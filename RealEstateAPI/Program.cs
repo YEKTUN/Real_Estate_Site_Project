@@ -1,0 +1,208 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using RealEstateAPI.Data;
+using RealEstateAPI.Models;
+using RealEstateAPI.Repositories.Auth;
+using RealEstateAPI.Services.Auth;
+
+var builder = WebApplication.CreateBuilder(args);
+
+/**
+ * Real Estate API - Program.cs
+ * 
+ * ASP.NET Core Web API yapılandırma dosyası.
+ * Servisler, middleware'ler ve uygulama ayarları burada yapılandırılır.
+ */
+
+// ============================================================================
+// SERVICES CONFIGURATION
+// ============================================================================
+
+// Controllers
+builder.Services.AddControllers();
+
+// CORS Policy - Frontend ile iletişim için
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000") // Next.js frontend
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+// Database Context - PostgreSQL
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Identity Configuration - IdentityUserContext ile Role tabloları kaldırıldı
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+{
+    // Password settings
+    options.Password.RequireDigit = true;
+    options.Password.RequireLowercase = true;
+    options.Password.RequireUppercase = true;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequiredLength = 8;
+
+    // User settings
+    options.User.RequireUniqueEmail = true;
+
+    // Lockout settings
+    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+    options.Lockout.MaxFailedAccessAttempts = 5;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddSignInManager<SignInManager<ApplicationUser>>()
+.AddDefaultTokenProviders();
+
+// JWT Authentication
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyHere123456789!"; // Geliştirme için varsayılan
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtSettings["Issuer"] ?? "RealEstateAPI",
+        ValidAudience = jwtSettings["Audience"] ?? "RealEstateFrontend",
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
+    };
+});
+
+// AutoMapper
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
+// Swagger/OpenAPI
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Real Estate API",
+        Version = "v1",
+        Description = "Gayrimenkul yönetim sistemi API'si",
+        Contact = new Microsoft.OpenApi.Models.OpenApiContact
+        {
+            Name = "Real Estate Team",
+            Email = "info@realestate.com"
+        }
+    });
+
+    // JWT Bearer için Swagger yapılandırması
+    options.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme. Example: \"Bearer {token}\"",
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    options.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                {
+                    Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
+
+// Dependency Injection - Services & Repositories
+// builder.Services.AddScoped<IPropertyService, PropertyService>();
+// builder.Services.AddScoped<IPropertyRepository, PropertyRepository>();
+builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+// ============================================================================
+// MIDDLEWARE PIPELINE
+// ============================================================================
+
+var app = builder.Build();
+
+// ============================================================================
+// DATABASE AUTO-MIGRATION
+// Uygulama başlatıldığında veritabanı tablolarını otomatik oluşturur
+// ============================================================================
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        
+        // Veritabanını oluştur ve migration'ları uygula
+        // EnsureCreated: Veritabanı yoksa oluşturur (migration kullanmadan)
+        // Migrate: Migration'ları uygular (production için önerilir)
+        
+        // Development ortamında EnsureCreated kullan (hızlı)
+        if (app.Environment.IsDevelopment())
+        {
+            await context.Database.EnsureCreatedAsync();
+            app.Logger.LogInformation("✅ Veritabanı tabloları kontrol edildi/oluşturuldu");
+        }
+        else
+        {
+            // Production ortamında migration kullan
+            await context.Database.MigrateAsync();
+            app.Logger.LogInformation("✅ Veritabanı migration'ları uygulandı");
+        }
+    }
+    catch (Exception ex)
+    {
+        var logger = services.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "❌ Veritabanı oluşturulurken hata oluştu");
+    }
+}
+
+// Development ortamında Swagger kullan
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Real Estate API v1");
+        options.RoutePrefix = string.Empty; // Swagger'ı root'ta aç
+    });
+}
+
+// HTTPS Redirection
+app.UseHttpsRedirection();
+
+// CORS
+app.UseCors("AllowFrontend");
+
+// Authentication & Authorization
+app.UseAuthentication();
+app.UseAuthorization();
+
+// Controllers
+app.MapControllers();
+
+// Uygulama başlatma mesajı
+app.Logger.LogInformation("🏠 Real Estate API başlatıldı!");
+app.Logger.LogInformation("📝 Swagger UI: http://localhost:5000");
+app.Logger.LogInformation("🌐 API Endpoint: http://localhost:5000/api");
+
+app.Run();

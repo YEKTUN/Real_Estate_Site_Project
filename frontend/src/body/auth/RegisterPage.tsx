@@ -12,6 +12,7 @@ import {
   selectIsAuthenticated 
 } from '@/body/redux/slices/auth/AuthSlice';
 import { RegisterRequestDto } from '@/body/redux/slices/auth/DTOs/AuthDTOs';
+import GoogleLoginButton from './components/GoogleLoginButton';
 
 /**
  * Register Component
@@ -44,11 +45,12 @@ export default function RegisterPage() {
   const [validationError, setValidationError] = useState<string | null>(null);
 
   /**
-   * Başarılı kayıt sonrası yönlendirme
+   * Başarılı kayıt sonrası panel sayfasına yönlendirme
    */
   useEffect(() => {
     if (isAuthenticated) {
-      router.push('/');
+      console.log('Register: Kullanıcı authenticated, panel sayfasına yönlendiriliyor...');
+      router.push('/panel');
     }
   }, [isAuthenticated, router]);
 
@@ -369,15 +371,17 @@ export default function RegisterPage() {
         </div>
       </div>
 
-      {/* Social Register Buttons */}
+      {/* Google Register Button */}
       <div className="space-y-3">
-        <button 
-          disabled={isLoading}
-          className="w-full py-3 border border-gray-300 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2 disabled:bg-gray-100 disabled:cursor-not-allowed"
-        >
-          <span>🔍</span>
-          <span>Google ile Kayıt Ol</span>
-        </button>
+        <GoogleLoginButton 
+          text="signup_with"
+          onSuccess={() => {
+            console.log('Google ile kayıt başarılı, yönlendirme yapılacak...');
+          }}
+          onError={(error) => {
+            console.error('Google ile kayıt hatası:', error);
+          }}
+        />
       </div>
 
       {/* Login Link */}

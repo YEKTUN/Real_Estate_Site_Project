@@ -164,6 +164,40 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// Google OAuth ile giriş endpoint'i
+    /// Frontend'den gelen Google ID Token'ı doğrular ve JWT token döner
+    /// </summary>
+    /// <param name="googleLoginDto">Google ID Token</param>
+    /// <returns>Giriş sonucu, JWT token ve Refresh token</returns>
+    [HttpPost("google")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginDto googleLoginDto)
+    {
+        // Model validasyonu
+        if (string.IsNullOrEmpty(googleLoginDto.IdToken))
+        {
+            return BadRequest(new AuthResponseDto
+            {
+                Success = false,
+                Message = "Google ID Token gereklidir"
+            });
+        }
+
+        _logger.LogInformation("Google OAuth giriş isteği alındı");
+
+        var ipAddress = GetIpAddress();
+        var result = await _authService.GoogleLoginAsync(googleLoginDto, ipAddress);
+
+        if (!result.Success)
+        {
+            return Unauthorized(result);
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Mevcut kullanıcı bilgilerini getir
     /// </summary>
     /// <returns>Kullanıcı bilgileri</returns>

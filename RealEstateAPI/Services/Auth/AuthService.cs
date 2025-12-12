@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using RealEstateAPI.DTOs.Auth;
@@ -309,6 +310,112 @@ public class AuthService : IAuthService
         return MapToUserDto(user);
     }
 
+    /// <summary>
+    /// Google OAuth ile giriş işlemi
+    /// Kullanıcı varsa giriş yapar, yoksa yeni kullanıcı oluşturur
+    /// </summary>
+    public async Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginDto googleLoginDto, string? ipAddress = null)
+    {
+        try
+        {
+            _logger.LogInformation("Google OAuth giriş isteği alındı");
+
+            // Google ID Token'ı doğrula ve kullanıcı bilgilerini al
+            var googleUserInfo = await ValidateGoogleTokenAsync(googleLoginDto.IdToken);
+
+            if (googleUserInfo == null)
+            {
+                _logger.LogWarning("Google token doğrulaması başarısız");
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Geçersiz Google token"
+                };
+            }
+
+            _logger.LogInformation("Google token doğrulandı: {Email}", googleUserInfo.Email);
+
+            // E-posta ile mevcut kullanıcıyı kontrol et
+            var existingUser = await _authRepository.GetUserByEmailAsync(googleUserInfo.Email);
+
+            ApplicationUser user;
+
+            if (existingUser != null)
+            {
+                // Mevcut kullanıcı - Google bilgilerini güncelle
+                user = existingUser;
+                
+                // Google ID yoksa ekle (normal kayıt olmuş ama şimdi Google ile giriş yapıyor)
+                if (string.IsNullOrEmpty(user.GoogleId))
+                {
+                    user.GoogleId = googleUserInfo.GoogleId;
+                    user.ProfilePictureUrl = googleUserInfo.Picture;
+                    user.UpdatedAt = DateTime.UtcNow;
+                    await _userManager.UpdateAsync(user);
+                    _logger.LogInformation("Mevcut kullanıcıya Google ID eklendi: {Email}", user.Email);
+                }
+
+                _logger.LogInformation("Google ile mevcut kullanıcı giriş yaptı: {Email}", user.Email);
+            }
+            else
+            {
+                // Yeni kullanıcı oluştur
+                user = new ApplicationUser
+                {
+                    UserName = googleUserInfo.Email,
+                    Email = googleUserInfo.Email,
+                    EmailConfirmed = googleUserInfo.EmailVerified,
+                    Name = googleUserInfo.Name,
+                    Surname = googleUserInfo.Surname,
+                    GoogleId = googleUserInfo.GoogleId,
+                    ProfilePictureUrl = googleUserInfo.Picture,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                // Google kullanıcıları için rastgele şifre oluştur (kullanılmayacak ama Identity gereksinimi)
+                var randomPassword = GenerateRandomPassword();
+                var createResult = await _userManager.CreateAsync(user, randomPassword);
+
+                if (!createResult.Succeeded)
+                {
+                    var errors = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                    _logger.LogError("Google kullanıcısı oluşturulamadı: {Errors}", errors);
+                    
+                    return new AuthResponseDto
+                    {
+                        Success = false,
+                        Message = $"Kullanıcı oluşturulamadı: {errors}"
+                    };
+                }
+
+                _logger.LogInformation("Google ile yeni kullanıcı kaydedildi: {Email}", user.Email);
+            }
+
+            // JWT token ve Refresh token oluştur
+            var accessToken = GenerateJwtToken(user);
+            var refreshToken = await GenerateRefreshTokenAsync(user.Id, ipAddress);
+
+            return new AuthResponseDto
+            {
+                Success = true,
+                Message = "Google ile giriş başarılı",
+                Token = accessToken,
+                RefreshToken = refreshToken.Token,
+                ExpiresIn = GetTokenExpirationInSeconds(),
+                User = MapToUserDto(user)
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Google OAuth işlemi sırasında hata oluştu");
+            return new AuthResponseDto
+            {
+                Success = false,
+                Message = "Google ile giriş sırasında bir hata oluştu"
+            };
+        }
+    }
+
     // ============================================================================
     // PRIVATE HELPER METHODS
     // ============================================================================
@@ -399,5 +506,95 @@ public class AuthService : IAuthService
     {
         var expirationMinutes = int.Parse(_configuration["JwtSettings:ExpirationMinutes"] ?? "60");
         return expirationMinutes * 60;
+    }
+
+    /// <summary>
+    /// Google ID Token'ı doğrula ve kullanıcı bilgilerini çıkar
+    /// Google'ın tokeninfo endpoint'ini kullanarak doğrulama yapar
+    /// </summary>
+    private async Task<GoogleUserInfo?> ValidateGoogleTokenAsync(string idToken)
+    {
+        try
+        {
+            var googleClientId = _configuration["GoogleAuth:ClientId"];
+            
+            // Google tokeninfo endpoint'ini kullanarak doğrula
+            using var httpClient = new HttpClient();
+            var response = await httpClient.GetAsync($"https://oauth2.googleapis.com/tokeninfo?id_token={idToken}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("Google token doğrulama başarısız: {StatusCode}", response.StatusCode);
+                return null;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            var tokenInfo = JsonSerializer.Deserialize<JsonElement>(content);
+
+            // Audience (Client ID) kontrolü - güvenlik için önemli
+            if (!string.IsNullOrEmpty(googleClientId))
+            {
+                var aud = tokenInfo.GetProperty("aud").GetString();
+                if (aud != googleClientId)
+                {
+                    _logger.LogWarning("Google token audience uyuşmuyor: Beklenen={Expected}, Gelen={Actual}", googleClientId, aud);
+                    return null;
+                }
+            }
+
+            // Token süresi kontrolü
+            var expStr = tokenInfo.GetProperty("exp").GetString();
+            if (long.TryParse(expStr, out var exp))
+            {
+                var expiryTime = DateTimeOffset.FromUnixTimeSeconds(exp);
+                if (expiryTime < DateTimeOffset.UtcNow)
+                {
+                    _logger.LogWarning("Google token süresi dolmuş");
+                    return null;
+                }
+            }
+
+            // Kullanıcı bilgilerini çıkar
+            return new GoogleUserInfo
+            {
+                GoogleId = tokenInfo.GetProperty("sub").GetString() ?? string.Empty,
+                Email = tokenInfo.GetProperty("email").GetString() ?? string.Empty,
+                EmailVerified = tokenInfo.TryGetProperty("email_verified", out var emailVerified) && 
+                               emailVerified.GetString()?.ToLower() == "true",
+                Name = tokenInfo.TryGetProperty("given_name", out var givenName) 
+                       ? givenName.GetString() ?? string.Empty 
+                       : string.Empty,
+                Surname = tokenInfo.TryGetProperty("family_name", out var familyName) 
+                          ? familyName.GetString() ?? string.Empty 
+                          : string.Empty,
+                Picture = tokenInfo.TryGetProperty("picture", out var picture) 
+                          ? picture.GetString() 
+                          : null
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Google token doğrulama sırasında hata");
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Google kullanıcıları için rastgele şifre oluştur
+    /// Bu şifre kullanılmayacak ama Identity için gerekli
+    /// </summary>
+    private static string GenerateRandomPassword()
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
+        var random = new byte[32];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(random);
+
+        var result = new char[32];
+        for (int i = 0; i < 32; i++)
+        {
+            result[i] = chars[random[i] % chars.Length];
+        }
+        return new string(result);
     }
 }

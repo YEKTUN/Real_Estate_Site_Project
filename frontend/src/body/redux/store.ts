@@ -1,18 +1,36 @@
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from './slices/auth/AuthSlice';
+import listingReducer from './slices/listing/ListingSlice';
+import commentReducer from './slices/comment/CommentSlice';
+import favoriteReducer from './slices/favorite/FavoriteSlice';
 
 /**
  * Redux Store Yapılandırması
  * 
  * Bu dosya, uygulamanın merkezi state yönetimi için Redux store'unu yapılandırır.
  * Tüm slice'lar burada birleştirilir ve store oluşturulur.
+ * 
+ * Mevcut Slice'lar:
+ * - auth: Kimlik doğrulama (login, register, logout)
+ * - listing: İlan işlemleri (CRUD, arama, listeleme)
+ * - comment: Yorum işlemleri (CRUD)
+ * - favorite: Favori işlemleri (ekleme, kaldırma, toggle)
  */
 
 // Store'u oluştur
 export const store = configureStore({
   reducer: {
-    // Slice'lar buraya eklenir
+    // Auth Slice - Kimlik doğrulama
     auth: authReducer,
+    
+    // Listing Slice - İlan işlemleri
+    listing: listingReducer,
+    
+    // Comment Slice - Yorum işlemleri
+    comment: commentReducer,
+    
+    // Favorite Slice - Favori işlemleri
+    favorite: favoriteReducer,
   },
   // Middleware yapılandırması (varsayılan middleware'ler otomatik eklenir)
   middleware: (getDefaultMiddleware) =>

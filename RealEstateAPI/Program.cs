@@ -6,7 +6,9 @@ using System.Text;
 using RealEstateAPI.Data;
 using RealEstateAPI.Models;
 using RealEstateAPI.Repositories.Auth;
+using RealEstateAPI.Repositories.Listing;
 using RealEstateAPI.Services.Auth;
+using RealEstateAPI.Services.Listing;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -130,10 +132,35 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // Dependency Injection - Services & Repositories
-// builder.Services.AddScoped<IPropertyService, PropertyService>();
-// builder.Services.AddScoped<IPropertyRepository, PropertyRepository>();
+
+// Auth
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Listing (İlan)
+builder.Services.AddScoped<IListingRepository, ListingRepository>();
+builder.Services.AddScoped<IListingService, ListingService>();
+
+// Comment (Yorum)
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<ICommentService, CommentService>();
+
+// Favorite (Favori)
+builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
+
+// HttpClient for Google Token Validation
+builder.Services.AddHttpClient();
+
+// ============================================================================
+// GOOGLE AUTH CONFIGURATION (appsettings.json'dan okunacak)
+// Google Cloud Console'dan Client ID alınmalı:
+// 1. https://console.cloud.google.com/ adresine git
+// 2. Credentials > Create Credentials > OAuth 2.0 Client ID
+// 3. Application type: Web application
+// 4. Authorized JavaScript origins: http://localhost:3000
+// 5. Client ID'yi appsettings.json veya environment variable'a ekle
+// ============================================================================
 
 // ============================================================================
 // MIDDLEWARE PIPELINE

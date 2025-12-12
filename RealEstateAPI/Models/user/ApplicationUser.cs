@@ -43,4 +43,40 @@ public class ApplicationUser : IdentityUser
     /// Son güncelleme tarihi
     /// </summary>
     public DateTime? UpdatedAt { get; set; }
+
+    // ============================================================================
+    // GOOGLE OAUTH FIELDS
+    // ============================================================================
+
+    /// <summary>
+    /// Google OAuth ile giriş yapan kullanıcının Google ID'si
+    /// Null ise kullanıcı normal email/şifre ile kayıt olmuştur
+    /// </summary>
+    [StringLength(100)]
+    public string? GoogleId { get; set; }
+
+    /// <summary>
+    /// Google profil fotoğrafı URL'i
+    /// </summary>
+    [StringLength(500)]
+    public string? ProfilePictureUrl { get; set; }
+
+    /// <summary>
+    /// Kullanıcı Google ile mi giriş yaptı?
+    /// </summary>
+    public bool IsGoogleUser => !string.IsNullOrEmpty(GoogleId);
+
+    // ============================================================================
+    // İLAN İLİŞKİLERİ
+    // ============================================================================
+
+    /// <summary>
+    /// Kullanıcının yayınladığı ilanlar
+    /// </summary>
+    public virtual ICollection<Listing> Listings { get; set; } = new List<Listing>();
+
+    /// <summary>
+    /// Kullanıcının favori ilanları
+    /// </summary>
+    public virtual ICollection<FavoriteListing> FavoriteListings { get; set; } = new List<FavoriteListing>();
 }

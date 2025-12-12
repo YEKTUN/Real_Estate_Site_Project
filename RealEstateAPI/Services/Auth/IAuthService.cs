@@ -48,4 +48,12 @@ public interface IAuthService
     /// <param name="userId">Kullanıcı ID'si</param>
     /// <returns>Kullanıcı bilgileri</returns>
     Task<UserDto?> GetUserByIdAsync(string userId);
+
+    /// <summary>
+    /// Google OAuth ile giriş işlemi
+    /// </summary>
+    /// <param name="googleLoginDto">Google ID Token</param>
+    /// <param name="ipAddress">İstemci IP adresi</param>
+    /// <returns>İşlem sonucu ve JWT token</returns>
+    Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginDto googleLoginDto, string? ipAddress = null);
 }

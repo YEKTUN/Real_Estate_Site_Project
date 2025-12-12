@@ -1,0 +1,280 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAppSelector, useAppDispatch } from '@/body/redux/hooks';
+import { selectUser, selectIsAuthenticated, selectIsLoading, logoutAsync } from '@/body/redux/slices/auth/AuthSlice';
+import ProfileSection from '@/body/panel/components/ProfileSection';
+import MyListings from './components/MyListings';
+import CreateListing from '@/body/panel/components/CreateListing';
+import FavoriteListings from '@/body/panel/components/FavoriteListings';
+import Settings from '@/body/panel/components/Settings';
+
+/**
+ * Panel Ana Bileşeni
+ * 
+ * Kullanıcı paneli ana yapısı:
+ * - Sidebar: Navigasyon menüsü
+ * - Content: Seçilen bölümün içeriği
+ * 
+ * Bölümler:
+ * - Profil: Kullanıcı bilgileri düzenleme
+ * - İlanlarım: Kullanıcının ilanları
+ * - İlan Ver: Yeni ilan oluşturma
+ * - Favorilerim: Favori ilanlar
+ * - Ayarlar: Hesap ayarları
+ */
+
+// Panel menü öğeleri tipi
+interface MenuItem {
+  id: string;
+  label: string;
+  icon: string;
+  description: string;
+}
+
+// Menü öğeleri
+const menuItems: MenuItem[] = [
+  {
+    id: 'profile',
+    label: 'Profilim',
+    icon: '👤',
+    description: 'Kişisel bilgilerinizi düzenleyin',
+  },
+  {
+    id: 'my-listings',
+    label: 'İlanlarım',
+    icon: '🏠',
+    description: 'İlanlarınızı yönetin',
+  },
+  {
+    id: 'create-listing',
+    label: 'İlan Ver',
+    icon: '➕',
+    description: 'Yeni ilan oluşturun',
+  },
+  {
+    id: 'favorites',
+    label: 'Favorilerim',
+    icon: '❤️',
+    description: 'Favori ilanlarınız',
+  },
+  {
+    id: 'settings',
+    label: 'Ayarlar',
+    icon: '⚙️',
+    description: 'Hesap ayarları',
+  },
+];
+
+export default function Panel() {
+  // Router ve dispatch
+  const router = useRouter();
+  const dispatch = useAppDispatch();
+
+  // Redux state
+  const user = useAppSelector(selectUser);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const isLoading = useAppSelector(selectIsLoading);
+
+  // Aktif menü
+  const [activeMenu, setActiveMenu] = useState<string>('profile');
+
+  // Sidebar collapse durumu (mobil için)
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+
+  /**
+   * Çıkış yap handler
+   */
+  const handleLogout = async () => {
+    try {
+      console.log('Panel: Çıkış yapılıyor...');
+      await dispatch(logoutAsync()).unwrap();
+      router.push('/login');
+    } catch (error) {
+      console.error('Çıkış hatası:', error);
+      // Hata olsa bile login'e yönlendir
+      router.push('/login');
+    }
+  };
+
+  // Auth kontrolü - giriş yapmamış kullanıcıları yönlendir
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      console.log('Panel: Kullanıcı giriş yapmamış, login sayfasına yönlendiriliyor...');
+      router.push('/login');
+    }
+  }, [isAuthenticated, isLoading, router]);
+
+  /**
+   * Aktif menüye göre içerik render et
+   */
+  const renderContent = () => {
+    switch (activeMenu) {
+      case 'profile':
+        return <ProfileSection />;
+      case 'my-listings':
+        return <MyListings />;
+      case 'create-listing':
+        return <CreateListing />;
+      case 'favorites':
+        return <FavoriteListings />;
+      case 'settings':
+        return <Settings />;
+      default:
+        return <ProfileSection />;
+    }
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Auth check - kullanıcı yoksa null döndür (yönlendirme useEffect'te)
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 text-lg">Yönlendiriliyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Panel Container */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-white rounded-2xl shadow-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold">
+              {user.name?.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h2 className="font-semibold text-gray-800">{user.name} {user.surname}</h2>
+              <p className="text-sm text-gray-500">{user.email}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <span className="text-2xl">{isSidebarCollapsed ? '☰' : '✕'}</span>
+          </button>
+        </div>
+
+        {/* Sidebar */}
+        <aside
+          className={`
+            lg:w-80 bg-white rounded-2xl shadow-lg overflow-hidden
+            ${isSidebarCollapsed ? 'hidden' : 'block'} lg:block
+            transition-all duration-300
+          `}
+        >
+          {/* User Info - Desktop */}
+          <div className="hidden lg:block p-6 bg-gradient-to-br from-blue-600 to-purple-700 text-white">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-2xl font-bold">
+                {user.name?.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">{user.name} {user.surname}</h2>
+                <p className="text-blue-100 text-sm">{user.email}</p>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t border-white/20 flex gap-4 text-sm">
+              <div className="text-center">
+                <p className="font-bold text-lg">0</p>
+                <p className="text-blue-100">İlan</p>
+              </div>
+              <div className="text-center">
+                <p className="font-bold text-lg">0</p>
+                <p className="text-blue-100">Favori</p>
+              </div>
+              <div className="text-center">
+                <p className="font-bold text-lg">0</p>
+                <p className="text-blue-100">Mesaj</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Menu Items */}
+          <nav className="p-4">
+            <ul className="space-y-2">
+              {menuItems.map((item) => (
+                <li key={item.id}>
+                  <button
+                    onClick={() => {
+                      setActiveMenu(item.id);
+                      setIsSidebarCollapsed(true); // Mobilde menü seçince kapat
+                    }}
+                    className={`
+                      w-full flex items-center gap-4 px-4 py-3 rounded-xl
+                      transition-all duration-200
+                      ${
+                        activeMenu === item.id
+                          ? 'bg-blue-50 text-blue-600 shadow-sm'
+                          : 'hover:bg-gray-50 text-gray-700'
+                      }
+                    `}
+                  >
+                    <span className="text-2xl">{item.icon}</span>
+                    <div className="text-left">
+                      <p className="font-semibold">{item.label}</p>
+                      <p className="text-xs text-gray-500">{item.description}</p>
+                    </div>
+                    {activeMenu === item.id && (
+                      <span className="ml-auto text-blue-600">→</span>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Logout Button */}
+          <div className="p-4 border-t border-gray-100">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-all duration-200"
+            >
+              <span className="text-2xl">🚪</span>
+              <div className="text-left">
+                <p className="font-semibold">Çıkış Yap</p>
+                <p className="text-xs text-gray-500">Hesabınızdan çıkın</p>
+              </div>
+            </button>
+          </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 bg-white rounded-2xl shadow-lg p-6 lg:p-8">
+          {/* Content Header */}
+          <div className="mb-6 pb-6 border-b border-gray-100">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-800">
+              {menuItems.find((item) => item.id === activeMenu)?.label}
+            </h1>
+            <p className="text-gray-500 mt-1">
+              {menuItems.find((item) => item.id === activeMenu)?.description}
+            </p>
+          </div>
+
+          {/* Dynamic Content */}
+          <div className="animate-fadeIn">
+            {renderContent()}
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}

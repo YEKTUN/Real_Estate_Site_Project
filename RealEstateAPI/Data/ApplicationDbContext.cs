@@ -17,6 +17,12 @@ namespace RealEstateAPI.Data;
  * - AspNetUserLogins: Harici login (Google login için)
  * - AspNetUserTokens: Token'lar (email onay, şifre sıfırlama)
  * - RefreshTokens: JWT token yenileme
+ * - Listings: Emlak ilanları
+ * - ListingImages: İlan görselleri
+ * - ListingInteriorFeatures: İlan iç özellikleri
+ * - ListingExteriorFeatures: İlan dış özellikleri
+ * - ListingComments: İlan yorumları
+ * - FavoriteListings: Favori ilanlar
  * 
  * Kaldırılan tablolar: AspNetRoles, AspNetUserRoles, AspNetRoleClaims
  */
@@ -27,10 +33,48 @@ public class ApplicationDbContext : IdentityUserContext<ApplicationUser>
     {
     }
 
+    // ============================================================================
+    // AUTH TABLOLARI
+    // ============================================================================
+
     /// <summary>
     /// Refresh Token'lar
     /// </summary>
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+
+    // ============================================================================
+    // İLAN TABLOLARI
+    // ============================================================================
+
+    /// <summary>
+    /// Emlak İlanları
+    /// </summary>
+    public DbSet<Listing> Listings { get; set; }
+
+    /// <summary>
+    /// İlan Görselleri
+    /// </summary>
+    public DbSet<ListingImage> ListingImages { get; set; }
+
+    /// <summary>
+    /// İlan İç Özellikleri
+    /// </summary>
+    public DbSet<ListingInteriorFeature> ListingInteriorFeatures { get; set; }
+
+    /// <summary>
+    /// İlan Dış Özellikleri
+    /// </summary>
+    public DbSet<ListingExteriorFeature> ListingExteriorFeatures { get; set; }
+
+    /// <summary>
+    /// İlan Yorumları
+    /// </summary>
+    public DbSet<ListingComment> ListingComments { get; set; }
+
+    /// <summary>
+    /// Favori İlanlar
+    /// </summary>
+    public DbSet<FavoriteListing> FavoriteListings { get; set; }
 
     /// <summary>
     /// Model yapılandırması
@@ -69,6 +113,155 @@ public class ApplicationDbContext : IdentityUserContext<ApplicationUser>
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ============================================================================
+        // İLAN TABLOLARI YAPILANDIRMASI
+        // ============================================================================
+
+        // Listing (İlan) yapılandırması
+        builder.Entity<Listing>(entity =>
+        {
+            entity.ToTable("Listings");
+            entity.HasKey(e => e.Id);
+
+            // Index'ler
+            entity.HasIndex(e => e.ListingNumber).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.Status);
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.Type);
+            entity.HasIndex(e => e.City);
+            entity.HasIndex(e => e.District);
+            entity.HasIndex(e => e.Price);
+            entity.HasIndex(e => e.CreatedAt);
+
+            // String uzunlukları
+            entity.Property(e => e.ListingNumber).HasMaxLength(20);
+            entity.Property(e => e.Title).HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(5000);
+            entity.Property(e => e.City).HasMaxLength(50);
+            entity.Property(e => e.District).HasMaxLength(50);
+            entity.Property(e => e.Neighborhood).HasMaxLength(100);
+            entity.Property(e => e.FullAddress).HasMaxLength(300);
+            entity.Property(e => e.RoomCount).HasMaxLength(20);
+
+            // Decimal hassasiyeti
+            entity.Property(e => e.Price).HasPrecision(18, 2);
+            entity.Property(e => e.MonthlyDues).HasPrecision(18, 2);
+            entity.Property(e => e.Deposit).HasPrecision(18, 2);
+
+            // Kullanıcı ilişkisi
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.Listings)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ListingImage (Görsel) yapılandırması
+        builder.Entity<ListingImage>(entity =>
+        {
+            entity.ToTable("ListingImages");
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => e.ListingId);
+
+            entity.Property(e => e.ImageUrl).HasMaxLength(500);
+            entity.Property(e => e.ThumbnailUrl).HasMaxLength(500);
+            entity.Property(e => e.AltText).HasMaxLength(200);
+
+            entity.HasOne(e => e.Listing)
+                .WithMany(l => l.Images)
+                .HasForeignKey(e => e.ListingId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ListingInteriorFeature (İç Özellik) yapılandırması
+        builder.Entity<ListingInteriorFeature>(entity =>
+        {
+            entity.ToTable("ListingInteriorFeatures");
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => e.ListingId);
+            entity.HasIndex(e => new { e.ListingId, e.FeatureType }).IsUnique();
+
+            entity.HasOne(e => e.Listing)
+                .WithMany(l => l.InteriorFeatures)
+                .HasForeignKey(e => e.ListingId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ListingExteriorFeature (Dış Özellik) yapılandırması
+        builder.Entity<ListingExteriorFeature>(entity =>
+        {
+            entity.ToTable("ListingExteriorFeatures");
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => e.ListingId);
+            entity.HasIndex(e => new { e.ListingId, e.FeatureType }).IsUnique();
+
+            entity.HasOne(e => e.Listing)
+                .WithMany(l => l.ExteriorFeatures)
+                .HasForeignKey(e => e.ListingId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ListingComment (Yorum) yapılandırması
+        builder.Entity<ListingComment>(entity =>
+        {
+            entity.ToTable("ListingComments");
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => e.ListingId);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.ParentCommentId);
+            entity.HasIndex(e => e.IsActive);
+
+            entity.Property(e => e.Content).HasMaxLength(1000);
+
+            // İlan ilişkisi
+            entity.HasOne(e => e.Listing)
+                .WithMany(l => l.Comments)
+                .HasForeignKey(e => e.ListingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Kullanıcı ilişkisi
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            // Self-referencing ilişki (Yanıtlar)
+            entity.HasOne(e => e.ParentComment)
+                .WithMany(e => e.Replies)
+                .HasForeignKey(e => e.ParentCommentId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        // FavoriteListing (Favori) yapılandırması
+        builder.Entity<FavoriteListing>(entity =>
+        {
+            entity.ToTable("FavoriteListings");
+            entity.HasKey(e => e.Id);
+
+            // Unique constraint: Bir kullanıcı bir ilanı bir kez favoriye ekleyebilir
+            entity.HasIndex(e => new { e.UserId, e.ListingId }).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.ListingId);
+
+            entity.Property(e => e.Note).HasMaxLength(500);
+
+            // İlan ilişkisi
+            entity.HasOne(e => e.Listing)
+                .WithMany(l => l.FavoritedBy)
+                .HasForeignKey(e => e.ListingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Kullanıcı ilişkisi
+            entity.HasOne(e => e.User)
+                .WithMany(u => u.FavoriteListings)
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
         });
     }
 

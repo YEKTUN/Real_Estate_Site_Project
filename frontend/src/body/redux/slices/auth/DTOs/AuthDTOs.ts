@@ -40,6 +40,14 @@ export interface RefreshTokenRequestDto {
   refreshToken: string;
 }
 
+/**
+ * Google Login Request DTO
+ * Google OAuth ile giriş isteği için
+ */
+export interface GoogleLoginRequestDto {
+  idToken: string;
+}
+
 // ============================================================================
 // RESPONSE DTOs
 // ============================================================================

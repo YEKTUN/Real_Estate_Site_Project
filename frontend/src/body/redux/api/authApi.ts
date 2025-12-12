@@ -10,7 +10,8 @@ import {
   LoginRequestDto, 
   RegisterRequestDto, 
   AuthResponseDto,
-  UserDto 
+  UserDto,
+  GoogleLoginRequestDto 
 } from '../slices/auth/DTOs/AuthDTOs';
 
 /**
@@ -80,6 +81,36 @@ export const registerApi = async (userData: RegisterRequestDto): Promise<AuthRes
     return {
       success: false,
       message: 'Kayıt işlemi sırasında bir hata oluştu'
+    };
+  }
+};
+
+/**
+ * Google ile Giriş
+ * @param googleData - Google ID Token
+ * @returns Auth yanıtı (token, refreshToken ve kullanıcı bilgileri)
+ */
+export const googleLoginApi = async (googleData: GoogleLoginRequestDto): Promise<AuthResponseDto> => {
+  console.log('googleLoginApi çağrıldı');
+  try {
+    const response = await axiosInstance.post<AuthResponseDto>('/auth/google', googleData);
+    console.log('Google Login API yanıtı:', response.data);
+    
+    // Başarılı giriş - token'ları kaydet
+    if (response.data.success && response.data.token && response.data.refreshToken) {
+      saveTokens(response.data.token, response.data.refreshToken);
+    }
+    
+    return response.data;
+  } catch (error: unknown) {
+    console.error('Google Login API hatası:', error);
+    if (isAxiosError(error) && error.response?.data) {
+      return error.response.data as AuthResponseDto;
+    }
+    
+    return {
+      success: false,
+      message: 'Google ile giriş işlemi sırasında bir hata oluştu'
     };
   }
 };

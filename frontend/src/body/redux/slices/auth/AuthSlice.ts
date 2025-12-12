@@ -5,7 +5,8 @@ import {
   LoginRequestDto, 
   RegisterRequestDto, 
   AuthResponseDto,
-  UserDto 
+  UserDto,
+  GoogleLoginRequestDto 
 } from './DTOs/AuthDTOs';
 import { 
   loginApi, 
@@ -16,7 +17,8 @@ import {
   checkAuthStatus,
   getStoredToken,
   getStoredRefreshToken,
-  refreshTokenApi
+  refreshTokenApi,
+  googleLoginApi
 } from '../../api/authApi';
 
 /**
@@ -81,6 +83,31 @@ export const register = createAsyncThunk<AuthResponseDto, RegisterRequestDto>(
       return response;
     } catch {
       return rejectWithValue('Kayıt işlemi başarısız oldu');
+    }
+  }
+);
+
+/**
+ * Google Login Thunk
+ * Google OAuth ile giriş işlemi
+ */
+export const googleLogin = createAsyncThunk<AuthResponseDto, GoogleLoginRequestDto>(
+  'auth/googleLogin',
+  async (googleData, { rejectWithValue }) => {
+    try {
+      console.log('Google Login thunk çalışıyor...');
+      const response = await googleLoginApi(googleData);
+      
+      if (!response.success) {
+        console.log('Google Login başarısız:', response.message);
+        return rejectWithValue(response.message);
+      }
+      
+      console.log('Google Login başarılı:', response);
+      return response;
+    } catch {
+      console.error('Google Login thunk hatası');
+      return rejectWithValue('Google ile giriş işlemi başarısız oldu');
     }
   }
 );
@@ -255,6 +282,26 @@ export const authSlice = createSlice({
         state.error = null;
       })
       .addCase(register.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = false;
+        state.error = action.payload as string;
+      });
+
+    // ========== GOOGLE LOGIN ==========
+    builder
+      .addCase(googleLogin.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(googleLogin.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isAuthenticated = true;
+        state.user = action.payload.user || null;
+        state.token = action.payload.token || null;
+        state.refreshToken = action.payload.refreshToken || null;
+        state.error = null;
+      })
+      .addCase(googleLogin.rejected, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = false;
         state.error = action.payload as string;

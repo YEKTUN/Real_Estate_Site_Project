@@ -43,7 +43,7 @@ export default function Navbar() {
    */
   const navItems = [
     { name: 'Ana Sayfa', href: '/' },
-    { name: 'İlanlar', href: '/properties' },
+    { name: 'İlanlar', href: '/listing' },
     { name: 'Hakkımızda', href: '/about' },
     { name: 'İletişim', href: '/contact' },
   ];

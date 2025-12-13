@@ -29,6 +29,8 @@ import {
   getSimilarListingsApi,
   updateListingStatusApi,
   addListingImageApi,
+  uploadListingImageFileApi,
+  uploadMultipleListingImageFilesApi,
   deleteListingImageApi,
   setCoverImageApi,
   getListingImagesApi,
@@ -311,7 +313,9 @@ export const updateListingStatus = createAsyncThunk<
 // ---------- GÖRSEL İŞLEMLERİ ----------
 
 /**
- * İlana görsel ekle
+ * İlana görsel ekle (URL ile - eski yöntem)
+ * 
+ * @deprecated Cloudinary entegrasyonu için uploadListingImageFile kullanın
  */
 export const addListingImage = createAsyncThunk<
   ImageResponseDto, 
@@ -327,6 +331,77 @@ export const addListingImage = createAsyncThunk<
       return response;
     } catch {
       return rejectWithValue('Görsel eklenirken bir hata oluştu');
+    }
+  }
+);
+
+/**
+ * İlana görsel yükle (Cloudinary ile - dosya yükleme)
+ * 
+ * Hem Cloudinary'e yükler hem de veritabanına kaydeder.
+ */
+export const uploadListingImageFile = createAsyncThunk<
+  ImageResponseDto,
+  {
+    listingId: number;
+    file: File;
+    options?: {
+      isCoverImage?: boolean;
+      altText?: string;
+      displayOrder?: number;
+    };
+  }
+>(
+  'listing/uploadImageFile',
+  async ({ listingId, file, options }, { rejectWithValue }) => {
+    try {
+      console.log('📤 Listing slice - Görsel yükleme başlatıldı:', {
+        listingId,
+        fileName: file.name,
+        options,
+      });
+
+      const response = await uploadListingImageFileApi(listingId, file, options);
+      
+      if (!response.success) {
+        return rejectWithValue(response.message);
+      }
+
+      console.log('✅ Listing slice - Görsel yükleme başarılı:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ Listing slice - Görsel yükleme hatası:', error);
+      return rejectWithValue(error.message || 'Görsel yüklenirken bir hata oluştu');
+    }
+  }
+);
+
+/**
+ * İlana birden fazla görsel yükle (Cloudinary ile)
+ */
+export const uploadMultipleListingImageFiles = createAsyncThunk<
+  ImageListResponseDto,
+  { listingId: number; files: File[] }
+>(
+  'listing/uploadMultipleImageFiles',
+  async ({ listingId, files }, { rejectWithValue }) => {
+    try {
+      console.log('📤 Listing slice - Çoklu görsel yükleme başlatıldı:', {
+        listingId,
+        fileCount: files.length,
+      });
+
+      const response = await uploadMultipleListingImageFilesApi(listingId, files);
+      
+      if (!response.success) {
+        return rejectWithValue(response.message);
+      }
+
+      console.log('✅ Listing slice - Çoklu görsel yükleme başarılı:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ Listing slice - Çoklu görsel yükleme hatası:', error);
+      return rejectWithValue(error.message || 'Görseller yüklenirken bir hata oluştu');
     }
   }
 );
@@ -615,6 +690,97 @@ export const listingSlice = createSlice({
         state.currentListingImages = action.payload.images;
       })
       .addCase(fetchListingImages.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // ========== ADD IMAGE (URL ile - eski yöntem) ==========
+    builder
+      .addCase(addListingImage.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(addListingImage.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // Görselleri yeniden yükle
+        if (state.currentListing && action.payload.image) {
+          state.currentListingImages.push(action.payload.image);
+        }
+      })
+      .addCase(addListingImage.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // ========== UPLOAD IMAGE FILE (Cloudinary ile) ==========
+    builder
+      .addCase(uploadListingImageFile.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(uploadListingImageFile.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // Yeni görseli current listing'e ekle
+        if (state.currentListing && action.payload.image) {
+          state.currentListingImages.push(action.payload.image);
+        }
+      })
+      .addCase(uploadListingImageFile.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // ========== UPLOAD MULTIPLE IMAGE FILES (Cloudinary ile) ==========
+    builder
+      .addCase(uploadMultipleListingImageFiles.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(uploadMultipleListingImageFiles.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // Yeni görselleri current listing'e ekle
+        if (state.currentListing && action.payload.images) {
+          state.currentListingImages.push(...action.payload.images);
+        }
+      })
+      .addCase(uploadMultipleListingImageFiles.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // ========== DELETE IMAGE ==========
+    builder
+      .addCase(deleteListingImage.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(deleteListingImage.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // Silinen görseli listeden çıkar
+        // action.payload.imageId kullanarak silinebilir
+      })
+      .addCase(deleteListingImage.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
+      });
+
+    // ========== SET COVER IMAGE ==========
+    builder
+      .addCase(setCoverImage.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(setCoverImage.fulfilled, (state, action) => {
+        state.isLoading = false;
+        // Kapak fotoğrafını güncelle
+        if (state.currentListingImages.length > 0) {
+          state.currentListingImages.forEach((img) => {
+            img.isCoverImage = false;
+          });
+          // action.payload.imageId ile kapak fotoğrafını bul ve ayarla
+        }
+      })
+      .addCase(setCoverImage.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload as string;
       });

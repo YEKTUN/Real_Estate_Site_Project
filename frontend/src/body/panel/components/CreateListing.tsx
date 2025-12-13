@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/body/redux/hooks';
 import { 
-  createListing, 
+  createListing,
+  uploadListingImageFile,
+  uploadMultipleListingImageFiles,
   selectListingCreating,
   selectListingError,
   clearError 
@@ -147,6 +149,15 @@ export default function CreateListing() {
   // Başarı mesajı
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  // Görsel yükleme state'leri
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [uploadingImages, setUploadingImages] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [createdListingId, setCreatedListingId] = useState<number | null>(null);
+
   // Adım listesi
   const steps: { id: Step; label: string; icon: string }[] = [
     { id: 'basic', label: 'Temel Bilgiler', icon: '📝' },
@@ -223,6 +234,151 @@ export default function CreateListing() {
   };
 
   /**
+   * Dosya işleme helper fonksiyonu
+   */
+  const processFiles = (files: File[]) => {
+    // Maksimum 20 dosya kontrolü
+    if (selectedImages.length + files.length > 20) {
+      alert('Maksimum 20 fotoğraf yükleyebilirsiniz!');
+      return;
+    }
+
+    // Dosya boyutu kontrolü (5MB)
+    const validFiles = files.filter((file) => {
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`${file.name} dosyası çok büyük! Maksimum 5MB olmalıdır.`);
+        return false;
+      }
+      return true;
+    });
+
+    // Dosya tipi kontrolü
+    const imageFiles = validFiles.filter((file) => {
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        alert(`${file.name} geçersiz dosya tipi! Sadece resim dosyaları yükleyebilirsiniz.`);
+        return false;
+      }
+      return true;
+    });
+
+    // Yeni dosyaları ekle
+    const newFiles = [...selectedImages, ...imageFiles];
+    setSelectedImages(newFiles);
+
+    // Önizlemeleri oluştur
+    imageFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews((prev) => [...prev, reader.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  /**
+   * Dosya seçme handler
+   */
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    processFiles(files);
+
+    // Input'u temizle
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  /**
+   * Drag & Drop handlers
+   */
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    processFiles(files);
+  };
+
+  /**
+   * Görsel sil
+   */
+  const handleRemoveImage = (index: number) => {
+    setSelectedImages((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  /**
+   * Görsel sıralamasını değiştir
+   */
+  const handleMoveImage = (index: number, direction: 'up' | 'down') => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === selectedImages.length - 1) return;
+
+    const newImages = [...selectedImages];
+    const newPreviews = [...imagePreviews];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+
+    [newImages[index], newImages[newIndex]] = [newImages[newIndex], newImages[index]];
+    [newPreviews[index], newPreviews[newIndex]] = [newPreviews[newIndex], newPreviews[index]];
+
+    setSelectedImages(newImages);
+    setImagePreviews(newPreviews);
+  };
+
+  /**
+   * Görselleri yükle (Cloudinary ile)
+   */
+  const uploadImages = async (listingId: number) => {
+    if (selectedImages.length === 0) return;
+
+    setUploadingImages(true);
+    setUploadProgress(0);
+
+    try {
+      console.log('📤 Görseller yükleniyor:', { listingId, count: selectedImages.length });
+
+      // Çoklu görsel yükleme
+      const result = await dispatch(
+        uploadMultipleListingImageFiles({
+          listingId,
+          files: selectedImages,
+        })
+      ).unwrap();
+
+      if (result.success) {
+        console.log('✅ Görseller başarıyla yüklendi:', result);
+        setUploadProgress(100);
+      } else {
+        throw new Error(result.message || 'Görseller yüklenirken bir hata oluştu');
+      }
+    } catch (error: any) {
+      console.error('❌ Görsel yükleme hatası:', error);
+      throw error;
+    } finally {
+      setUploadingImages(false);
+    }
+  };
+
+  /**
    * Form submit - Redux ile
    */
   const handleSubmit = async () => {
@@ -252,20 +408,38 @@ export default function CreateListing() {
         buildingAge: formData.buildingAge ? parseInt(formData.buildingAge) : undefined,
         floorNumber: formData.floorNumber ? parseInt(formData.floorNumber) : undefined,
         totalFloors: formData.totalFloors ? parseInt(formData.totalFloors) : undefined,
-        heatingType: formData.heatingType || undefined,
-        buildingStatus: formData.buildingStatus || undefined,
-        usageStatus: formData.usageStatus || undefined,
+        // Enum alanları: boş string ise undefined, değilse enum değeri gönder
+        heatingType: formData.heatingType === '' ? undefined : formData.heatingType as HeatingType,
+        buildingStatus: formData.buildingStatus === '' ? undefined : formData.buildingStatus as BuildingStatus,
+        usageStatus: formData.usageStatus === '' ? undefined : formData.usageStatus as UsageStatus,
         isSuitableForCredit: formData.isSuitableForCredit,
         isSuitableForTrade: formData.isSuitableForTrade,
         ownerType: formData.ownerType,
-        interiorFeatures: formData.interiorFeatures,
-        exteriorFeatures: formData.exteriorFeatures,
+        // Özellikler: boş array ise undefined gönder (backend List<InteriorFeatureType> bekliyor)
+        interiorFeatures: formData.interiorFeatures.length > 0 ? formData.interiorFeatures : undefined,
+        exteriorFeatures: formData.exteriorFeatures.length > 0 ? formData.exteriorFeatures : undefined,
       };
+      
+      console.log('CreateListingDto oluşturuldu:', createDto);
 
+      // İlanı oluştur
       const result = await dispatch(createListing(createDto)).unwrap();
       
-      if (result.success) {
+      if (result.success && result.listingId) {
+        setCreatedListingId(result.listingId);
+        
+        // Görselleri yükle
+        if (selectedImages.length > 0) {
+          try {
+            await uploadImages(result.listingId);
+          } catch (imageError) {
+            console.error('Görsel yükleme hatası:', imageError);
+            // Görsel yükleme hatası olsa bile ilan oluşturuldu
+          }
+        }
+
         setSuccessMessage('İlanınız başarıyla oluşturuldu! İnceleme sonrası yayına alınacaktır.');
+        
         // Formu sıfırla
         setFormData({
           title: '',
@@ -298,7 +472,10 @@ export default function CreateListing() {
           interiorFeatures: [],
           exteriorFeatures: [],
         });
+        setSelectedImages([]);
+        setImagePreviews([]);
         setCurrentStep('basic');
+        setCreatedListingId(null);
       }
     } catch (err) {
       console.error('İlan oluşturma hatası:', err);
@@ -816,8 +993,28 @@ export default function CreateListing() {
       case 'photos':
         return (
           <div className="space-y-6">
+            {/* Dosya Seçme Alanı */}
             <div className="text-center">
-              <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 hover:border-blue-400 transition-colors cursor-pointer">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                onDragEnter={handleDragEnter}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-2xl p-12 transition-all cursor-pointer ${
+                  isDragging
+                    ? 'border-blue-500 bg-blue-50 scale-105'
+                    : 'border-gray-300 hover:border-blue-400'
+                }`}
+              >
                 <div className="text-6xl mb-4">📷</div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                   Fotoğraf Yükleyin
@@ -827,6 +1024,10 @@ export default function CreateListing() {
                 </p>
                 <button
                   type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
                   className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold"
                 >
                   Fotoğraf Seç
@@ -834,13 +1035,85 @@ export default function CreateListing() {
                 <p className="text-sm text-gray-500 mt-4">
                   Maksimum 20 fotoğraf, her biri en fazla 5MB
                 </p>
+                <p className="text-xs text-gray-400 mt-2">
+                  Seçilen: {selectedImages.length}/20
+                </p>
               </div>
             </div>
 
+            {/* Seçilen Görseller */}
+            {selectedImages.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800">
+                  Seçilen Fotoğraflar ({selectedImages.length})
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {selectedImages.map((file, index) => (
+                    <div
+                      key={index}
+                      className="relative group border-2 border-gray-200 rounded-xl overflow-hidden"
+                    >
+                      {/* Görsel Önizleme */}
+                      <div className="aspect-square bg-gray-100 relative">
+                        <img
+                          src={imagePreviews[index]}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        {/* Kapak Fotoğrafı Badge */}
+                        {index === 0 && (
+                          <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full font-semibold">
+                            Kapak
+                          </div>
+                        )}
+                        {/* Silme Butonu */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(index)}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                        >
+                          ✕
+                        </button>
+                        {/* Sıralama Butonları */}
+                        <div className="absolute bottom-2 left-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveImage(index, 'up')}
+                            disabled={index === 0}
+                            className="flex-1 bg-black/50 text-white py-1 rounded text-xs font-semibold hover:bg-black/70 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveImage(index, 'down')}
+                            disabled={index === selectedImages.length - 1}
+                            className="flex-1 bg-black/50 text-white py-1 rounded text-xs font-semibold hover:bg-black/70 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            ↓
+                          </button>
+                        </div>
+                      </div>
+                      {/* Dosya Adı */}
+                      <div className="p-2 bg-white">
+                        <p className="text-xs text-gray-600 truncate" title={file.name}>
+                          {file.name}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {(file.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* İpucu */}
             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 flex items-center gap-3">
               <span className="text-2xl">💡</span>
               <p className="text-yellow-800 text-sm">
-                İpucu: Kaliteli fotoğraflar ilanınızın %50 daha fazla görüntülenmesini sağlar!
+                İpucu: Kaliteli fotoğraflar ilanınızın %50 daha fazla görüntülenmesini sağlar! İlk fotoğraf kapak fotoğrafı olarak kullanılacaktır.
               </p>
             </div>
           </div>
@@ -858,14 +1131,31 @@ export default function CreateListing() {
 
             {/* Önizleme Kartı */}
             <div className="border border-gray-200 rounded-2xl overflow-hidden">
-              <div className="h-64 bg-gradient-to-br from-blue-400 to-purple-500 relative">
+              <div className="h-64 bg-gradient-to-br from-blue-400 to-purple-500 relative overflow-hidden">
+                {/* Kapak Fotoğrafı veya Gradient */}
+                {imagePreviews.length > 0 ? (
+                  <img
+                    src={imagePreviews[0]}
+                    alt="Kapak fotoğrafı"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-6xl text-white/50">📷</span>
+                  </div>
+                )}
                 <div className="absolute top-4 left-4 flex gap-2">
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold text-white ${
-                    formData.type === ListingType.ForSale ? 'bg-blue-600' : 'bg-green-600'
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold text-white backdrop-blur-sm bg-black/30 ${
+                    formData.type === ListingType.ForSale ? 'bg-blue-600/80' : 'bg-green-600/80'
                   }`}>
                     {formData.type === ListingType.ForSale ? 'Satılık' : 'Kiralık'}
                   </span>
                 </div>
+                {imagePreviews.length > 0 && (
+                  <div className="absolute bottom-4 right-4 bg-black/50 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm font-semibold">
+                    {imagePreviews.length} Fotoğraf
+                  </div>
+                )}
               </div>
 
               <div className="p-6">
@@ -918,6 +1208,31 @@ export default function CreateListing() {
                       </span>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* Yüklenen Fotoğraflar Önizlemesi */}
+            {imagePreviews.length > 0 && (
+              <div className="bg-gray-50 rounded-xl p-6">
+                <h3 className="font-semibold text-gray-800 mb-3">
+                  Fotoğraflar ({imagePreviews.length})
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {imagePreviews.map((preview, index) => (
+                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden border-2 border-gray-200">
+                      <img
+                        src={preview}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      {index === 0 && (
+                        <div className="absolute top-1 left-1 bg-blue-600 text-white text-xs px-2 py-0.5 rounded font-semibold">
+                          Kapak
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -1011,13 +1326,13 @@ export default function CreateListing() {
           <button
             type="button"
             onClick={handleSubmit}
-            disabled={isCreating}
+            disabled={isCreating || uploadingImages}
             className="px-8 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-semibold disabled:bg-green-400 disabled:cursor-not-allowed flex items-center gap-2"
           >
-            {isCreating ? (
+            {isCreating || uploadingImages ? (
               <>
                 <span className="animate-spin">⏳</span>
-                Yayınlanıyor...
+                {isCreating ? 'Yayınlanıyor...' : `Görseller yükleniyor... ${uploadProgress}%`}
               </>
             ) : (
               <>

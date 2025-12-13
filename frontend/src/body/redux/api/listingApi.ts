@@ -10,6 +10,11 @@ import {
   UploadImageDto,
   ListingStatus,
 } from '../slices/listing/DTOs/ListingDTOs';
+import {
+  uploadListingImageApi,
+  uploadMultipleListingImagesApi,
+  deleteListingImageApi as deleteCloudinaryListingImageApi,
+} from './cloudinaryApi';
 
 /**
  * Listing API
@@ -31,8 +36,48 @@ export const createListingApi = async (data: CreateListingDto): Promise<ListingR
     const response = await axiosInstance.post<ListingResponseDto>('/listing', data);
     console.log('İlan oluşturma yanıtı:', response.data);
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('İlan oluşturma hatası:', error);
+    
+    // Tüm response'u logla (debug için)
+    if (error.response) {
+      console.error('Backend response:', {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data,
+      });
+    }
+    
+    // Backend'den gelen hata mesajını al
+    if (error.response?.data?.message) {
+      console.error('Backend hata mesajı:', error.response.data.message);
+      return {
+        success: false,
+        message: error.response.data.message,
+      };
+    }
+    
+    // ModelState validation hataları için (errors objesi varsa)
+    if (error.response?.data?.errors) {
+      const validationErrors = Object.entries(error.response.data.errors)
+        .map(([key, value]: [string, any]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
+        .join('; ');
+      console.error('Validation hataları:', validationErrors);
+      return {
+        success: false,
+        message: `Validation hataları: ${validationErrors}`,
+      };
+    }
+    
+    // Axios error mesajı
+    if (error.message) {
+      console.error('Axios hata mesajı:', error.message);
+      return {
+        success: false,
+        message: `İlan oluşturulurken bir hata oluştu: ${error.message}`,
+      };
+    }
+    
     return {
       success: false,
       message: 'İlan oluşturulurken bir hata oluştu',
@@ -335,14 +380,16 @@ export const updateListingStatusApi = async (
 // ============================================================================
 
 /**
- * İlana görsel ekle
+ * İlana görsel ekle (URL ile - eski yöntem, hala destekleniyor)
+ * 
+ * @deprecated Cloudinary entegrasyonu için uploadListingImageFileApi kullanın
  */
 export const addListingImageApi = async (
   listingId: number, 
   data: UploadImageDto
 ): Promise<ImageResponseDto> => {
   try {
-    console.log('Görsel ekleme isteği:', { listingId, data });
+    console.log('Görsel ekleme isteği (URL ile):', { listingId, data });
     const response = await axiosInstance.post<ImageResponseDto>(
       `/listing/${listingId}/images`, 
       data
@@ -359,24 +406,152 @@ export const addListingImageApi = async (
 };
 
 /**
- * Görsel sil
+ * İlana görsel yükle (Cloudinary ile - dosya yükleme)
+ * 
+ * Hem Cloudinary'e yükler hem de veritabanına kaydeder.
+ * 
+ * @param listingId İlan ID
+ * @param file Yüklenecek görsel dosyası
+ * @param options Görsel seçenekleri (kapak fotoğrafı, alt text, sıralama)
+ * @returns Yükleme sonucu
+ */
+export const uploadListingImageFileApi = async (
+  listingId: number,
+  file: File,
+  options?: {
+    isCoverImage?: boolean;
+    altText?: string;
+    displayOrder?: number;
+  }
+): Promise<ImageResponseDto> => {
+  try {
+    console.log('📤 İlan görseli yükleme isteği (Cloudinary):', {
+      listingId,
+      fileName: file.name,
+      fileSize: file.size,
+      options,
+    });
+
+    // Cloudinary API'sini kullan
+    const cloudinaryResponse = await uploadListingImageApi(listingId, file, options);
+
+    if (!cloudinaryResponse.success) {
+      return {
+        success: false,
+        message: cloudinaryResponse.message,
+      };
+    }
+
+    // Cloudinary response'unu ImageResponseDto formatına dönüştür
+    return {
+      success: true,
+      message: cloudinaryResponse.message,
+      image: cloudinaryResponse.imageId
+        ? {
+            id: cloudinaryResponse.imageId,
+            imageUrl: cloudinaryResponse.imageUrl || '',
+            thumbnailUrl: cloudinaryResponse.thumbnailUrl,
+            altText: options?.altText,
+            isCoverImage: options?.isCoverImage || false,
+            displayOrder: options?.displayOrder || 0,
+          }
+        : undefined,
+    };
+  } catch (error: any) {
+    console.error('❌ İlan görseli yükleme hatası:', error);
+    return {
+      success: false,
+      message: error.message || 'Görsel yüklenirken bir hata oluştu',
+    };
+  }
+};
+
+/**
+ * İlana birden fazla görsel yükle (Cloudinary ile)
+ * 
+ * @param listingId İlan ID
+ * @param files Yüklenecek görsel dosyaları
+ * @returns Yükleme sonuçları
+ */
+export const uploadMultipleListingImageFilesApi = async (
+  listingId: number,
+  files: File[]
+): Promise<ImageListResponseDto> => {
+  try {
+    console.log('📤 İlana çoklu görsel yükleme isteği (Cloudinary):', {
+      listingId,
+      fileCount: files.length,
+    });
+
+    // Cloudinary API'sini kullan
+    const cloudinaryResponse = await uploadMultipleListingImagesApi(listingId, files);
+
+    if (!cloudinaryResponse.success) {
+      return {
+        success: false,
+        message: cloudinaryResponse.message,
+        images: [],
+      };
+    }
+
+    // Cloudinary response'unu ImageListResponseDto formatına dönüştür
+    const images = cloudinaryResponse.uploadedImages
+      .filter((img) => img.success)
+      .map((img, index) => ({
+        id: 0, // Backend'den dönen gerçek ID'yi kullanmak için API'yi güncellemek gerekebilir
+        imageUrl: img.secureUrl || img.url || '',
+        thumbnailUrl: img.thumbnailUrl,
+        altText: undefined,
+        isCoverImage: index === 0, // İlk görseli kapak yap
+        displayOrder: index,
+      }));
+
+    return {
+      success: true,
+      message: cloudinaryResponse.message,
+      images,
+    };
+  } catch (error: any) {
+    console.error('❌ İlana çoklu görsel yükleme hatası:', error);
+    return {
+      success: false,
+      message: error.message || 'Görseller yüklenirken bir hata oluştu',
+      images: [],
+    };
+  }
+};
+
+/**
+ * Görsel sil (Cloudinary entegrasyonu ile)
+ * 
+ * Hem Cloudinary'den hem de veritabanından siler.
  */
 export const deleteListingImageApi = async (
   listingId: number, 
   imageId: number
 ): Promise<ImageResponseDto> => {
   try {
-    console.log('Görsel silme isteği:', { listingId, imageId });
-    const response = await axiosInstance.delete<ImageResponseDto>(
-      `/listing/${listingId}/images/${imageId}`
-    );
-    console.log('Görsel silme yanıtı:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Görsel silme hatası:', error);
+    console.log('🗑️ Görsel silme isteği (Cloudinary):', { listingId, imageId });
+    
+    // Cloudinary API'sini kullan (hem Cloudinary'den hem veritabanından siler)
+    const cloudinaryResponse = await deleteCloudinaryListingImageApi(listingId, imageId);
+
+    if (!cloudinaryResponse.success) {
+      return {
+        success: false,
+        message: cloudinaryResponse.message,
+      };
+    }
+
+    return {
+      success: true,
+      message: cloudinaryResponse.message,
+    };
+  } catch (error: any) {
+    console.error('❌ Görsel silme hatası:', error);
     return {
       success: false,
-      message: 'Görsel silinirken bir hata oluştu',
+      message: error.message || 'Görsel silinirken bir hata oluştu',
     };
   }
 };

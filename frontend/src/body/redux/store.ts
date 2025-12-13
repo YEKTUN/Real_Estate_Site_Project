@@ -3,6 +3,7 @@ import authReducer from './slices/auth/AuthSlice';
 import listingReducer from './slices/listing/ListingSlice';
 import commentReducer from './slices/comment/CommentSlice';
 import favoriteReducer from './slices/favorite/FavoriteSlice';
+import cloudinaryReducer from './slices/cloudinary/CloudinarySlice';
 
 /**
  * Redux Store Yapılandırması
@@ -15,6 +16,7 @@ import favoriteReducer from './slices/favorite/FavoriteSlice';
  * - listing: İlan işlemleri (CRUD, arama, listeleme)
  * - comment: Yorum işlemleri (CRUD)
  * - favorite: Favori işlemleri (ekleme, kaldırma, toggle)
+ * - cloudinary: Görsel yükleme ve yönetim (Cloudinary entegrasyonu)
  */
 
 // Store'u oluştur
@@ -31,6 +33,9 @@ export const store = configureStore({
     
     // Favorite Slice - Favori işlemleri
     favorite: favoriteReducer,
+    
+    // Cloudinary Slice - Görsel yükleme ve yönetim
+    cloudinary: cloudinaryReducer,
   },
   // Middleware yapılandırması (varsayılan middleware'ler otomatik eklenir)
   middleware: (getDefaultMiddleware) =>

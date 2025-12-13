@@ -1,5 +1,7 @@
 using RealEstateAPI.DTOs.Auth;
+using RealEstateAPI.DTOs.Listing;
 using RealEstateAPI.Models;
+using RealEstateAPI.Models.listing;
 using System.Text;
 using System.Text.Json;
 
@@ -378,6 +380,353 @@ public static class TestDataFactory
         return new GoogleLoginDto
         {
             IdToken = "invalid-google-token"
+        };
+    }
+
+    // ============================================================================
+    // LISTING DATA
+    // ============================================================================
+
+    /// <summary>
+    /// Test için CreateListingDto oluşturur
+    /// </summary>
+    public static CreateListingDto CreateCreateListingDto(
+        string? title = null,
+        string? description = null,
+        string? userId = null)
+    {
+        return new CreateListingDto
+        {
+            Title = title ?? "Test İlan Başlığı",
+            Description = description ?? "Bu bir test ilan açıklamasıdır. Detaylı bilgiler burada yer alacaktır.",
+            Category = ListingCategory.Residential,
+            Type = ListingType.ForSale,
+            PropertyType = PropertyType.Apartment,
+            Price = 1000000,
+            Currency = Currency.TRY,
+            City = "İstanbul",
+            District = "Kadıköy",
+            Neighborhood = "Moda",
+            GrossSquareMeters = 150,
+            NetSquareMeters = 120,
+            RoomCount = "3+1",
+            BathroomCount = 2,
+            BuildingAge = 5,
+            FloorNumber = 3,
+            TotalFloors = 5,
+            OwnerType = ListingOwnerType.Owner,
+            InteriorFeatures = new List<InteriorFeatureType> { InteriorFeatureType.Balcony, InteriorFeatureType.Elevator },
+            ExteriorFeatures = new List<ExteriorFeatureType> { ExteriorFeatureType.Security, ExteriorFeatureType.Parking }
+        };
+    }
+
+    /// <summary>
+    /// Test için UpdateListingDto oluşturur
+    /// </summary>
+    public static UpdateListingDto CreateUpdateListingDto(
+        string? title = null,
+        decimal? price = null)
+    {
+        return new UpdateListingDto
+        {
+            Title = title ?? "Güncellenmiş İlan Başlığı",
+            Price = price ?? 1200000,
+            Description = "Güncellenmiş açıklama"
+        };
+    }
+
+    /// <summary>
+    /// Test için Listing model oluşturur
+    /// </summary>
+    public static Listing CreateListing(
+        string? userId = null,
+        ListingStatus? status = null)
+    {
+        return new Listing
+        {
+            Id = new Random().Next(1, 10000),
+            ListingNumber = Guid.NewGuid().ToString().Replace("-", "").Substring(0, 12).ToUpper(),
+            Title = "Test İlan",
+            Description = "Test açıklama",
+            Category = ListingCategory.Residential,
+            Type = ListingType.ForSale,
+            PropertyType = PropertyType.Apartment,
+            Price = 1000000,
+            Currency = Currency.TRY,
+            City = "İstanbul",
+            District = "Kadıköy",
+            Neighborhood = "Moda",
+            GrossSquareMeters = 150,
+            NetSquareMeters = 120,
+            RoomCount = "3+1",
+            BathroomCount = 2,
+            BuildingAge = 5,
+            FloorNumber = 3,
+            TotalFloors = 5,
+            UserId = userId ?? Guid.NewGuid().ToString(),
+            Status = status ?? ListingStatus.Active,
+            CreatedAt = DateTime.UtcNow,
+            OwnerType = ListingOwnerType.Owner
+        };
+    }
+
+    /// <summary>
+    /// Test için ListingDetailDto oluşturur
+    /// </summary>
+    public static ListingDetailDto CreateListingDetailDto(int? id = null)
+    {
+        return new ListingDetailDto
+        {
+            Id = id ?? 1,
+            ListingNumber = Guid.NewGuid().ToString().Replace("-", "").Substring(0, 12).ToUpper(),
+            Title = "Test İlan",
+            Description = "Test açıklama",
+            Category = ListingCategory.Residential,
+            Type = ListingType.ForSale,
+            PropertyType = PropertyType.Apartment,
+            Price = 1000000,
+            Currency = Currency.TRY,
+            City = "İstanbul",
+            District = "Kadıköy",
+            Status = ListingStatus.Active,
+            CreatedAt = DateTime.UtcNow,
+            Owner = new ListingOwnerDto
+            {
+                Id = Guid.NewGuid().ToString(),
+                Name = "Test",
+                Surname = "User",
+                Email = "test@example.com"
+            }
+        };
+    }
+
+    /// <summary>
+    /// Test için ListingListDto oluşturur
+    /// </summary>
+    public static ListingListDto CreateListingListDto(int? id = null)
+    {
+        return new ListingListDto
+        {
+            Id = id ?? 1,
+            ListingNumber = Guid.NewGuid().ToString().Replace("-", "").Substring(0, 12).ToUpper(),
+            Title = "Test İlan",
+            Category = ListingCategory.Residential,
+            Type = ListingType.ForSale,
+            PropertyType = PropertyType.Apartment,
+            Price = 1000000,
+            Currency = Currency.TRY,
+            City = "İstanbul",
+            District = "Kadıköy",
+            Status = ListingStatus.Active,
+            CreatedAt = DateTime.UtcNow,
+            ViewCount = 100,
+            FavoriteCount = 25
+        };
+    }
+
+    /// <summary>
+    /// Başarılı ListingResponseDto oluşturur
+    /// </summary>
+    public static ListingResponseDto CreateSuccessListingResponse(ListingDetailDto? listing = null)
+    {
+        return new ListingResponseDto
+        {
+            Success = true,
+            Message = "İşlem başarılı",
+            Listing = listing ?? CreateListingDetailDto()
+        };
+    }
+
+    /// <summary>
+    /// Başarısız ListingResponseDto oluşturur
+    /// </summary>
+    public static ListingResponseDto CreateFailedListingResponse(string message = "İşlem başarısız")
+    {
+        return new ListingResponseDto
+        {
+            Success = false,
+            Message = message
+        };
+    }
+
+    /// <summary>
+    /// Test için ListingListResponseDto oluşturur
+    /// </summary>
+    public static ListingListResponseDto CreateListingListResponse(List<ListingListDto>? listings = null)
+    {
+        return new ListingListResponseDto
+        {
+            Success = true,
+            Message = "İşlem başarılı",
+            Listings = listings ?? new List<ListingListDto> { CreateListingListDto() },
+            Pagination = new PaginationDto
+            {
+                CurrentPage = 1,
+                PageSize = 12,
+                TotalPages = 1,
+                TotalCount = 1,
+                HasPrevious = false,
+                HasNext = false
+            }
+        };
+    }
+
+    // ============================================================================
+    // COMMENT DATA
+    // ============================================================================
+
+    /// <summary>
+    /// Test için CreateCommentDto oluşturur
+    /// </summary>
+    public static CreateCommentDto CreateCreateCommentDto(
+        string? content = null,
+        int? parentCommentId = null)
+    {
+        return new CreateCommentDto
+        {
+            Content = content ?? "Bu bir test yorumudur.",
+            ParentCommentId = parentCommentId
+        };
+    }
+
+    /// <summary>
+    /// Test için UpdateCommentDto oluşturur
+    /// </summary>
+    public static UpdateCommentDto CreateUpdateCommentDto(string? content = null)
+    {
+        return new UpdateCommentDto
+        {
+            Content = content ?? "Güncellenmiş yorum içeriği"
+        };
+    }
+
+    /// <summary>
+    /// Test için CommentDto oluşturur
+    /// </summary>
+    public static CommentDto CreateCommentDto(
+        int? id = null,
+        int? listingId = null,
+        string? userId = null,
+        string? content = null)
+    {
+        var user = CreateTestUser(userId);
+        return new CommentDto
+        {
+            Id = id ?? 1,
+            ListingId = listingId ?? 1,
+            Content = content ?? "Test yorumu",
+            User = new CommentUserDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Surname = user.Surname,
+                ProfilePictureUrl = user.ProfilePictureUrl
+            },
+            CreatedAt = DateTime.UtcNow,
+            Replies = new List<CommentDto>()
+        };
+    }
+
+    /// <summary>
+    /// Test için CommentResponseDto oluşturur
+    /// </summary>
+    public static CommentResponseDto CreateSuccessCommentResponse(CommentDto? comment = null)
+    {
+        return new CommentResponseDto
+        {
+            Success = true,
+            Message = "İşlem başarılı",
+            Comment = comment ?? CreateCommentDto()
+        };
+    }
+
+    /// <summary>
+    /// Test için CommentListResponseDto oluşturur
+    /// </summary>
+    public static CommentListResponseDto CreateCommentListResponse(List<CommentDto>? comments = null)
+    {
+        return new CommentListResponseDto
+        {
+            Success = true,
+            Message = "İşlem başarılı",
+            Comments = comments ?? new List<CommentDto> { CreateCommentDto() },
+            TotalCount = 1
+        };
+    }
+
+    // ============================================================================
+    // FAVORITE DATA
+    // ============================================================================
+
+    /// <summary>
+    /// Test için AddFavoriteDto oluşturur
+    /// </summary>
+    public static AddFavoriteDto CreateAddFavoriteDto(string? note = null)
+    {
+        return new AddFavoriteDto
+        {
+            Note = note ?? "Test favori notu"
+        };
+    }
+
+    /// <summary>
+    /// Test için UpdateFavoriteNoteDto oluşturur
+    /// </summary>
+    public static UpdateFavoriteNoteDto CreateUpdateFavoriteNoteDto(string? note = null)
+    {
+        return new UpdateFavoriteNoteDto
+        {
+            Note = note ?? "Güncellenmiş favori notu"
+        };
+    }
+
+    /// <summary>
+    /// Test için FavoriteListingDto oluşturur
+    /// </summary>
+    public static FavoriteListingDto CreateFavoriteListingDto(int? id = null, int? listingId = null)
+    {
+        return new FavoriteListingDto
+        {
+            Id = id ?? 1,
+            ListingId = listingId ?? 1,
+            Listing = CreateListingListDto(listingId),
+            Note = "Test favori notu",
+            CreatedAt = DateTime.UtcNow
+        };
+    }
+
+    /// <summary>
+    /// Test için FavoriteResponseDto oluşturur
+    /// </summary>
+    public static FavoriteResponseDto CreateSuccessFavoriteResponse(bool isFavorited = true)
+    {
+        return new FavoriteResponseDto
+        {
+            Success = true,
+            Message = "İşlem başarılı",
+            IsFavorited = isFavorited
+        };
+    }
+
+    /// <summary>
+    /// Test için FavoriteListResponseDto oluşturur
+    /// </summary>
+    public static FavoriteListResponseDto CreateFavoriteListResponse(List<FavoriteListingDto>? favorites = null)
+    {
+        return new FavoriteListResponseDto
+        {
+            Success = true,
+            Message = "İşlem başarılı",
+            Favorites = favorites ?? new List<FavoriteListingDto> { CreateFavoriteListingDto() },
+            Pagination = new PaginationDto
+            {
+                CurrentPage = 1,
+                PageSize = 20,
+                TotalPages = 1,
+                TotalCount = 1,
+                HasPrevious = false,
+                HasNext = false
+            }
         };
     }
 }

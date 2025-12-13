@@ -49,30 +49,45 @@ public class ListingController : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Create([FromBody] CreateListingDto dto)
     {
+        // ModelState validation kontrolü - detaylı hata loglama
         if (!ModelState.IsValid)
         {
+            var errors = ModelState
+                .Where(x => x.Value?.Errors.Count > 0)
+                .SelectMany(x => x.Value!.Errors.Select(e => $"{x.Key}: {e.ErrorMessage}"))
+                .ToList();
+
+            var errorMessage = string.Join("; ", errors);
+            
+            _logger.LogWarning("İlan oluşturma validation hatası. Hatalar: {Errors}", errorMessage);
+            
             return BadRequest(new ListingResponseDto
             {
                 Success = false,
-                Message = "Geçersiz veri"
+                Message = $"Geçersiz veri: {errorMessage}"
             });
         }
 
         var userId = GetCurrentUserId();
         if (string.IsNullOrEmpty(userId))
         {
+            _logger.LogWarning("İlan oluşturma hatası: Kullanıcı kimliği bulunamadı");
             return Unauthorized();
         }
 
-        _logger.LogInformation("İlan oluşturma isteği. UserId: {UserId}", userId);
+        _logger.LogInformation("İlan oluşturma isteği. UserId: {UserId}, DTO: {@Dto}", userId, dto);
 
         var result = await _listingService.CreateAsync(dto, userId);
         
         if (!result.Success)
         {
+            _logger.LogWarning("İlan oluşturma başarısız. UserId: {UserId}, Hata: {Message}", userId, result.Message);
             return BadRequest(result);
         }
 
+        _logger.LogInformation("İlan başarıyla oluşturuldu. ListingId: {ListingId}, UserId: {UserId}", 
+            result.Listing?.Id, userId);
+        
         return Ok(result);
     }
 

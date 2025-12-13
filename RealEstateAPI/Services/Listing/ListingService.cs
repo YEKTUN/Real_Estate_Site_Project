@@ -78,13 +78,13 @@ public class ListingService : IListingService
 
             var createdListing = await _listingRepository.CreateAsync(listing);
 
-            // Özellikleri ekle
-            if (dto.InteriorFeatures.Any())
+            // Özellikleri ekle (null kontrolü ile)
+            if (dto.InteriorFeatures != null && dto.InteriorFeatures.Any())
             {
                 await _listingRepository.UpdateInteriorFeaturesAsync(createdListing.Id, dto.InteriorFeatures);
             }
 
-            if (dto.ExteriorFeatures.Any())
+            if (dto.ExteriorFeatures != null && dto.ExteriorFeatures.Any())
             {
                 await _listingRepository.UpdateExteriorFeaturesAsync(createdListing.Id, dto.ExteriorFeatures);
             }
@@ -100,11 +100,27 @@ public class ListingService : IListingService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "İlan oluşturma hatası");
+            // Detaylı hata loglama - Database hatalarını da yakalayalım
+            _logger.LogError(ex, "İlan oluşturma hatası. Exception: {ExceptionMessage}, InnerException: {InnerException}, StackTrace: {StackTrace}", 
+                ex.Message, 
+                ex.InnerException?.Message, 
+                ex.StackTrace);
+            
+            // Development ortamında detaylı hata mesajı gönder
+            var errorMessage = "İlan oluşturulurken bir hata oluştu";
+            if (ex.InnerException != null)
+            {
+                errorMessage += $": {ex.InnerException.Message}";
+            }
+            else
+            {
+                errorMessage += $": {ex.Message}";
+            }
+            
             return new ListingResponseDto
             {
                 Success = false,
-                Message = "İlan oluşturulurken bir hata oluştu"
+                Message = errorMessage
             };
         }
     }
@@ -532,6 +548,7 @@ public class ListingService : IListingService
                 ListingId = listingId,
                 ImageUrl = dto.ImageUrl,
                 ThumbnailUrl = dto.ThumbnailUrl,
+                CloudinaryPublicId = dto.CloudinaryPublicId,
                 AltText = dto.AltText,
                 IsCoverImage = dto.IsCoverImage,
                 DisplayOrder = dto.DisplayOrder
@@ -756,6 +773,7 @@ public class ListingService : IListingService
             Id = image.Id,
             ImageUrl = image.ImageUrl,
             ThumbnailUrl = image.ThumbnailUrl,
+            CloudinaryPublicId = image.CloudinaryPublicId,
             AltText = image.AltText,
             IsCoverImage = image.IsCoverImage,
             DisplayOrder = image.DisplayOrder

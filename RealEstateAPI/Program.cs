@@ -9,6 +9,8 @@ using RealEstateAPI.Repositories.Auth;
 using RealEstateAPI.Repositories.Listing;
 using RealEstateAPI.Services.Auth;
 using RealEstateAPI.Services.Listing;
+using RealEstateAPI.Services.Cloudinary;
+using RealEstateAPI.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,8 +25,15 @@ var builder = WebApplication.CreateBuilder(args);
 // SERVICES CONFIGURATION
 // ============================================================================
 
-// Controllers
-builder.Services.AddControllers();
+// Controllers - JSON serialization ayarları (camelCase)
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // JSON property isimlerini camelCase yap (frontend ile uyumluluk için)
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        // Enum'ları integer olarak serialize/deserialize et (frontend number[] gönderiyor)
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
 // CORS Policy - Frontend ile iletişim için
 builder.Services.AddCors(options =>
@@ -149,6 +158,10 @@ builder.Services.AddScoped<ICommentService, CommentService>();
 builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 
+// Cloudinary (Görsel Yükleme)
+builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
+builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+
 // HttpClient for Google Token Validation
 builder.Services.AddHttpClient();
 
@@ -183,17 +196,41 @@ using (var scope = app.Services.CreateScope())
         // EnsureCreated: Veritabanı yoksa oluşturur (migration kullanmadan)
         // Migrate: Migration'ları uygular (production için önerilir)
         
-        // Development ortamında EnsureCreated kullan (hızlı)
+        // Veritabanı tablolarını oluştur
+        // Development ortamında: Önce veritabanını sil, sonra yeniden oluştur (geliştirme için)
+        // Production ortamında: Migration kullan
+        
         if (app.Environment.IsDevelopment())
         {
-            await context.Database.EnsureCreatedAsync();
-            app.Logger.LogInformation("✅ Veritabanı tabloları kontrol edildi/oluşturuldu");
+            // Development: Veritabanını sil ve yeniden oluştur
+            app.Logger.LogInformation("🔄 Development ortamı: Veritabanı kontrol ediliyor...");
+            try
+            {
+                // Önce veritabanını sil (güvenli değil ama development için OK)
+                await context.Database.EnsureDeletedAsync();
+                app.Logger.LogInformation("🗑️ Eski veritabanı silindi");
+                
+                // Yeni veritabanını oluştur
+                await context.Database.EnsureCreatedAsync();
+                app.Logger.LogInformation("✅ Veritabanı tabloları oluşturuldu");
+            }
+            catch (Exception ex)
+            {
+                app.Logger.LogError(ex, "❌ Veritabanı oluşturulurken hata oluştu");
+            }
         }
         else
         {
-            // Production ortamında migration kullan
-            await context.Database.MigrateAsync();
-            app.Logger.LogInformation("✅ Veritabanı migration'ları uygulandı");
+            // Production: Migration kullan
+            try
+            {
+                await context.Database.MigrateAsync();
+                app.Logger.LogInformation("✅ Veritabanı migration'ları uygulandı");
+            }
+            catch (Exception ex)
+            {
+                app.Logger.LogError(ex, "❌ Migration uygulanırken hata oluştu");
+            }
         }
     }
     catch (Exception ex)
@@ -214,8 +251,13 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-// HTTPS Redirection
-app.UseHttpsRedirection();
+// HTTPS Redirection - Sadece Production ortamında veya HTTPS port'u varsa çalıştır
+// Development'ta sadece HTTP kullanılıyorsa uyarı vermemesi için kontrol ediyoruz
+if (!app.Environment.IsDevelopment() || 
+    app.Configuration["ASPNETCORE_URLS"]?.Contains("https://") == true)
+{
+    app.UseHttpsRedirection();
+}
 
 // CORS
 app.UseCors("AllowFrontend");

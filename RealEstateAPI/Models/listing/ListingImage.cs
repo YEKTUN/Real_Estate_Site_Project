@@ -37,6 +37,12 @@ public class ListingImage
     public string ImageUrl { get; set; } = string.Empty;
 
     /// <summary>
+    /// Cloudinary Public ID (Görseli silmek için gerekli)
+    /// </summary>
+    [StringLength(500)]
+    public string? CloudinaryPublicId { get; set; }
+
+    /// <summary>
     /// Küçük boyutlu görsel URL'i (Thumbnail)
     /// </summary>
     [StringLength(500)]

@@ -372,6 +372,12 @@ public class ListingImageDto
     public int Id { get; set; }
     public string ImageUrl { get; set; } = string.Empty;
     public string? ThumbnailUrl { get; set; }
+    
+    /// <summary>
+    /// Cloudinary Public ID (Görseli silmek için gerekli)
+    /// </summary>
+    public string? CloudinaryPublicId { get; set; }
+    
     public string? AltText { get; set; }
     public bool IsCoverImage { get; set; }
     public int DisplayOrder { get; set; }
@@ -386,6 +392,11 @@ public class UploadImageDto
     public string ImageUrl { get; set; } = string.Empty;
     
     public string? ThumbnailUrl { get; set; }
+    
+    /// <summary>
+    /// Cloudinary Public ID (Görseli silmek için gerekli)
+    /// </summary>
+    public string? CloudinaryPublicId { get; set; }
     
     [StringLength(200)]
     public string? AltText { get; set; }

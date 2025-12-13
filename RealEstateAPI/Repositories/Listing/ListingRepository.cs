@@ -90,8 +90,9 @@ public class ListingRepository : IListingRepository
 
     public async Task<(List<Models.Listing> Listings, int TotalCount)> GetAllAsync(int page, int pageSize)
     {
+        // Active ve Pending durumundaki ilanları göster (Pending = onay bekleyen, kullanıcılar görebilir)
         var query = _context.Listings
-            .Where(l => l.Status == ListingStatus.Active)
+            .Where(l => l.Status == ListingStatus.Active || l.Status == ListingStatus.Pending)
             .Include(l => l.Images.Where(i => i.IsCoverImage))
             .OrderByDescending(l => l.CreatedAt);
 
@@ -106,8 +107,9 @@ public class ListingRepository : IListingRepository
 
     public async Task<(List<Models.Listing> Listings, int TotalCount)> SearchAsync(ListingSearchDto searchDto)
     {
+        // Active ve Pending durumundaki ilanları göster (Pending = onay bekleyen, kullanıcılar görebilir)
         var query = _context.Listings
-            .Where(l => l.Status == ListingStatus.Active)
+            .Where(l => l.Status == ListingStatus.Active || l.Status == ListingStatus.Pending)
             .Include(l => l.Images.Where(i => i.IsCoverImage))
             .Include(l => l.InteriorFeatures)
             .Include(l => l.ExteriorFeatures)

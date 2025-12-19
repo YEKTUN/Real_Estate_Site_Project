@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using RealEstateAPI.Controllers.Listing;
 using RealEstateAPI.DTOs.Listing;
+using RealEstateAPI.Models;
 using RealEstateAPI.Services.Listing;
 using RealEstateAPI.Tests.Helpers;
 using Xunit;
@@ -289,6 +290,49 @@ public class ListingControllerTests
         var notFoundResult = result.Should().BeOfType<NotFoundObjectResult>().Subject;
         var response = notFoundResult.Value.Should().BeOfType<ListingResponseDto>().Subject;
         response.Success.Should().BeFalse();
+    }
+
+    // ============================================================================
+    // GET LISTINGS BY USER ENDPOINT TESTS
+    // ============================================================================
+
+    [Fact]
+    public async Task GetListingsByUser_WithValidUserId_ShouldReturnOk()
+    {
+        // Arrange
+        var userId = Guid.NewGuid().ToString();
+        var listResponse = TestDataFactory.CreateListingListResponse();
+
+        _listingServiceMock
+            .Setup(x => x.GetMyListingsAsync(userId, 1, 20))
+            .ReturnsAsync(listResponse);
+
+        // Act
+        var result = await _controller.GetListingsByUser(userId, 1, 20);
+
+        // Assert
+        var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
+        var response = okResult.Value.Should().BeOfType<ListingListResponseDto>().Subject;
+        response.Should().Be(listResponse);
+        _listingServiceMock.Verify(
+            x => x.GetMyListingsAsync(userId, 1, 20),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task GetListingsByUser_WhenUserIdIsEmpty_ShouldReturnBadRequest()
+    {
+        // Arrange
+        var emptyUserId = string.Empty;
+
+        // Act
+        var result = await _controller.GetListingsByUser(emptyUserId, 1, 20);
+
+        // Assert
+        var badRequest = result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        var response = badRequest.Value.Should().BeOfType<ListingListResponseDto>().Subject;
+        response.Success.Should().BeFalse();
+        response.Message.Should().Contain("Kullanıcı ID'si gereklidir");
     }
 
     // ============================================================================

@@ -73,7 +73,7 @@ public class FavoriteControllerTests
         SetupAuthenticatedUser(userId);
         var addDto = TestDataFactory.CreateAddFavoriteDto();
         var successResponse = TestDataFactory.CreateSuccessFavoriteResponse();
-        _favoriteServiceMock.Setup(x => x.AddAsync(It.IsAny<int>(), addDto, userId))
+        _favoriteServiceMock.Setup(x => x.AddToFavoritesAsync(It.IsAny<int>(), addDto, userId))
             .ReturnsAsync(successResponse);
 
         // Act
@@ -93,7 +93,7 @@ public class FavoriteControllerTests
         var userId = Guid.NewGuid().ToString();
         SetupAuthenticatedUser(userId);
         var successResponse = TestDataFactory.CreateSuccessFavoriteResponse(false);
-        _favoriteServiceMock.Setup(x => x.RemoveAsync(It.IsAny<int>(), userId))
+        _favoriteServiceMock.Setup(x => x.RemoveFromFavoritesAsync(It.IsAny<int>(), userId))
             .ReturnsAsync(successResponse);
 
         // Act
@@ -112,7 +112,7 @@ public class FavoriteControllerTests
         var userId = Guid.NewGuid().ToString();
         SetupAuthenticatedUser(userId);
         var successResponse = TestDataFactory.CreateSuccessFavoriteResponse(true);
-        _favoriteServiceMock.Setup(x => x.ToggleAsync(It.IsAny<int>(), userId))
+        _favoriteServiceMock.Setup(x => x.ToggleFavoriteAsync(It.IsAny<int>(), userId))
             .ReturnsAsync(successResponse);
 
         // Act
@@ -130,9 +130,8 @@ public class FavoriteControllerTests
         // Arrange
         var userId = Guid.NewGuid().ToString();
         SetupAuthenticatedUser(userId);
-        var successResponse = TestDataFactory.CreateSuccessFavoriteResponse(true);
-        _favoriteServiceMock.Setup(x => x.CheckAsync(It.IsAny<int>(), userId))
-            .ReturnsAsync(successResponse);
+        _favoriteServiceMock.Setup(x => x.IsFavoritedAsync(It.IsAny<int>(), userId))
+            .ReturnsAsync(true);
 
         // Act
         var result = await _controller.CheckFavorite(1);

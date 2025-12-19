@@ -149,6 +149,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 // Listing (İlan)
 builder.Services.AddScoped<IListingRepository, ListingRepository>();
 builder.Services.AddScoped<IListingService, ListingService>();
+builder.Services.AddScoped<IMessageRepository, MessageRepository>();
+builder.Services.AddScoped<IMessageService, MessageService>();
 
 // Comment (Yorum)
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
@@ -200,37 +202,26 @@ using (var scope = app.Services.CreateScope())
         // Development ortamında: Önce veritabanını sil, sonra yeniden oluştur (geliştirme için)
         // Production ortamında: Migration kullan
         
-        if (app.Environment.IsDevelopment())
+        // Sadece yeni tablo/sütun geldiğinde migration çalıştır
+        // Development'ta eski veritabanını silmeden pending migration varsa uygula
+        var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+        if (pendingMigrations.Any())
         {
-            // Development: Veritabanını sil ve yeniden oluştur
-            app.Logger.LogInformation("🔄 Development ortamı: Veritabanı kontrol ediliyor...");
-            try
-            {
-                // Önce veritabanını sil (güvenli değil ama development için OK)
-                await context.Database.EnsureDeletedAsync();
-                app.Logger.LogInformation("🗑️ Eski veritabanı silindi");
-                
-                // Yeni veritabanını oluştur
-                await context.Database.EnsureCreatedAsync();
-                app.Logger.LogInformation("✅ Veritabanı tabloları oluşturuldu");
-            }
-            catch (Exception ex)
-            {
-                app.Logger.LogError(ex, "❌ Veritabanı oluşturulurken hata oluştu");
-            }
-        }
-        else
-        {
-            // Production: Migration kullan
+            app.Logger.LogInformation("🔄 Bekleyen migration bulundu, uygulanıyor...");
+            app.Logger.LogInformation("📋 Uygulanacak migration'lar: {Migrations}", string.Join(", ", pendingMigrations));
             try
             {
                 await context.Database.MigrateAsync();
-                app.Logger.LogInformation("✅ Veritabanı migration'ları uygulandı");
+                app.Logger.LogInformation("✅ Bekleyen migration'lar uygulandı");
             }
             catch (Exception ex)
             {
                 app.Logger.LogError(ex, "❌ Migration uygulanırken hata oluştu");
             }
+        }
+        else
+        {
+            app.Logger.LogInformation("ℹ️ Bekleyen migration yok, veritabanı güncel");
         }
     }
     catch (Exception ex)

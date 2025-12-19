@@ -50,6 +50,13 @@ public interface IAuthService
     Task<UserDto?> GetUserByIdAsync(string userId);
 
     /// <summary>
+    /// Kullanıcının profil fotoğrafını güncelle
+    /// </summary>
+    /// <param name="userId">Kullanıcı ID'si</param>
+    /// <param name="profilePictureUrl">Yeni profil fotoğrafı URL'i</param>
+    Task<AuthResponseDto> UpdateProfilePictureAsync(string userId, string profilePictureUrl);
+
+    /// <summary>
     /// Google OAuth ile giriş işlemi
     /// </summary>
     /// <param name="googleLoginDto">Google ID Token</param>

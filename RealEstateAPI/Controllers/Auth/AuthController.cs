@@ -238,6 +238,48 @@ public class AuthController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// Belirli bir kullanıcıyı ID'sine göre getir
+    /// 
+    /// Profil sayfalarında başka bir kullanıcının temel bilgilerini
+    /// (ad, soyad, email, telefon, profil fotoğrafı) göstermek için kullanılır.
+    /// Hassas bilgi içermediği için anonim erişime açıktır.
+    /// </summary>
+    /// <param name="id">Kullanıcı ID'si</param>
+    /// <returns>Kullanıcı bilgileri</returns>
+    [HttpGet("user/{id}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetUserById(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return BadRequest(new AuthResponseDto
+            {
+                Success = false,
+                Message = "Kullanıcı ID'si gereklidir"
+            });
+        }
+
+        var user = await _authService.GetUserByIdAsync(id);
+        if (user == null)
+        {
+            return NotFound(new AuthResponseDto
+            {
+                Success = false,
+                Message = "Kullanıcı bulunamadı"
+            });
+        }
+
+        return Ok(new AuthResponseDto
+        {
+            Success = true,
+            Message = "Kullanıcı bilgileri başarıyla getirildi",
+            User = user
+        });
+    }
+
     // ============================================================================
     // HELPER METHODS
     // ============================================================================
@@ -255,5 +297,29 @@ public class AuthController : ControllerBase
 
         // Doğrudan bağlantı
         return HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString();
+    }
+
+    /// <summary>
+    /// Mevcut kullanıcının profil fotoğrafını güncelle
+    /// </summary>
+    [HttpPut("profile-picture")]
+    [Authorize]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> UpdateProfilePicture([FromBody] string profilePictureUrl)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var result = await _authService.UpdateProfilePictureAsync(userId, profilePictureUrl);
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
     }
 }

@@ -77,6 +77,16 @@ public class ApplicationDbContext : IdentityUserContext<ApplicationUser>
     public DbSet<FavoriteListing> FavoriteListings { get; set; }
 
     /// <summary>
+    /// İlan Mesajlaşma Kanalları
+    /// </summary>
+    public DbSet<ListingMessageThread> ListingMessageThreads { get; set; }
+
+    /// <summary>
+    /// İlan Mesajları
+    /// </summary>
+    public DbSet<ListingMessage> ListingMessages { get; set; }
+
+    /// <summary>
     /// Model yapılandırması
     /// </summary>
     protected override void OnModelCreating(ModelBuilder builder)
@@ -261,6 +271,59 @@ public class ApplicationDbContext : IdentityUserContext<ApplicationUser>
             entity.HasOne(e => e.User)
                 .WithMany(u => u.FavoriteListings)
                 .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        // ListingMessageThread yapılandırması
+        builder.Entity<ListingMessageThread>(entity =>
+        {
+            entity.ToTable("ListingMessageThreads");
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => e.ListingId);
+            entity.HasIndex(e => new { e.ListingId, e.BuyerId, e.SellerId }).IsUnique();
+            entity.HasIndex(e => e.LastMessageAt);
+
+            entity.Property(e => e.SellerId).HasMaxLength(450);
+            entity.Property(e => e.BuyerId).HasMaxLength(450);
+
+            entity.HasOne(e => e.Listing)
+                .WithMany()
+                .HasForeignKey(e => e.ListingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Seller)
+                .WithMany()
+                .HasForeignKey(e => e.SellerId)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(e => e.Buyer)
+                .WithMany()
+                .HasForeignKey(e => e.BuyerId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        // ListingMessage yapılandırması
+        builder.Entity<ListingMessage>(entity =>
+        {
+            entity.ToTable("ListingMessages");
+            entity.HasKey(e => e.Id);
+
+            entity.HasIndex(e => e.ThreadId);
+            entity.HasIndex(e => e.SenderId);
+            entity.HasIndex(e => e.CreatedAt);
+
+            entity.Property(e => e.Content).HasMaxLength(1000);
+            entity.Property(e => e.OfferPrice).HasPrecision(18, 2);
+
+            entity.HasOne(e => e.Thread)
+                .WithMany(t => t.Messages)
+                .HasForeignKey(e => e.ThreadId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Sender)
+                .WithMany()
+                .HasForeignKey(e => e.SenderId)
                 .OnDelete(DeleteBehavior.NoAction);
         });
     }

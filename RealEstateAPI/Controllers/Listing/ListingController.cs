@@ -270,6 +270,46 @@ public class ListingController : ControllerBase
     }
 
     /// <summary>
+    /// Belirli bir kullanıcının ilanlarını getir
+    /// 
+    /// Profil sayfalarında başka bir kullanıcının aktif/pasif ilanlarını
+    /// listelemek için kullanılır. Kullanıcı kimliği JWT'den değil,
+    /// route parametresinden alınır.
+    /// </summary>
+    /// <param name="userId">İlanları listelenecek kullanıcı ID'si</param>
+    /// <param name="page">Sayfa numarası</param>
+    /// <param name="pageSize">Sayfa boyutu</param>
+    /// <returns>Kullanıcının ilanları</returns>
+    [HttpGet("user/{userId}")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(ListingListResponseDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetListingsByUser(
+        string userId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return BadRequest(new ListingListResponseDto
+            {
+                Success = false,
+                Message = "Kullanıcı ID'si gereklidir",
+                Listings = new List<ListingListDto>(),
+                Pagination = new PaginationDto
+                {
+                    CurrentPage = 1,
+                    PageSize = pageSize,
+                    TotalCount = 0,
+                    TotalPages = 0,
+                }
+            });
+        }
+
+        var result = await _listingService.GetMyListingsAsync(userId, page, pageSize);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Öne çıkan ilanları getir
     /// </summary>
     /// <param name="count">İlan sayısı</param>

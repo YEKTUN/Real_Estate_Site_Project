@@ -69,6 +69,11 @@ public class UserDto
     /// E-posta adresi
     /// </summary>
     public string Email { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Profil fotoğrafı URL'i
+    /// </summary>
+    public string? ProfilePictureUrl { get; set; }
 }
 
 /**

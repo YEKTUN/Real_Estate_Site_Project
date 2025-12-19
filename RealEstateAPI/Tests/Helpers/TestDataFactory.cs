@@ -1,7 +1,6 @@
 using RealEstateAPI.DTOs.Auth;
 using RealEstateAPI.DTOs.Listing;
 using RealEstateAPI.Models;
-using RealEstateAPI.Models.listing;
 using System.Text;
 using System.Text.Json;
 
@@ -416,7 +415,7 @@ public static class TestDataFactory
             TotalFloors = 5,
             OwnerType = ListingOwnerType.Owner,
             InteriorFeatures = new List<InteriorFeatureType> { InteriorFeatureType.Balcony, InteriorFeatureType.Elevator },
-            ExteriorFeatures = new List<ExteriorFeatureType> { ExteriorFeatureType.Security, ExteriorFeatureType.Parking }
+            ExteriorFeatures = new List<ExteriorFeatureType> { ExteriorFeatureType.Security24Hours, ExteriorFeatureType.OpenParking }
         };
     }
 
@@ -564,9 +563,7 @@ public static class TestDataFactory
                 CurrentPage = 1,
                 PageSize = 12,
                 TotalPages = 1,
-                TotalCount = 1,
-                HasPrevious = false,
-                HasNext = false
+                TotalCount = 1
             }
         };
     }
@@ -723,9 +720,7 @@ public static class TestDataFactory
                 CurrentPage = 1,
                 PageSize = 20,
                 TotalPages = 1,
-                TotalCount = 1,
-                HasPrevious = false,
-                HasNext = false
+                TotalCount = 1
             }
         };
     }

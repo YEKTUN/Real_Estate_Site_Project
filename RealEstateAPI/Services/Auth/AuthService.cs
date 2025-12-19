@@ -311,6 +311,56 @@ public class AuthService : IAuthService
     }
 
     /// <summary>
+    /// Kullanıcının profil fotoğrafını güncelle
+    /// </summary>
+    public async Task<AuthResponseDto> UpdateProfilePictureAsync(string userId, string profilePictureUrl)
+    {
+        try
+        {
+            var user = await _authRepository.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Kullanıcı bulunamadı"
+                };
+            }
+
+            user.ProfilePictureUrl = profilePictureUrl;
+            user.UpdatedAt = DateTime.UtcNow;
+            var result = await _userManager.UpdateAsync(user);
+
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogWarning("Profil fotoğrafı güncellenemedi: {Errors}", errors);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Profil fotoğrafı güncellenemedi: " + errors
+                };
+            }
+
+            return new AuthResponseDto
+            {
+                Success = true,
+                Message = "Profil fotoğrafı güncellendi",
+                User = MapToUserDto(user)
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Profil fotoğrafı güncellenirken hata oluştu");
+            return new AuthResponseDto
+            {
+                Success = false,
+                Message = "Profil fotoğrafı güncellenirken bir hata oluştu"
+            };
+        }
+    }
+
+    /// <summary>
     /// Google OAuth ile giriş işlemi
     /// Kullanıcı varsa giriş yapar, yoksa yeni kullanıcı oluşturur
     /// </summary>
@@ -431,46 +481,55 @@ public class AuthService : IAuthService
             Name = user.Name,
             Surname = user.Surname,
             Phone = user.Phone,
-            Email = user.Email ?? string.Empty
+            Email = user.Email ?? string.Empty,
+            ProfilePictureUrl = user.ProfilePictureUrl
         };
     }
 
-    /// <summary>
-    /// JWT Access Token oluştur
-    /// </summary>
-    private string GenerateJwtToken(ApplicationUser user)
-    {
-        var jwtSettings = _configuration.GetSection("JwtSettings");
-        var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyHere123456789!";
-        var issuer = jwtSettings["Issuer"] ?? "RealEstateAPI";
-        var audience = jwtSettings["Audience"] ?? "RealEstateFrontend";
-        var expirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"] ?? "60");
-
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        // Token claim'leri
-        var claims = new[]
+        /// <summary>
+        /// JWT Access Token oluştur
+        /// </summary>
+        private string GenerateJwtToken(ApplicationUser user)
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-            new Claim(JwtRegisteredClaimNames.GivenName, user.Name),
-            new Claim(JwtRegisteredClaimNames.FamilyName, user.Surname),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(ClaimTypes.NameIdentifier, user.Id)
-        };
+            var jwtSettings = _configuration.GetSection("JwtSettings");
+            var secretKey = jwtSettings["SecretKey"] ?? "YourSuperSecretKeyHere123456789!";
+            var issuer = jwtSettings["Issuer"] ?? "RealEstateAPI";
+            var audience = jwtSettings["Audience"] ?? "RealEstateFrontend";
+            var expirationMinutes = int.Parse(jwtSettings["ExpirationMinutes"] ?? "60");
 
-        // Token oluştur
-        var token = new JwtSecurityToken(
-            issuer: issuer,
-            audience: audience,
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(expirationMinutes),
-            signingCredentials: credentials
-        );
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
+            // Token claim'leri
+            // NOT: Profil fotoğrafı URL'i de token'a eklenir ki frontend sayfa yenilemelerinde
+            // ek bir API çağrısı olmadan güncel profil fotoğrafını okuyabilsin.
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+                new Claim(JwtRegisteredClaimNames.GivenName, user.Name),
+                new Claim(JwtRegisteredClaimNames.FamilyName, user.Surname),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id)
+            };
+
+            // Profil fotoğrafı varsa custom "picture" claim'i olarak ekle
+            if (!string.IsNullOrWhiteSpace(user.ProfilePictureUrl))
+            {
+                claims.Add(new Claim("picture", user.ProfilePictureUrl));
+            }
+
+            // Token oluştur
+            var token = new JwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(expirationMinutes),
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
 
     /// <summary>
     /// Refresh Token oluştur ve veritabanına kaydet

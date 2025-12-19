@@ -183,7 +183,7 @@ describe('MyListings', () => {
   });
 
   describe('Status Filter', () => {
-    test('should render status filter dropdown', () => {
+    test('should render status filter buttons', () => {
       const store = createMockStore({
         listing: {
           myListings: [mockListing],
@@ -197,7 +197,11 @@ describe('MyListings', () => {
         </Provider>
       );
 
-      expect(screen.getByLabelText(/durum/i)).toBeInTheDocument();
+      // Durum filtre butonları: Tümü, Aktif, Beklemede, Pasif
+      expect(screen.getByRole('button', { name: /tümü/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /aktif/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /beklemede/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /pasif/i })).toBeInTheDocument();
     });
   });
 });

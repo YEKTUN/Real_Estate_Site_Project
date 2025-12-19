@@ -18,7 +18,8 @@ import {
   getStoredToken,
   getStoredRefreshToken,
   refreshTokenApi,
-  googleLoginApi
+  googleLoginApi,
+  updateProfilePictureApi,
 } from '../../api/authApi';
 
 /**
@@ -134,6 +135,24 @@ export const refreshToken = createAsyncThunk<AuthResponseDto, void>(
 );
 
 /**
+ * Profil fotoğrafını güncelle
+ */
+export const updateProfilePicture = createAsyncThunk<AuthResponseDto, string>(
+  'auth/updateProfilePicture',
+  async (profilePictureUrl, { rejectWithValue }) => {
+    try {
+      const response = await updateProfilePictureApi(profilePictureUrl);
+      if (!response.success) {
+        return rejectWithValue(response.message);
+      }
+      return response;
+    } catch {
+      return rejectWithValue('Profil fotoğrafı güncellenemedi');
+    }
+  }
+);
+
+/**
  * Get Current User Thunk
  * Mevcut kullanıcı bilgilerini getir
  */
@@ -164,26 +183,50 @@ export const initializeAuth = createAsyncThunk<
 >(
   'auth/initialize',
   async () => {
+    // Tarayıcı tarafında token var mı ve süresi dolmamış mı?
     const isAuthenticated = checkAuthStatus();
-    
-    if (isAuthenticated) {
-      const user = getUserFromStoredToken();
-      const token = getStoredToken();
-      const refreshToken = getStoredRefreshToken();
-      
-      return {
-        user,
-        token,
-        refreshToken,
-        isAuthenticated: true
-      };
+    const token = getStoredToken();
+    const refreshToken = getStoredRefreshToken();
+
+    // Kullanıcı oturum açmış görünüyorsa backend'den /auth/me ile
+    // güncel kullanıcı bilgilerini (profil fotoğrafı dahil) çek.
+    // Backend bu endpoint'te JWT içindeki userId (sub / NameIdentifier)
+    // claim'lerinden ilgili kullanıcıyı bulup DB'den getiriyor.
+    if (isAuthenticated && token) {
+      try {
+        const response = await getCurrentUserApi();
+
+        if (response.success) {
+          return {
+            user: response.user || null,
+            token,
+            refreshToken,
+            isAuthenticated: true,
+          };
+        }
+
+        // /auth/me başarısız olursa auth state'i sıfırla
+        return {
+          user: null,
+          token: null,
+          refreshToken: null,
+          isAuthenticated: false,
+        };
+      } catch {
+        return {
+          user: null,
+          token: null,
+          refreshToken: null,
+          isAuthenticated: false,
+        };
+      }
     }
-    
+
     return {
       user: null,
       token: null,
       refreshToken: null,
-      isAuthenticated: false
+      isAuthenticated: false,
     };
   }
 );
@@ -366,6 +409,17 @@ export const authSlice = createSlice({
         state.refreshToken = null;
         state.isAuthenticated = false;
         state.error = null;
+      });
+
+    // ========== UPDATE PROFILE PICTURE ==========
+    builder
+      .addCase(updateProfilePicture.fulfilled, (state, action) => {
+        if (action.payload.user) {
+          state.user = action.payload.user;
+        }
+      })
+      .addCase(updateProfilePicture.rejected, (state, action) => {
+        state.error = action.payload as string;
       });
   },
 });

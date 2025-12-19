@@ -67,7 +67,7 @@ describe('FavoriteApi', () => {
       const result = await getMyFavoritesApi(1, 20);
 
       expect(result).toEqual(mockFavoriteListResponse);
-      expect(mockedAxiosInstance.get).toHaveBeenCalledWith('/favorite/my', {
+      expect(mockedAxiosInstance.get).toHaveBeenCalledWith('/favorites', {
         params: { page: 1, pageSize: 20 },
       });
     });
@@ -97,7 +97,7 @@ describe('FavoriteApi', () => {
       const result = await addToFavoritesApi(1, { note: 'Test note' });
 
       expect(result).toEqual(mockFavoriteResponse);
-      expect(mockedAxiosInstance.post).toHaveBeenCalledWith('/favorite/1', {
+      expect(mockedAxiosInstance.post).toHaveBeenCalledWith('/favorites/1', {
         note: 'Test note',
       });
     });
@@ -112,7 +112,7 @@ describe('FavoriteApi', () => {
       const result = await removeFromFavoritesApi(1);
 
       expect(result).toEqual(mockFavoriteResponse);
-      expect(mockedAxiosInstance.delete).toHaveBeenCalledWith('/favorite/1');
+      expect(mockedAxiosInstance.delete).toHaveBeenCalledWith('/favorites/1');
     });
   });
 
@@ -125,7 +125,7 @@ describe('FavoriteApi', () => {
       const result = await toggleFavoriteApi(1);
 
       expect(result).toEqual(mockFavoriteResponse);
-      expect(mockedAxiosInstance.post).toHaveBeenCalledWith('/favorite/1/toggle');
+      expect(mockedAxiosInstance.post).toHaveBeenCalledWith('/favorites/1/toggle');
     });
   });
 
@@ -138,7 +138,7 @@ describe('FavoriteApi', () => {
       const result = await checkFavoriteApi(1);
 
       expect(result).toEqual(mockFavoriteResponse);
-      expect(mockedAxiosInstance.get).toHaveBeenCalledWith('/favorite/1/check');
+      expect(mockedAxiosInstance.get).toHaveBeenCalledWith('/favorites/1/check');
     });
   });
 });

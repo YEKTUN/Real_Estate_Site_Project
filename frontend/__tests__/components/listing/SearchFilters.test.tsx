@@ -195,7 +195,7 @@ describe('SearchFilters', () => {
         />
       );
 
-      const searchInput = screen.getByPlaceholderText(/ilan başlığı, konum/i);
+      const searchInput = screen.getByRole('textbox');
       fireEvent.keyPress(searchInput, { key: 'Enter', code: 'Enter' });
 
       expect(mockOnSearch).toHaveBeenCalled();
@@ -214,7 +214,8 @@ describe('SearchFilters', () => {
         />
       );
 
-      const categorySelect = screen.getByLabelText(/kategori/i);
+      const categoryLabel = screen.getByText(/kategori/i);
+      const categorySelect = categoryLabel.parentElement?.querySelector('select') as HTMLSelectElement;
       fireEvent.change(categorySelect, { target: { value: String(ListingCategory.Residential) } });
 
       expect(mockOnFilterChange).toHaveBeenCalledWith('category', ListingCategory.Residential);
@@ -233,7 +234,8 @@ describe('SearchFilters', () => {
         />
       );
 
-      const typeSelect = screen.getByLabelText(/ilan tipi/i);
+      const typeLabel = screen.getByText(/ilan tipi/i);
+      const typeSelect = typeLabel.parentElement?.querySelector('select') as HTMLSelectElement;
       fireEvent.change(typeSelect, { target: { value: String(ListingType.ForSale) } });
 
       expect(mockOnFilterChange).toHaveBeenCalledWith('type', ListingType.ForSale);
@@ -252,7 +254,9 @@ describe('SearchFilters', () => {
         />
       );
 
-      const citySelect = screen.getByLabelText(/il/i);
+      // City select'i label üzerinden bulmak yerine, label'in yanındaki select'i al
+      const cityLabel = screen.getByText(/il/i);
+      const citySelect = cityLabel.parentElement?.querySelector('select') as HTMLSelectElement;
       fireEvent.change(citySelect, { target: { value: 'İstanbul' } });
 
       expect(mockOnFilterChange).toHaveBeenCalledWith('city', 'İstanbul');
@@ -271,7 +275,8 @@ describe('SearchFilters', () => {
         />
       );
 
-      const minPriceInput = screen.getByLabelText(/min fiyat/i);
+      const minPriceLabel = screen.getByText(/min fiyat/i);
+      const minPriceInput = minPriceLabel.parentElement?.querySelector('input') as HTMLInputElement;
       fireEvent.change(minPriceInput, { target: { value: '100000' } });
 
       expect(mockOnFilterChange).toHaveBeenCalledWith('minPrice', 100000);

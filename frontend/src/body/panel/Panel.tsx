@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '@/body/redux/hooks';
 import { selectUser, selectIsAuthenticated, selectIsLoading, logoutAsync } from '@/body/redux/slices/auth/AuthSlice';
@@ -9,6 +9,9 @@ import MyListings from './components/MyListings';
 import CreateListing from '@/body/panel/components/CreateListing';
 import FavoriteListings from '@/body/panel/components/FavoriteListings';
 import Settings from '@/body/panel/components/Settings';
+import Messages from '@/body/panel/components/Messages';
+import { selectTotalUnread } from '@/body/redux/slices/message/MessageSlice';
+import UserAvatar from '@/body/panel/components/UserAvatar';
 
 /**
  * Panel Ana Bileşeni
@@ -60,12 +63,29 @@ const menuItems: MenuItem[] = [
     description: 'Favori ilanlarınız',
   },
   {
+    id: 'messages',
+    label: 'Mesajlarım',
+    icon: '💬',
+    description: 'Gelen mesaj ve teklifler',
+  },
+  {
     id: 'settings',
     label: 'Ayarlar',
     icon: '⚙️',
     description: 'Hesap ayarları',
   },
 ];
+
+// Türkçe karakterlerde encoding bozulmalarını düzeltmek için yardımcı fonksiyon
+const fixEncoding = (value?: string | null) => {
+  if (!value) return '';
+  try {
+    // Eğer UTF-8 string Latin1 olarak çözülmüşse, yeniden kodlayıp çöz
+    return decodeURIComponent(escape(value));
+  } catch {
+    return value;
+  }
+};
 
 export default function Panel() {
   // Router ve dispatch
@@ -76,12 +96,24 @@ export default function Panel() {
   const user = useAppSelector(selectUser);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const isLoading = useAppSelector(selectIsLoading);
+  const totalUnread = useAppSelector(selectTotalUnread);
 
   // Aktif menü
   const [activeMenu, setActiveMenu] = useState<string>('profile');
 
   // Sidebar collapse durumu (mobil için)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
+
+  // Kullanıcı bilgilerini encoding sorunu olmadan göstermek için normalize et
+  const displayName = useMemo(
+    () => `${fixEncoding(user?.name)} ${fixEncoding(user?.surname)}`.trim(),
+    [user?.name, user?.surname]
+  );
+  const displayEmail = useMemo(() => fixEncoding(user?.email), [user?.email]);
+  const displayInitial = useMemo(() => {
+    const source = fixEncoding(user?.name || user?.email || '?');
+    return source.charAt(0).toUpperCase() || '?';
+  }, [user?.name, user?.email]);
 
   /**
    * Çıkış yap handler
@@ -119,6 +151,8 @@ export default function Panel() {
         return <CreateListing />;
       case 'favorites':
         return <FavoriteListings />;
+      case 'messages':
+        return <Messages />;
       case 'settings':
         return <Settings />;
       default:
@@ -157,12 +191,16 @@ export default function Panel() {
         {/* Mobile Header */}
         <div className="lg:hidden bg-white rounded-2xl shadow-lg p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xl font-bold">
-              {user.name?.charAt(0).toUpperCase()}
-            </div>
+            <UserAvatar
+              name={user.name}
+              surname={user.surname}
+              profilePictureUrl={user.profilePictureUrl}
+              size="lg"
+              className="shadow-md ring-2 ring-blue-500/40"
+            />
             <div>
-              <h2 className="font-semibold text-gray-800">{user.name} {user.surname}</h2>
-              <p className="text-sm text-gray-500">{user.email}</p>
+              <h2 className="font-semibold text-gray-800">{displayName}</h2>
+              <p className="text-sm text-gray-500">{displayEmail}</p>
             </div>
           </div>
           <button
@@ -184,12 +222,16 @@ export default function Panel() {
           {/* User Info - Desktop */}
           <div className="hidden lg:block p-6 bg-gradient-to-br from-blue-600 to-purple-700 text-white">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center text-2xl font-bold">
-                {user.name?.charAt(0).toUpperCase()}
-              </div>
+              <UserAvatar
+                name={user.name}
+                surname={user.surname}
+                profilePictureUrl={user.profilePictureUrl}
+                size="xl"
+                className="border-2 border-white/70 shadow-xl"
+              />
               <div>
-                <h2 className="text-xl font-bold">{user.name} {user.surname}</h2>
-                <p className="text-blue-100 text-sm">{user.email}</p>
+                <h2 className="text-xl font-bold">{displayName}</h2>
+                <p className="text-blue-100 text-sm">{displayEmail}</p>
               </div>
             </div>
             <div className="mt-4 pt-4 border-t border-white/20 flex gap-4 text-sm">
@@ -228,7 +270,21 @@ export default function Panel() {
                       }
                     `}
                   >
-                    <span className="text-2xl">{item.icon}</span>
+                    <span className="text-2xl relative inline-block">
+                      {item.icon}
+                      {item.id === 'messages' && totalUnread > 0 && (
+                        <>
+                          <span
+                            className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white"
+                            aria-hidden="true"
+                          />
+                          <span
+                            className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-red-500 opacity-75 animate-ping"
+                            aria-hidden="true"
+                          />
+                        </>
+                      )}
+                    </span>
                     <div className="text-left">
                       <p className="font-semibold">{item.label}</p>
                       <p className="text-xs text-gray-500">{item.description}</p>

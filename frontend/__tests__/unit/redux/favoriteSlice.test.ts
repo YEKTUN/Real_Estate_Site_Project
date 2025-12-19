@@ -15,9 +15,10 @@ import favoriteReducer, {
   checkFavorite,
   selectFavorites,
   selectFavoriteIds,
-  selectIsLoading,
-  selectIsToggling,
-  selectError,
+  selectFavoritePagination,
+  selectFavoriteLoading,
+  selectFavoriteToggling,
+  selectFavoriteError,
 } from '@/body/redux/slices/favorite/FavoriteSlice';
 import { FavoriteState, FavoriteListingDto } from '@/body/redux/slices/favorite/DTOs/FavoriteDTOs';
 
@@ -138,7 +139,8 @@ describe('FavoriteSlice', () => {
     });
 
     test('should handle rejected state', () => {
-      const action = fetchMyFavorites.rejected(new Error('Test error'), '', undefined);
+      // rejectedWithValue senaryosunu simüle et: payload doğrudan hata mesajı
+      const action = fetchMyFavorites.rejected('Test error' as any, '', undefined);
       const result = favoriteReducer(initialState, action);
 
       expect(result.isLoading).toBe(false);
@@ -254,19 +256,24 @@ describe('FavoriteSlice', () => {
       expect(result).toEqual([1]);
     });
 
-    test('selectIsLoading should return loading state', () => {
-      const result = selectIsLoading(mockState);
+    test('selectFavoriteLoading should return loading state', () => {
+      const result = selectFavoriteLoading(mockState);
       expect(result).toBe(true);
     });
 
-    test('selectIsToggling should return toggling state', () => {
-      const result = selectIsToggling(mockState);
+    test('selectFavoriteToggling should return toggling state', () => {
+      const result = selectFavoriteToggling(mockState);
       expect(result).toBe(false);
     });
 
-    test('selectError should return error', () => {
-      const result = selectError(mockState);
+    test('selectFavoriteError should return error', () => {
+      const result = selectFavoriteError(mockState);
       expect(result).toBe('Test error');
+    });
+
+    test('selectFavoritePagination should return pagination', () => {
+      const result = selectFavoritePagination(mockState);
+      expect(result).toEqual(mockFavoriteListResponse.pagination);
     });
   });
 });

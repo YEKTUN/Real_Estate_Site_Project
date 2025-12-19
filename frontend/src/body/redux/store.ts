@@ -4,6 +4,7 @@ import listingReducer from './slices/listing/ListingSlice';
 import commentReducer from './slices/comment/CommentSlice';
 import favoriteReducer from './slices/favorite/FavoriteSlice';
 import cloudinaryReducer from './slices/cloudinary/CloudinarySlice';
+import messageReducer from './slices/message/MessageSlice';
 
 /**
  * Redux Store Yapılandırması
@@ -36,6 +37,9 @@ export const store = configureStore({
     
     // Cloudinary Slice - Görsel yükleme ve yönetim
     cloudinary: cloudinaryReducer,
+
+    // Message Slice - Mesaj/teklif işlemleri
+    message: messageReducer,
   },
   // Middleware yapılandırması (varsayılan middleware'ler otomatik eklenir)
   middleware: (getDefaultMiddleware) =>

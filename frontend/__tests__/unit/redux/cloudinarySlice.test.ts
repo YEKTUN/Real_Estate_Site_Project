@@ -18,7 +18,8 @@ import cloudinaryReducer, {
   selectIsDeleting,
   selectLastUploadedImage,
   selectLastUploadedImages,
-  selectError,
+  selectLastListingImageUpload,
+  selectCloudinaryError,
 } from '@/body/redux/slices/cloudinary/CloudinarySlice';
 import { CloudinaryState } from '@/body/redux/slices/cloudinary/DTOs/CloudinaryDTOs';
 
@@ -254,8 +255,20 @@ describe('CloudinarySlice', () => {
       expect(result).toEqual([mockUploadResult]);
     });
 
-    test('selectError should return error', () => {
-      const result = selectError(mockState);
+    test('selectLastListingImageUpload should return last listing image upload', () => {
+      const stateWithListingUpload = {
+        cloudinary: {
+          ...mockState.cloudinary,
+          lastListingImageUpload: mockListingImageUploadResult.image,
+        },
+      } as any;
+
+      const result = selectLastListingImageUpload(stateWithListingUpload);
+      expect(result).toEqual(mockListingImageUploadResult.image);
+    });
+
+    test('selectCloudinaryError should return error', () => {
+      const result = selectCloudinaryError(mockState);
       expect(result).toBe('Test error');
     });
   });

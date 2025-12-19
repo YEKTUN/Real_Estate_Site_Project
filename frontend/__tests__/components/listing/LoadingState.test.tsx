@@ -16,7 +16,7 @@ describe('LoadingState', () => {
     test('should render loading message', () => {
       render(<LoadingState />);
 
-      expect(screen.getByText(/ilanlar yükleniyor/i)).toBeInTheDocument();
+      expect(screen.getByText('İlanlar yükleniyor...')).toBeInTheDocument();
     });
 
     test('should render spinner element', () => {

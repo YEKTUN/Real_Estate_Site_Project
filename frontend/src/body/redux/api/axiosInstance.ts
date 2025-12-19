@@ -138,8 +138,12 @@ export const isTokenValid = (): boolean => {
 
 /**
  * Token'dan kullanıcı bilgilerini al
+ * 
+ * NOT: Backend tarafında JWT içine "picture" claim'i olarak profil fotoğrafı URL'i
+ * eklendi. Burada bu alanı da okuyarak frontend'de initial state oluştururken
+ * profil fotoğrafının kaybolmamasını sağlıyoruz.
  */
-export const getUserFromToken = (): { id: string; name: string; surname: string; email: string } | null => {
+export const getUserFromToken = (): { id: string; name: string; surname: string; email: string; profilePictureUrl?: string } | null => {
   const token = getToken();
   if (!token) return null;
 
@@ -150,6 +154,8 @@ export const getUserFromToken = (): { id: string; name: string; surname: string;
       name: payload.given_name || '',
       surname: payload.family_name || '',
       email: payload.email,
+      // Backend'deki custom "picture" claim'i
+      profilePictureUrl: payload.picture || undefined,
     };
   } catch {
     return null;

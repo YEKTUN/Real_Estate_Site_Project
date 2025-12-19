@@ -163,7 +163,7 @@ export default function Listings() {
    * İlan detayına git
    */
   const handleViewDetails = (listingId: number) => {
-    router.push(`/properties/${listingId}`);
+    router.push(`/listing/${listingId}`);
   };
 
   return (

@@ -10,6 +10,11 @@ import { render, RenderOptions } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import authReducer from '@/body/redux/slices/auth/AuthSlice';
+import listingReducer from '@/body/redux/slices/listing/ListingSlice';
+import commentReducer from '@/body/redux/slices/comment/CommentSlice';
+import favoriteReducer from '@/body/redux/slices/favorite/FavoriteSlice';
+import cloudinaryReducer from '@/body/redux/slices/cloudinary/CloudinarySlice';
+import messageReducer from '@/body/redux/slices/message/MessageSlice';
 import type { RootState } from '@/body/redux/store';
 
 // ============================================================================
@@ -34,6 +39,11 @@ export function setupStore(preloadedState?: PreloadedStateType) {
   return configureStore({
     reducer: {
       auth: authReducer,
+      listing: listingReducer,
+      comment: commentReducer,
+      favorite: favoriteReducer,
+      cloudinary: cloudinaryReducer,
+      message: messageReducer,
     },
     preloadedState: preloadedState as RootState | undefined,
   });

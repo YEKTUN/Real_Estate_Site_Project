@@ -62,6 +62,7 @@ export interface UserDto {
   surname: string;
   phone?: string;
   email: string;
+  profilePictureUrl?: string;
 }
 
 /**
@@ -107,4 +108,6 @@ export interface TokenPayload {
   exp: number;
   iss: string;
   aud: string;
+  // Backend'deki custom profil fotoğrafı claim'i
+  picture?: string;
 }

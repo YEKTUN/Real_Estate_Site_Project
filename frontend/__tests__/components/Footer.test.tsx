@@ -34,7 +34,10 @@ describe('Footer', () => {
     test('should render contact section', () => {
       render(<Footer />);
 
-      expect(screen.getByText('İletişim')).toBeInTheDocument();
+      // Başlık (heading) olarak iletişim bölümünü kontrol et
+      expect(
+        screen.getByRole('heading', { name: 'İletişim' })
+      ).toBeInTheDocument();
     });
 
     test('should render copyright text', () => {

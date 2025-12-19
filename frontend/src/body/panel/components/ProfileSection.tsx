@@ -1,8 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/body/redux/hooks';
-import { selectUser } from '@/body/redux/slices/auth/AuthSlice';
+import { selectUser, updateProfilePicture } from '@/body/redux/slices/auth/AuthSlice';
+import { uploadFile, selectIsUploadingFile } from '@/body/redux/slices/cloudinary/CloudinarySlice';
+import UserAvatar from '@/body/panel/components/UserAvatar';
 
 /**
  * Profil Bölümü Bileşeni
@@ -20,16 +22,38 @@ interface ProfileFormData {
   email: string;
 }
 
+// UTF-8 -> Latin1 bozulmalarını düzeltmek için yardımcı
+const fixEncoding = (value?: string | null) => {
+  if (!value) return '';
+  try {
+    return decodeURIComponent(escape(value));
+  } catch {
+    return value;
+  }
+};
+
 export default function ProfileSection() {
   const dispatch = useAppDispatch();
   const user = useAppSelector(selectUser);
+  const isUploading = useAppSelector(selectIsUploadingFile);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Kullanıcı bilgilerini normalize et
+  const displayName = useMemo(() => fixEncoding(user?.name), [user?.name]);
+  const displaySurname = useMemo(() => fixEncoding(user?.surname), [user?.surname]);
+  const displayEmail = useMemo(() => fixEncoding(user?.email), [user?.email]);
+  const displayPhone = useMemo(() => fixEncoding(user?.phone), [user?.phone]);
+  const displayInitial = useMemo(
+    () => (displayName || displayEmail || '?').charAt(0).toUpperCase() || '?',
+    [displayName, displayEmail]
+  );
 
   // Form state
   const [formData, setFormData] = useState<ProfileFormData>({
-    name: user?.name || '',
-    surname: user?.surname || '',
-    phone: user?.phone || '',
-    email: user?.email || '',
+    name: displayName,
+    surname: displaySurname,
+    phone: displayPhone,
+    email: displayEmail,
   });
 
   // Edit mode
@@ -82,13 +106,51 @@ export default function ProfileSection() {
    */
   const handleCancel = () => {
     setFormData({
-      name: user?.name || '',
-      surname: user?.surname || '',
-      phone: user?.phone || '',
-      email: user?.email || '',
+      name: displayName,
+      surname: displaySurname,
+      phone: displayPhone,
+      email: displayEmail,
     });
     setIsEditing(false);
     setMessage(null);
+  };
+
+  const handleAvatarClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Profil fotoğrafı en fazla 5MB olabilir.');
+      return;
+    }
+
+    try {
+      const uploadRes: any = await dispatch(uploadFile({ file, folder: 'profiles' })).unwrap();
+      if (!uploadRes.success || !uploadRes.url) {
+        alert(uploadRes.message || 'Profil fotoğrafı yüklenemedi');
+        return;
+      }
+
+      const url = uploadRes.url as string;
+      const result = await dispatch(updateProfilePicture(url)).unwrap();
+      if (!result.success) {
+        alert(result.message || 'Profil fotoğrafı güncellenemedi');
+        return;
+      }
+
+      setMessage({ type: 'success', text: 'Profil fotoğrafınız güncellendi.' });
+    } catch (err) {
+      console.error('Profil fotoğrafı güncelleme hatası:', err);
+      alert('Profil fotoğrafı güncellenirken bir hata oluştu.');
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   return (
@@ -117,15 +179,40 @@ export default function ProfileSection() {
       <div className="bg-gray-50 rounded-2xl p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">Profil Fotoğrafı</h3>
         <div className="flex items-center gap-6">
-          <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-lg">
-            {user?.name?.charAt(0).toUpperCase()}
-          </div>
+          <button
+            type="button"
+            onClick={handleAvatarClick}
+            className="relative group"
+          >
+            <UserAvatar
+              name={displayName || 'Kullanıcı'}
+              surname={displaySurname || ''}
+              profilePictureUrl={user?.profilePictureUrl}
+              size="xl"
+              className="shadow-lg"
+            />
+            <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs text-white font-semibold transition-opacity">
+              Değiştir
+            </div>
+          </button>
           <div>
-            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold">
-              Fotoğraf Yükle
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <button
+              type="button"
+              onClick={handleAvatarClick}
+              disabled={isUploading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isUploading ? 'Yükleniyor...' : 'Fotoğraf Yükle'}
             </button>
             <p className="text-sm text-gray-500 mt-2">
-              JPG, PNG veya GIF. Maksimum 2MB.
+              JPG, PNG veya GIF. Maksimum 5MB. Yeni fotoğraf yüklendiğinde eski fotoğrafınızın yerini alır.
             </p>
           </div>
         </div>

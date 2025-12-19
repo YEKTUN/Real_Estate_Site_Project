@@ -21,6 +21,48 @@ import {
   UsageStatus,
   ListingOwnerType,
 } from '@/body/redux/slices/listing/DTOs/ListingDTOs';
+import rawSampleListings from '../sampleListings.json';
+
+// Örnek ilan tipi - sampleListings.json için tip güvenliği
+type SampleListing = {
+  id: number;
+  title: string;
+  description: string;
+  category: ListingCategory;
+  type: ListingType;
+  propertyType: PropertyType;
+  price: number;
+  currency: Currency;
+  monthlyDues: number | null;
+  deposit: number | null;
+  isNegotiable: boolean;
+  city: string;
+  district: string;
+  neighborhood: string | null;
+  fullAddress: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  grossSquareMeters: number | null;
+  netSquareMeters: number | null;
+  roomCount: string | null;
+  bathroomCount: number | null;
+  buildingAge: number | null;
+  floorNumber: number | null;
+  totalFloors: number | null;
+  heatingType: HeatingType | null;
+  buildingStatus: BuildingStatus | null;
+  usageStatus: UsageStatus | null;
+  facingDirection: number | null;
+  deedStatus: number | null;
+  isSuitableForCredit: boolean;
+  isSuitableForTrade: boolean;
+  interiorFeatures: number[];
+  exteriorFeatures: number[];
+  ownerType: ListingOwnerType;
+};
+
+// JSON'dan gelen örnek ilanları tipli hale getir
+const sampleListings = rawSampleListings as SampleListing[];
 
 /**
  * İlan Ver Bileşeni
@@ -82,6 +124,9 @@ export default function CreateListing() {
 
   // Aktif adım
   const [currentStep, setCurrentStep] = useState<Step>('basic');
+
+  // Seçili örnek ilan id'si (formu otomatik doldurmak için)
+  const [selectedSampleId, setSelectedSampleId] = useState<number | ''>('');
 
   // Form verileri
   const [formData, setFormData] = useState<{
@@ -185,6 +230,52 @@ export default function CreateListing() {
     if (error) {
       dispatch(clearError());
     }
+  };
+
+  /**
+   * Örnek ilanı form alanlarına uygula
+   */
+  const applySampleListing = (sampleId: number) => {
+    const sample = sampleListings.find((s) => s.id === sampleId);
+    if (!sample) {
+      console.warn('CreateListing: Örnek ilan bulunamadı', { sampleId });
+      return;
+    }
+
+    console.log('CreateListing: Örnek ilan uygulanıyor', sample);
+
+    setFormData((prev) => ({
+      ...prev,
+      title: sample.title,
+      description: sample.description,
+      category: sample.category,
+      type: sample.type,
+      propertyType: sample.propertyType,
+      price: sample.price ? sample.price.toString() : '',
+      currency: sample.currency,
+      monthlyDues: sample.monthlyDues != null ? sample.monthlyDues.toString() : '',
+      deposit: sample.deposit != null ? sample.deposit.toString() : '',
+      isNegotiable: sample.isNegotiable,
+      city: sample.city,
+      district: sample.district,
+      neighborhood: sample.neighborhood ?? '',
+      fullAddress: sample.fullAddress ?? '',
+      grossSquareMeters: sample.grossSquareMeters != null ? sample.grossSquareMeters.toString() : '',
+      netSquareMeters: sample.netSquareMeters != null ? sample.netSquareMeters.toString() : '',
+      roomCount: sample.roomCount ?? '',
+      bathroomCount: sample.bathroomCount != null ? sample.bathroomCount.toString() : '',
+      buildingAge: sample.buildingAge != null ? sample.buildingAge.toString() : '',
+      floorNumber: sample.floorNumber != null ? sample.floorNumber.toString() : '',
+      totalFloors: sample.totalFloors != null ? sample.totalFloors.toString() : '',
+      heatingType: sample.heatingType ?? '',
+      buildingStatus: sample.buildingStatus ?? '',
+      usageStatus: sample.usageStatus ?? '',
+      isSuitableForCredit: sample.isSuitableForCredit,
+      isSuitableForTrade: sample.isSuitableForTrade,
+      ownerType: sample.ownerType,
+      interiorFeatures: [...sample.interiorFeatures],
+      exteriorFeatures: [...sample.exteriorFeatures],
+    }));
   };
 
   /**
@@ -499,6 +590,39 @@ export default function CreateListing() {
       case 'basic':
         return (
           <div className="space-y-6">
+            {/* Örnek ilan seçimi */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Örnekten doldur (otomatik form doldurma)
+              </label>
+              <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                <select
+                  value={selectedSampleId}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!value) {
+                      setSelectedSampleId('');
+                      return;
+                    }
+                    const id = parseInt(value, 10);
+                    setSelectedSampleId(id);
+                    applySampleListing(id);
+                  }}
+                  className="w-full text-gray-900 sm:w-72 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
+                >
+                  <option value="">Seçiniz</option>
+                  {sampleListings.map((s) => (
+                    <option className="text-gray-900" key={s.id} value={s.id}>
+                      #{s.id} - {s.title}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 sm:ml-2">
+                  Bir örnek seçtiğinizde tüm temel alanlar otomatik doldurulur, siz sadece fotoğraf ekleyip yayına alırsınız.
+                </p>
+              </div>
+            </div>
+
             {/* İlan Kategorisi */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
@@ -562,7 +686,7 @@ export default function CreateListing() {
                 name="propertyType"
                 value={formData.propertyType}
                 onChange={(e) => setFormData(prev => ({ ...prev, propertyType: parseInt(e.target.value) }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               >
                 <option value={PropertyType.Apartment}>Daire</option>
                 <option value={PropertyType.Residence}>Rezidans</option>
@@ -584,7 +708,7 @@ export default function CreateListing() {
                 value={formData.title}
                 onChange={handleChange}
                 placeholder="Örn: Deniz Manzaralı 3+1 Lüks Daire"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 minLength={10}
                 maxLength={200}
               />
@@ -603,7 +727,7 @@ export default function CreateListing() {
                 onChange={handleChange}
                 rows={5}
                 placeholder="İlanınız hakkında detaylı bilgi verin..."
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
                 minLength={50}
                 maxLength={5000}
               />
@@ -623,7 +747,7 @@ export default function CreateListing() {
                   value={formData.price}
                   onChange={handleChange}
                   placeholder="Örn: 2500000"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   min="1"
                 />
                 <p className="text-sm text-gray-500 mt-1">
@@ -658,7 +782,7 @@ export default function CreateListing() {
                     value={formData.monthlyDues}
                     onChange={handleChange}
                     placeholder="Örn: 500"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   />
                 </div>
                 <div>
@@ -672,7 +796,7 @@ export default function CreateListing() {
                     value={formData.deposit}
                     onChange={handleChange}
                     placeholder="Örn: 15000"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   />
                 </div>
               </div>
@@ -689,7 +813,7 @@ export default function CreateListing() {
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 >
                   <option value="">Seçiniz</option>
                   {cities.map((city) => (
@@ -708,7 +832,7 @@ export default function CreateListing() {
                   value={formData.district}
                   onChange={handleChange}
                   placeholder="Örn: Kadıköy"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
             </div>
@@ -724,7 +848,7 @@ export default function CreateListing() {
                 value={formData.neighborhood}
                 onChange={handleChange}
                 placeholder="Örn: Caferağa"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
               />
             </div>
           </div>
@@ -744,7 +868,7 @@ export default function CreateListing() {
                   name="roomCount"
                   value={formData.roomCount}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 >
                   <option value="">Seçiniz</option>
                   <option value="1+0">1+0 (Stüdyo)</option>
@@ -766,7 +890,7 @@ export default function CreateListing() {
                   name="bathroomCount"
                   value={formData.bathroomCount}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 >
                   <option value="">Seçiniz</option>
                   {[1, 2, 3, 4, 5].map((num) => (
@@ -789,7 +913,7 @@ export default function CreateListing() {
                   value={formData.grossSquareMeters}
                   onChange={handleChange}
                   placeholder="Örn: 150"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
               <div>
@@ -803,7 +927,7 @@ export default function CreateListing() {
                   value={formData.netSquareMeters}
                   onChange={handleChange}
                   placeholder="Örn: 130"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
             </div>
@@ -821,7 +945,7 @@ export default function CreateListing() {
                   value={formData.floorNumber}
                   onChange={handleChange}
                   placeholder="Örn: 5"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
               <div>
@@ -835,7 +959,7 @@ export default function CreateListing() {
                   value={formData.totalFloors}
                   onChange={handleChange}
                   placeholder="Örn: 10"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
             </div>
@@ -854,7 +978,7 @@ export default function CreateListing() {
                   onChange={handleChange}
                   placeholder="Örn: 5"
                   min="0"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
               <div>
@@ -866,7 +990,7 @@ export default function CreateListing() {
                   name="heatingType"
                   value={formData.heatingType}
                   onChange={(e) => setFormData(prev => ({ ...prev, heatingType: parseInt(e.target.value) || '' as any }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 >
                   <option value="">Seçiniz</option>
                   <option value={HeatingType.Individual}>Bireysel (Kombi)</option>
@@ -890,7 +1014,7 @@ export default function CreateListing() {
                   name="buildingStatus"
                   value={formData.buildingStatus}
                   onChange={(e) => setFormData(prev => ({ ...prev, buildingStatus: parseInt(e.target.value) || '' as any }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 >
                   <option value="">Seçiniz</option>
                   <option value={BuildingStatus.Zero}>Sıfır</option>
@@ -908,7 +1032,7 @@ export default function CreateListing() {
                   name="usageStatus"
                   value={formData.usageStatus}
                   onChange={(e) => setFormData(prev => ({ ...prev, usageStatus: parseInt(e.target.value) || '' as any }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 >
                   <option value="">Seçiniz</option>
                   <option value={UsageStatus.Empty}>Boş</option>

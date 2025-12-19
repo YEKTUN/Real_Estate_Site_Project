@@ -108,6 +108,44 @@ export const uploadMultipleImagesApi = async (
   }
 };
 
+// ============================================================================
+// DOSYA YÜKLEME (GENEL) - Mesaj ekleri için
+// ============================================================================
+
+export const uploadFileApi = async (
+  file: File,
+  folder?: string
+): Promise<CloudinaryUploadResultDto> => {
+  try {
+    console.log('📤 Dosya yükleme isteği:', { fileName: file.name, size: file.size, folder });
+
+    const formData = new FormData();
+    formData.append('file', file);
+    if (folder) {
+      formData.append('folder', folder);
+    }
+
+    const response = await axiosInstance.post<CloudinaryUploadResultDto>(
+      '/ImageUpload/upload',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    console.log('✅ Dosya yükleme yanıtı:', response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('❌ Dosya yükleme hatası:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Dosya yüklenirken bir hata oluştu',
+    };
+  }
+};
+
 /**
  * Görsel sil (Cloudinary'den)
  * 

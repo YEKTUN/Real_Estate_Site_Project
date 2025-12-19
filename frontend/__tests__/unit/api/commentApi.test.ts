@@ -64,7 +64,7 @@ describe('CommentApi', () => {
       const result = await getListingCommentsApi(1);
 
       expect(result).toEqual(mockCommentListResponse);
-      expect(mockedAxiosInstance.get).toHaveBeenCalledWith('/comment/listing/1');
+      expect(mockedAxiosInstance.get).toHaveBeenCalledWith('/listings/1/comments');
     });
 
     test('should handle error', async () => {
@@ -92,7 +92,7 @@ describe('CommentApi', () => {
       const result = await createCommentApi(1, { content: 'Test comment' });
 
       expect(result).toEqual(mockCommentResponse);
-      expect(mockedAxiosInstance.post).toHaveBeenCalledWith('/comment/listing/1', {
+      expect(mockedAxiosInstance.post).toHaveBeenCalledWith('/listings/1/comments', {
         content: 'Test comment',
       });
     });
@@ -108,7 +108,7 @@ describe('CommentApi', () => {
       });
 
       expect(result).toEqual(mockCommentResponse);
-      expect(mockedAxiosInstance.post).toHaveBeenCalledWith('/comment/listing/1', {
+      expect(mockedAxiosInstance.post).toHaveBeenCalledWith('/listings/1/comments', {
         content: 'Reply comment',
         parentCommentId: 2,
       });
@@ -132,7 +132,7 @@ describe('CommentApi', () => {
       const result = await updateCommentApi(1, 1, { content: 'Updated comment' });
 
       expect(result.comment.content).toBe('Updated comment');
-      expect(mockedAxiosInstance.put).toHaveBeenCalledWith('/comment/1', {
+      expect(mockedAxiosInstance.put).toHaveBeenCalledWith('/listings/1/comments/1', {
         content: 'Updated comment',
       });
     });
@@ -144,10 +144,10 @@ describe('CommentApi', () => {
         data: mockCommentResponse,
       });
 
-      const result = await deleteCommentApi(1);
+      const result = await deleteCommentApi(1, 1);
 
       expect(result).toEqual(mockCommentResponse);
-      expect(mockedAxiosInstance.delete).toHaveBeenCalledWith('/comment/1');
+      expect(mockedAxiosInstance.delete).toHaveBeenCalledWith('/listings/1/comments/1');
     });
   });
 
@@ -165,7 +165,7 @@ describe('CommentApi', () => {
 
       expect(result.success).toBe(true);
       expect(result.comments).toEqual([mockComment]);
-      expect(mockedAxiosInstance.get).toHaveBeenCalledWith('/comment/my');
+      expect(mockedAxiosInstance.get).toHaveBeenCalledWith('/my-comments');
     });
   });
 });

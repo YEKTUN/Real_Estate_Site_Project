@@ -16,8 +16,8 @@ import commentReducer, {
   selectCommentsByListing,
   selectCommentCount,
   selectMyComments,
-  selectIsLoading,
-  selectError,
+  selectCommentLoading,
+  selectCommentError,
 } from '@/body/redux/slices/comment/CommentSlice';
 import { CommentState, CommentDto } from '@/body/redux/slices/comment/DTOs/CommentDTOs';
 
@@ -150,7 +150,8 @@ describe('CommentSlice', () => {
     });
 
     test('should handle rejected state', () => {
-      const action = fetchListingComments.rejected(new Error('Test error'), '', 1);
+      // rejectedWithValue senaryosunu simüle et: payload direkt hata mesajı
+      const action = fetchListingComments.rejected('Test error' as any, '', 1);
       const result = commentReducer(initialState, action);
 
       expect(result.isLoading).toBe(false);
@@ -249,7 +250,11 @@ describe('CommentSlice', () => {
       };
 
       const action = updateComment.fulfilled(
-        { listingId: 1, response: { ...mockCommentResponse, comment: updatedComment } },
+        {
+          listingId: 1,
+          commentId: 1,
+          response: { ...mockCommentResponse, comment: updatedComment },
+        },
         '',
         { listingId: 1, commentId: 1, data: {} as any }
       );
@@ -282,7 +287,7 @@ describe('CommentSlice', () => {
       };
 
       const action = deleteComment.fulfilled(
-        { listingId: 1, response: mockCommentResponse },
+        { listingId: 1, commentId: 1 },
         '',
         { listingId: 1, commentId: 1 }
       );
@@ -346,13 +351,13 @@ describe('CommentSlice', () => {
       expect(result).toEqual([mockComment]);
     });
 
-    test('selectIsLoading should return loading state', () => {
-      const result = selectIsLoading(mockState);
+    test('selectCommentLoading should return loading state', () => {
+      const result = selectCommentLoading(mockState);
       expect(result).toBe(true);
     });
 
-    test('selectError should return error', () => {
-      const result = selectError(mockState);
+    test('selectCommentError should return error', () => {
+      const result = selectCommentError(mockState);
       expect(result).toBe('Test error');
     });
   });

@@ -82,15 +82,25 @@ describe('FavoriteListings', () => {
   });
 
   describe('Rendering', () => {
-    test('should render component title', () => {
-      const store = createMockStore();
+    test('should render header text when favorites exist', () => {
+      const store = createMockStore({
+        favorite: {
+          favorites: [mockFavorite as any],
+          isLoading: false,
+          pagination: {
+            totalCount: 1,
+          },
+        },
+      });
       render(
         <Provider store={store}>
           <FavoriteListings />
         </Provider>
       );
 
-      expect(screen.getByText(/favori ilanlarım/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/favori ilanınız var/i)
+      ).toBeInTheDocument();
     });
 
     test('should render loading state', () => {
@@ -123,7 +133,9 @@ describe('FavoriteListings', () => {
         </Provider>
       );
 
-      expect(screen.getByText(/favori ilan bulunamadı/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/henüz favori ilanınız yok/i)
+      ).toBeInTheDocument();
     });
 
     test('should render favorites when available', () => {

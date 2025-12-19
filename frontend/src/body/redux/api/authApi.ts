@@ -191,6 +191,50 @@ export const getCurrentUserApi = async (): Promise<AuthResponseDto> => {
 };
 
 /**
+ * Kullanıcı ID'sine göre kullanıcı bilgilerini getir
+ * 
+ * Profil sayfalarında başka bir kullanıcının temel profil bilgilerini
+ * göstermek için kullanılır.
+ */
+export const getUserByIdApi = async (userId: string): Promise<AuthResponseDto> => {
+  try {
+    const response = await axiosInstance.get<AuthResponseDto>(`/auth/user/${userId}`);
+    return response.data;
+  } catch (error: unknown) {
+    if (isAxiosError(error) && error.response?.data) {
+      return error.response.data as AuthResponseDto;
+    }
+
+    return {
+      success: false,
+      message: 'Kullanıcı bilgileri alınamadı',
+    };
+  }
+};
+
+/**
+ * Profil fotoğrafını güncelle
+ */
+export const updateProfilePictureApi = async (profilePictureUrl: string): Promise<AuthResponseDto> => {
+  try {
+    const response = await axiosInstance.put<AuthResponseDto>(
+      '/auth/profile-picture',
+      JSON.stringify(profilePictureUrl),
+      { headers: { 'Content-Type': 'application/json' } }
+    );
+    return response.data;
+  } catch (error: unknown) {
+    if (isAxiosError(error) && error.response?.data) {
+      return error.response.data as AuthResponseDto;
+    }
+    return {
+      success: false,
+      message: 'Profil fotoğrafı güncellenemedi'
+    };
+  }
+};
+
+/**
  * Token'dan kullanıcı bilgilerini al (API çağrısı yapmadan)
  * @returns Kullanıcı bilgileri veya null
  */
@@ -206,7 +250,9 @@ export const getUserFromStoredToken = (): UserDto | null => {
     id: userData.id,
     name: userData.name,
     surname: userData.surname,
-    email: userData.email
+    email: userData.email,
+    // JWT içindeki "picture" claim'inden gelen profil fotoğrafı bilgisi
+    profilePictureUrl: userData.profilePictureUrl,
   };
 };
 

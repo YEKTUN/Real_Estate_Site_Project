@@ -71,7 +71,8 @@ describe('CloudinaryApi', () => {
       expect(result).toEqual(mockUploadResponse);
       expect(mockedAxiosInstance.post).toHaveBeenCalled();
       const callArgs = mockedAxiosInstance.post.mock.calls[0];
-      expect(callArgs[0]).toBe('/cloudinary/upload');
+      // Gerçek endpoint: /ImageUpload/upload
+      expect(callArgs[0]).toBe('/ImageUpload/upload');
     });
 
     test('should handle upload error', async () => {
@@ -123,9 +124,8 @@ describe('CloudinaryApi', () => {
       const result = await deleteImageApi('test-public-id');
 
       expect(result).toEqual(mockResponse);
-      expect(mockedAxiosInstance.delete).toHaveBeenCalledWith('/cloudinary/delete', {
-        params: { publicId: 'test-public-id' },
-      });
+      // Gerçek endpoint: /ImageUpload/{publicId}
+      expect(mockedAxiosInstance.delete).toHaveBeenCalledWith('/ImageUpload/test-public-id');
     });
   });
 
@@ -142,7 +142,8 @@ describe('CloudinaryApi', () => {
       expect(result).toEqual(mockListingImageUploadResponse);
       expect(mockedAxiosInstance.post).toHaveBeenCalled();
       const callArgs = mockedAxiosInstance.post.mock.calls[0];
-      expect(callArgs[0]).toBe('/cloudinary/listing/1/upload');
+      // Gerçek endpoint: /ImageUpload/listing/{id}?isCoverImage=true
+      expect(callArgs[0]).toBe('/ImageUpload/listing/1');
     });
   });
 
@@ -166,7 +167,7 @@ describe('CloudinaryApi', () => {
       expect(result).toEqual(mockResponse);
       expect(mockedAxiosInstance.post).toHaveBeenCalled();
       const callArgs = mockedAxiosInstance.post.mock.calls[0];
-      expect(callArgs[0]).toBe('/cloudinary/listing/1/upload-multiple');
+      expect(callArgs[0]).toBe('/ImageUpload/listing/1/multiple');
     });
   });
 
@@ -179,7 +180,7 @@ describe('CloudinaryApi', () => {
       const result = await deleteListingImageApi(1, 1);
 
       expect(result).toEqual(mockListingImageUploadResponse);
-      expect(mockedAxiosInstance.delete).toHaveBeenCalledWith('/cloudinary/listing/1/image/1');
+      expect(mockedAxiosInstance.delete).toHaveBeenCalledWith('/ImageUpload/listing/1/image/1');
     });
   });
 });

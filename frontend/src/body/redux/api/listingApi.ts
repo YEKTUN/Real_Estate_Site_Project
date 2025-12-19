@@ -258,6 +258,41 @@ export const getMyListingsApi = async (
 };
 
 /**
+ * Belirli bir kullanıcının ilanlarını getir
+ * 
+ * Profil sayfalarında başka kullanıcıların ilanlarını göstermek için kullanılır.
+ */
+export const getListingsByUserApi = async (
+  userId: string,
+  page: number = 1,
+  pageSize: number = 20
+): Promise<ListingListResponseDto> => {
+  try {
+    console.log('Kullanıcı ilanları (profil) isteği:', { userId, page, pageSize });
+    const response = await axiosInstance.get<ListingListResponseDto>(`/listing/user/${userId}`, {
+      params: { page, pageSize },
+    });
+    console.log('Kullanıcı ilanları (profil) yanıtı:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Kullanıcı ilanları (profil) hatası:', error);
+    return {
+      success: false,
+      message: 'Kullanıcının ilanları yüklenirken bir hata oluştu',
+      listings: [],
+      pagination: {
+        currentPage: 1,
+        pageSize,
+        totalPages: 0,
+        totalCount: 0,
+        hasPrevious: false,
+        hasNext: false,
+      },
+    };
+  }
+};
+
+/**
  * Öne çıkan ilanları getir
  */
 export const getFeaturedListingsApi = async (count: number = 10): Promise<ListingListResponseDto> => {

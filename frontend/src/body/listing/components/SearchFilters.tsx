@@ -106,30 +106,45 @@ export default function SearchFilters({
 
           {/* İl */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="city"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               İl
             </label>
             <select
+              id="city"
               value={filters.city || ''}
               onChange={(e) => onFilterChange('city', e.target.value || undefined)}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             >
               <option value="">Tümü</option>
-              {cities.map(city => (
-                <option key={city} value={city}>{city}</option>
+              {cities.map((city) => (
+                <option key={city} value={city}>
+                  {city}
+                </option>
               ))}
             </select>
           </div>
 
           {/* Min Fiyat */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="minPrice"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Min Fiyat
             </label>
             <input
+              id="minPrice"
               type="number"
               value={filters.minPrice || ''}
-              onChange={(e) => onFilterChange('minPrice', e.target.value ? parseInt(e.target.value) : undefined)}
+              onChange={(e) =>
+                onFilterChange(
+                  'minPrice',
+                  e.target.value ? parseInt(e.target.value) : undefined
+                )
+              }
               placeholder="₺ 0"
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             />

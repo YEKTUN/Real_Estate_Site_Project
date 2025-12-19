@@ -14,6 +14,7 @@ import {
   uploadListingImageApi,
   uploadMultipleListingImagesApi,
   deleteListingImageApi,
+  uploadFileApi,
 } from '../../api/cloudinaryApi';
 
 /**
@@ -29,9 +30,11 @@ import {
 
 const initialState: CloudinaryState = {
   isUploading: false,
+  isUploadingFile: false,
   isUploadingMultiple: false,
   isDeleting: false,
   lastUploadedImage: null,
+  lastUploadedFile: null,
   lastUploadedImages: [],
   error: null,
   isUploadingListingImage: false,
@@ -61,6 +64,27 @@ export const uploadImage = createAsyncThunk<
       return response;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Görsel yüklenirken bir hata oluştu');
+    }
+  }
+);
+
+/**
+ * Dosya yükle (mesaj eki)
+ */
+export const uploadFile = createAsyncThunk<
+  CloudinaryUploadResultDto,
+  { file: File; folder?: string }
+>(
+  'cloudinary/uploadFile',
+  async ({ file, folder }, { rejectWithValue }) => {
+    try {
+      const response = await uploadFileApi(file, folder);
+      if (!response.success) {
+        return rejectWithValue(response.message);
+      }
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Dosya yüklenirken bir hata oluştu');
     }
   }
 );
@@ -260,6 +284,24 @@ const cloudinarySlice = createSlice({
       });
 
     // ========================================================================
+    // DOSYA YÜKLEME (MESAJ EKİ)
+    // ========================================================================
+    builder
+      .addCase(uploadFile.pending, (state) => {
+        state.isUploadingFile = true;
+        state.error = null;
+      })
+      .addCase(uploadFile.fulfilled, (state, action: PayloadAction<CloudinaryUploadResultDto>) => {
+        state.isUploadingFile = false;
+        state.lastUploadedFile = action.payload;
+        state.error = null;
+      })
+      .addCase(uploadFile.rejected, (state, action) => {
+        state.isUploadingFile = false;
+        state.error = action.payload as string;
+      });
+
+    // ========================================================================
     // GÖRSEL SİLME
     // ========================================================================
     builder
@@ -376,6 +418,7 @@ export const selectIsUploadingMultiple = (state: RootState) => state.cloudinary.
 export const selectIsUploadingListingImage = (state: RootState) =>
   state.cloudinary.isUploadingListingImage;
 export const selectIsDeleting = (state: RootState) => state.cloudinary.isDeleting;
+export const selectIsUploadingFile = (state: RootState) => state.cloudinary.isUploadingFile;
 
 /**
  * Son yüklenen görselleri al

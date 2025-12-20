@@ -4,6 +4,7 @@ import { useState, useMemo, useRef } from 'react';
 import { useAppSelector, useAppDispatch } from '@/body/redux/hooks';
 import { selectUser, updateProfilePicture } from '@/body/redux/slices/auth/AuthSlice';
 import { uploadFile, selectIsUploadingFile } from '@/body/redux/slices/cloudinary/CloudinarySlice';
+import { changePasswordApi } from '@/body/redux/api/authApi';
 import UserAvatar from '@/body/panel/components/UserAvatar';
 
 /**
@@ -344,15 +345,7 @@ export default function ProfileSection() {
       </form>
 
       {/* Şifre Değiştirme */}
-      <div className="bg-gray-50 rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Şifre Değiştir</h3>
-        <p className="text-gray-600 mb-4">
-          Hesabınızın güvenliği için düzenli olarak şifrenizi değiştirmenizi öneririz.
-        </p>
-        <button className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors text-sm font-semibold">
-          🔐 Şifre Değiştir
-        </button>
-      </div>
+      <ChangePasswordSection />
 
       {/* Hesap Bilgileri */}
       <div className="bg-gray-50 rounded-2xl p-6">
@@ -375,6 +368,298 @@ export default function ProfileSection() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Şifre Değiştirme Bölümü Bileşeni
+ * 
+ * Kullanıcının mevcut şifresi ile yeni şifre belirlemesi için form.
+ */
+function ChangePasswordSection() {
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [formData, setFormData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
+
+  /**
+   * Form değişikliği handler
+   */
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+    // Yazarken mesajı temizle
+    if (message) {
+      setMessage(null);
+    }
+  };
+
+  /**
+   * Form submit handler
+   */
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage(null);
+
+    // Validasyon
+    if (!formData.currentPassword.trim()) {
+      setMessage({ type: 'error', text: 'Lütfen mevcut şifrenizi giriniz' });
+      setIsLoading(false);
+      return;
+    }
+
+    if (!formData.newPassword.trim()) {
+      setMessage({ type: 'error', text: 'Lütfen yeni şifrenizi giriniz' });
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.newPassword.length < 8) {
+      setMessage({ type: 'error', text: 'Yeni şifre en az 8 karakter olmalıdır' });
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      setMessage({ type: 'error', text: 'Yeni şifreler eşleşmiyor' });
+      setIsLoading(false);
+      return;
+    }
+
+    if (formData.currentPassword === formData.newPassword) {
+      setMessage({ type: 'error', text: 'Yeni şifre mevcut şifrenizden farklı olmalıdır' });
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const result = await changePasswordApi(
+        formData.currentPassword,
+        formData.newPassword,
+        formData.confirmPassword
+      );
+
+      if (result.success) {
+        setMessage({ 
+          type: 'success', 
+          text: result.message || 'Şifreniz başarıyla değiştirildi' 
+        });
+        // Formu temizle
+        setFormData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+        });
+        setIsEditing(false);
+      } else {
+        setMessage({ 
+          type: 'error', 
+          text: result.message || 'Şifre değiştirme işlemi başarısız oldu' 
+        });
+      }
+    } catch (error) {
+      console.error('Şifre değiştirme hatası:', error);
+      setMessage({ 
+        type: 'error', 
+        text: 'Şifre değiştirme işlemi sırasında bir hata oluştu' 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Düzenlemeyi iptal et
+   */
+  const handleCancel = () => {
+    setFormData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    });
+    setIsEditing(false);
+    setMessage(null);
+  };
+
+  return (
+    <div className="bg-gray-50 rounded-2xl p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-800">Şifre Değiştir</h3>
+        {!isEditing && (
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-semibold"
+          >
+            🔐 Şifre Değiştir
+          </button>
+        )}
+      </div>
+
+      {!isEditing ? (
+        <p className="text-gray-600">
+          Hesabınızın güvenliği için düzenli olarak şifrenizi değiştirmenizi öneririz.
+        </p>
+      ) : (
+        <>
+          {/* Mesaj */}
+          {message && (
+            <div
+              className={`p-4 rounded-xl flex items-center gap-3 mb-4 ${
+                message.type === 'success'
+                  ? 'bg-green-50 text-green-700 border border-green-200'
+                  : 'bg-red-50 text-red-700 border border-red-200'
+              }`}
+            >
+              <span className="text-xl">{message.type === 'success' ? '✅' : '❌'}</span>
+              <p className="flex-1 text-sm font-medium">{message.text}</p>
+              <button
+                onClick={() => setMessage(null)}
+                className="hover:opacity-70"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Şifre Değiştirme Formu */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Mevcut Şifre */}
+            <div>
+              <label
+                htmlFor="currentPassword"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Mevcut Şifre
+              </label>
+              <div className="relative">
+                <input
+                  type={showPasswords.current ? 'text' : 'password'}
+                  id="currentPassword"
+                  name="currentPassword"
+                  value={formData.currentPassword}
+                  onChange={handleChange}
+                  required
+                  disabled={isLoading}
+                  placeholder="Mevcut şifrenizi giriniz"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-100 disabled:cursor-not-allowed pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  {showPasswords.current ? '🙈' : '👁️'}
+                </button>
+              </div>
+            </div>
+
+            {/* Yeni Şifre */}
+            <div>
+              <label
+                htmlFor="newPassword"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Yeni Şifre
+              </label>
+              <div className="relative">
+                <input
+                  type={showPasswords.new ? 'text' : 'password'}
+                  id="newPassword"
+                  name="newPassword"
+                  value={formData.newPassword}
+                  onChange={handleChange}
+                  required
+                  disabled={isLoading}
+                  placeholder="En az 8 karakter"
+                  minLength={8}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-100 disabled:cursor-not-allowed pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  {showPasswords.new ? '🙈' : '👁️'}
+                </button>
+              </div>
+            </div>
+
+            {/* Yeni Şifre Tekrarı */}
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Yeni Şifre Tekrarı
+              </label>
+              <div className="relative">
+                <input
+                  type={showPasswords.confirm ? 'text' : 'password'}
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                  disabled={isLoading}
+                  placeholder="Yeni şifrenizi tekrar giriniz"
+                  minLength={8}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-100 disabled:cursor-not-allowed pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                >
+                  {showPasswords.confirm ? '🙈' : '👁️'}
+                </button>
+              </div>
+            </div>
+
+            {/* Butonlar */}
+            <div className="flex gap-4 pt-4">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <span className="animate-spin">⏳</span>
+                    Değiştiriliyor...
+                  </>
+                ) : (
+                  <>
+                    💾 Şifreyi Değiştir
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                disabled={isLoading}
+                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-semibold disabled:cursor-not-allowed"
+              >
+                İptal
+              </button>
+            </div>
+          </form>
+        </>
+      )}
     </div>
   );
 }

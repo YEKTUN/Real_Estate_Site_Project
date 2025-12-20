@@ -15,7 +15,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5202/a
  */
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // 30 saniye (email gönderme işlemleri için yeterli süre)
   headers: {
     'Content-Type': 'application/json',
   },

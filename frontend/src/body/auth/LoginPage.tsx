@@ -177,7 +177,7 @@ export default function LoginPage() {
             <span className="ml-2 text-sm text-gray-600">Beni Hatırla</span>
           </label>
           <Link
-            href="/forgot-password"
+            href="/forget-password"
             className="text-sm text-blue-600 hover:text-blue-700 font-medium"
           >
             Şifremi Unuttum

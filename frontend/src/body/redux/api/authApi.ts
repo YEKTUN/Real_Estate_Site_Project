@@ -280,6 +280,101 @@ export const getStoredRefreshToken = (): string | null => {
   return getRefreshToken();
 };
 
+/**
+ * Şifre sıfırlama isteği - Email'e token gönderir
+ * @param email - Email adresi
+ * @returns İşlem sonucu
+ */
+export const forgetPasswordApi = async (email: string): Promise<AuthResponseDto> => {
+  console.log('forgetPasswordApi çağrıldı:', email);
+  try {
+    const response = await axiosInstance.post<AuthResponseDto>('/auth/forget-password', { email });
+    console.log('Forget Password API yanıtı:', response.data);
+    return response.data;
+  } catch (error: unknown) {
+    console.error('Forget Password API hatası:', error);
+    if (isAxiosError(error) && error.response?.data) {
+      return error.response.data as AuthResponseDto;
+    }
+    
+    return {
+      success: false,
+      message: 'Şifre sıfırlama isteği sırasında bir hata oluştu'
+    };
+  }
+};
+
+/**
+ * Şifre sıfırlama - Token ile yeni şifre belirleme
+ * @param token - Şifre sıfırlama token'ı
+ * @param email - Email adresi
+ * @param newPassword - Yeni şifre
+ * @param confirmPassword - Yeni şifre tekrarı
+ * @returns İşlem sonucu
+ */
+export const resetPasswordApi = async (
+  token: string,
+  email: string,
+  newPassword: string,
+  confirmPassword: string
+): Promise<AuthResponseDto> => {
+  console.log('resetPasswordApi çağrıldı:', email);
+  try {
+    const response = await axiosInstance.post<AuthResponseDto>('/auth/reset-password', {
+      token,
+      email,
+      newPassword,
+      confirmPassword
+    });
+    console.log('Reset Password API yanıtı:', response.data);
+    return response.data;
+  } catch (error: unknown) {
+    console.error('Reset Password API hatası:', error);
+    if (isAxiosError(error) && error.response?.data) {
+      return error.response.data as AuthResponseDto;
+    }
+    
+    return {
+      success: false,
+      message: 'Şifre sıfırlama işlemi sırasında bir hata oluştu'
+    };
+  }
+};
+
+/**
+ * Şifre değiştirme - Mevcut şifre ile yeni şifre belirleme
+ * @param currentPassword - Mevcut şifre
+ * @param newPassword - Yeni şifre
+ * @param confirmPassword - Yeni şifre tekrarı
+ * @returns İşlem sonucu
+ */
+export const changePasswordApi = async (
+  currentPassword: string,
+  newPassword: string,
+  confirmPassword: string
+): Promise<AuthResponseDto> => {
+  console.log('changePasswordApi çağrıldı');
+  try {
+    const response = await axiosInstance.post<AuthResponseDto>('/auth/change-password', {
+      currentPassword,
+      newPassword,
+      confirmPassword
+    });
+    console.log('Change Password API yanıtı:', response.data);
+    return response.data;
+  } catch (error: unknown) {
+    console.error('Change Password API hatası:', error);
+    if (isAxiosError(error) && error.response?.data) {
+      return error.response.data as AuthResponseDto;
+    }
+    
+    return {
+      success: false,
+      message: 'Şifre değiştirme işlemi sırasında bir hata oluştu'
+    };
+  }
+};
+
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================

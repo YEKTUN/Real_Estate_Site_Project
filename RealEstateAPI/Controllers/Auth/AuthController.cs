@@ -322,4 +322,123 @@ public class AuthController : ControllerBase
 
         return Ok(result);
     }
+
+    /// <summary>
+    /// Şifre sıfırlama isteği - Email'e token gönderir
+    /// </summary>
+    /// <param name="forgetPasswordDto">Email adresi</param>
+    /// <returns>İşlem sonucu</returns>
+    [HttpPost("forget-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ForgetPassword([FromBody] ForgetPasswordDto forgetPasswordDto)
+    {
+        // Model validasyonu
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage);
+
+            return BadRequest(new AuthResponseDto
+            {
+                Success = false,
+                Message = string.Join(", ", errors)
+            });
+        }
+
+        _logger.LogInformation("Şifre sıfırlama isteği alındı: {Email}", forgetPasswordDto.Email);
+
+        var result = await _authService.ForgetPasswordAsync(forgetPasswordDto);
+
+        // Güvenlik: Her zaman başarılı mesaj döndür (email enumeration saldırısını önlemek için)
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Şifre sıfırlama - Token ile yeni şifre belirleme
+    /// </summary>
+    /// <param name="resetPasswordDto">Token, email ve yeni şifre</param>
+    /// <returns>İşlem sonucu</returns>
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto resetPasswordDto)
+    {
+        // Model validasyonu
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage);
+
+            return BadRequest(new AuthResponseDto
+            {
+                Success = false,
+                Message = string.Join(", ", errors)
+            });
+        }
+
+        _logger.LogInformation("Şifre sıfırlama işlemi başlatıldı: {Email}", resetPasswordDto.Email);
+
+        var result = await _authService.ResetPasswordAsync(resetPasswordDto);
+
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Şifre değiştirme - Mevcut şifre ile yeni şifre belirleme
+    /// </summary>
+    /// <param name="changePasswordDto">Mevcut şifre, yeni şifre ve yeni şifre tekrarı</param>
+    /// <returns>İşlem sonucu</returns>
+    [HttpPost("change-password")]
+    [Authorize]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto changePasswordDto)
+    {
+        // Model validasyonu
+        if (!ModelState.IsValid)
+        {
+            var errors = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage);
+
+            return BadRequest(new AuthResponseDto
+            {
+                Success = false,
+                Message = string.Join(", ", errors)
+            });
+        }
+
+        // JWT token'dan kullanıcı ID'sini al
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new AuthResponseDto
+            {
+                Success = false,
+                Message = "Kullanıcı kimliği doğrulanamadı"
+            });
+        }
+
+        _logger.LogInformation("Şifre değiştirme isteği alındı: UserId={UserId}", userId);
+
+        var result = await _authService.ChangePasswordAsync(userId, changePasswordDto);
+
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
 }

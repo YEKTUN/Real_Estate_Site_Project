@@ -10,6 +10,7 @@ using RealEstateAPI.Repositories.Listing;
 using RealEstateAPI.Services.Auth;
 using RealEstateAPI.Services.Listing;
 using RealEstateAPI.Services.Cloudinary;
+using RealEstateAPI.Services.Email;
 using RealEstateAPI.Helpers;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -163,6 +164,9 @@ builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 // Cloudinary (Görsel Yükleme)
 builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("CloudinarySettings"));
 builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+
+// Email Service
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // HttpClient for Google Token Validation
 builder.Services.AddHttpClient();

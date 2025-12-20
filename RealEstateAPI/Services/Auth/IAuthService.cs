@@ -63,4 +63,26 @@ public interface IAuthService
     /// <param name="ipAddress">İstemci IP adresi</param>
     /// <returns>İşlem sonucu ve JWT token</returns>
     Task<AuthResponseDto> GoogleLoginAsync(GoogleLoginDto googleLoginDto, string? ipAddress = null);
+
+    /// <summary>
+    /// Şifre sıfırlama isteği - Email'e token gönderir
+    /// </summary>
+    /// <param name="forgetPasswordDto">Email adresi</param>
+    /// <returns>İşlem sonucu</returns>
+    Task<AuthResponseDto> ForgetPasswordAsync(ForgetPasswordDto forgetPasswordDto);
+
+    /// <summary>
+    /// Şifre sıfırlama - Token ile yeni şifre belirleme
+    /// </summary>
+    /// <param name="resetPasswordDto">Token, email ve yeni şifre</param>
+    /// <returns>İşlem sonucu</returns>
+    Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordDto resetPasswordDto);
+
+    /// <summary>
+    /// Şifre değiştirme - Mevcut şifre ile yeni şifre belirleme
+    /// </summary>
+    /// <param name="userId">Kullanıcı ID'si</param>
+    /// <param name="changePasswordDto">Mevcut şifre, yeni şifre ve yeni şifre tekrarı</param>
+    /// <returns>İşlem sonucu</returns>
+    Task<AuthResponseDto> ChangePasswordAsync(string userId, ChangePasswordDto changePasswordDto);
 }

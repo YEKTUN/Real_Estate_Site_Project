@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 using RealEstateAPI.DTOs.Auth;
 using RealEstateAPI.Models;
 using RealEstateAPI.Repositories.Auth;
+using RealEstateAPI.Services.Email;
 
 namespace RealEstateAPI.Services.Auth;
 
@@ -24,19 +25,22 @@ public class AuthService : IAuthService
     private readonly IAuthRepository _authRepository;
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
+    private readonly IEmailService _emailService;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         IAuthRepository authRepository,
         IConfiguration configuration,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        IEmailService emailService)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _authRepository = authRepository;
         _configuration = configuration;
         _logger = logger;
+        _emailService = emailService;
     }
 
     /// <summary>
@@ -655,5 +659,291 @@ public class AuthService : IAuthService
             result[i] = chars[random[i] % chars.Length];
         }
         return new string(result);
+    }
+
+    /// <summary>
+    /// Şifre sıfırlama isteği - Email'e token gönderir
+    /// </summary>
+    public async Task<AuthResponseDto> ForgetPasswordAsync(ForgetPasswordDto forgetPasswordDto)
+    {
+        try
+        {
+            _logger.LogInformation("Şifre sıfırlama isteği alındı: {Email}", forgetPasswordDto.Email);
+
+            // Kullanıcıyı email ile bul
+            var user = await _authRepository.GetUserByEmailAsync(forgetPasswordDto.Email);
+
+            // Kullanıcı yoksa hata mesajı döndür
+            if (user == null)
+            {
+                _logger.LogWarning("Şifre sıfırlama isteği - Kullanıcı bulunamadı: {Email}", forgetPasswordDto.Email);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Bu email adresi ile kayıtlı bir kullanıcı bulunamadı."
+                };
+            }
+
+            // Google ile giriş yapan kullanıcılar şifre sıfırlayamaz
+            if (user.IsGoogleUser)
+            {
+                _logger.LogWarning("Google kullanıcısı şifre sıfırlama denemesi: {Email}", forgetPasswordDto.Email);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Google ile giriş yapan hesaplar için şifre sıfırlama yapılamaz. Lütfen Google hesabınızla giriş yapın."
+                };
+            }
+
+            // Güvenli token oluştur
+            var resetToken = GeneratePasswordResetToken();
+
+            // Token'ı veritabanına kaydet
+            user.PasswordResetToken = resetToken;
+            user.PasswordResetExpires = DateTime.UtcNow.AddHours(1); // 1 saat geçerli
+            user.UpdatedAt = DateTime.UtcNow;
+
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                var errors = string.Join(", ", updateResult.Errors.Select(e => e.Description));
+                _logger.LogError("Şifre sıfırlama token'ı kaydedilemedi: {Errors}. Kullanıcı ID: {UserId}", errors, user.Id);
+                
+                // Veritabanı hatası olabilir - migration kontrolü
+                _logger.LogWarning("PasswordResetToken veya PasswordResetExpires alanları veritabanında olmayabilir. Migration yapılması gerekebilir.");
+                
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Şifre sıfırlama işlemi sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+                };
+            }
+
+            // Email gönder
+            var userName = $"{user.Name} {user.Surname}".Trim();
+            var emailSent = await _emailService.SendPasswordResetEmailAsync(
+                user.Email ?? forgetPasswordDto.Email,
+                resetToken,
+                userName
+            );
+
+            if (!emailSent)
+            {
+                _logger.LogWarning("Şifre sıfırlama email'i gönderilemedi: {Email}", forgetPasswordDto.Email);
+                // Email gönderilemese bile token kaydedildi, kullanıcıya başarılı mesaj döndür (güvenlik)
+                return new AuthResponseDto
+                {
+                    Success = true,
+                    Message = "Şifre sıfırlama linki email adresinize gönderilmiştir."
+                };
+            }
+
+            _logger.LogInformation("Şifre sıfırlama email'i başarıyla gönderildi: {Email}", forgetPasswordDto.Email);
+
+            return new AuthResponseDto
+            {
+                Success = true,
+                Message = "Eğer bu email adresi sistemde kayıtlıysa, şifre sıfırlama linki email adresinize gönderilmiştir."
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Şifre sıfırlama isteği sırasında hata oluştu: {Email}", forgetPasswordDto.Email);
+            return new AuthResponseDto
+            {
+                Success = false,
+                Message = "Şifre sıfırlama işlemi sırasında bir hata oluştu"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Şifre sıfırlama - Token ile yeni şifre belirleme
+    /// </summary>
+    public async Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
+    {
+        try
+        {
+            _logger.LogInformation("Şifre sıfırlama işlemi başlatıldı: {Email}", resetPasswordDto.Email);
+
+            // Kullanıcıyı email ile bul
+            var user = await _authRepository.GetUserByEmailAsync(resetPasswordDto.Email);
+
+            if (user == null)
+            {
+                _logger.LogWarning("Şifre sıfırlama - Kullanıcı bulunamadı: {Email}", resetPasswordDto.Email);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Geçersiz token veya email adresi"
+                };
+            }
+
+            // Token kontrolü
+            if (string.IsNullOrEmpty(user.PasswordResetToken) || 
+                user.PasswordResetToken != resetPasswordDto.Token)
+            {
+                _logger.LogWarning("Şifre sıfırlama - Geçersiz token: {Email}", resetPasswordDto.Email);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Geçersiz veya süresi dolmuş token"
+                };
+            }
+
+            // Token süresi kontrolü
+            if (user.PasswordResetExpires == null || 
+                user.PasswordResetExpires < DateTime.UtcNow)
+            {
+                _logger.LogWarning("Şifre sıfırlama - Token süresi dolmuş: {Email}", resetPasswordDto.Email);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Token süresi dolmuş. Lütfen yeni bir şifre sıfırlama isteği gönderin."
+                };
+            }
+
+            // Google kullanıcıları şifre sıfırlayamaz
+            if (user.IsGoogleUser)
+            {
+                _logger.LogWarning("Google kullanıcısı şifre sıfırlama denemesi: {Email}", resetPasswordDto.Email);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Google ile giriş yapan hesaplar için şifre sıfırlama yapılamaz."
+                };
+            }
+
+            // Identity ile şifre sıfırlama
+            // Önce token'ı temizle (güvenlik için)
+            user.PasswordResetToken = null;
+            user.PasswordResetExpires = null;
+            user.UpdatedAt = DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
+
+            // Şifreyi sıfırla
+            var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, resetToken, resetPasswordDto.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                _logger.LogError("Şifre sıfırlama başarısız: {Errors}", errors);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = $"Şifre sıfırlama başarısız: {errors}"
+                };
+            }
+
+            _logger.LogInformation("Şifre başarıyla sıfırlandı: {Email}", resetPasswordDto.Email);
+
+            return new AuthResponseDto
+            {
+                Success = true,
+                Message = "Şifreniz başarıyla sıfırlandı. Yeni şifrenizle giriş yapabilirsiniz."
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Şifre sıfırlama işlemi sırasında hata oluştu: {Email}", resetPasswordDto.Email);
+            return new AuthResponseDto
+            {
+                Success = false,
+                Message = "Şifre sıfırlama işlemi sırasında bir hata oluştu"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Şifre değiştirme - Mevcut şifre ile yeni şifre belirleme
+    /// </summary>
+    public async Task<AuthResponseDto> ChangePasswordAsync(string userId, ChangePasswordDto changePasswordDto)
+    {
+        try
+        {
+            _logger.LogInformation("Şifre değiştirme isteği alındı: UserId={UserId}", userId);
+
+            // Kullanıcıyı bul
+            var user = await _authRepository.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                _logger.LogWarning("Şifre değiştirme - Kullanıcı bulunamadı: UserId={UserId}", userId);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Kullanıcı bulunamadı"
+                };
+            }
+
+            // Google kullanıcıları şifre değiştiremez
+            if (user.IsGoogleUser)
+            {
+                _logger.LogWarning("Google kullanıcısı şifre değiştirme denemesi: UserId={UserId}", userId);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Google ile giriş yapan hesaplar için şifre değiştirme yapılamaz."
+                };
+            }
+
+            // Mevcut şifreyi doğrula
+            var passwordCheck = await _signInManager.CheckPasswordSignInAsync(user, changePasswordDto.CurrentPassword, lockoutOnFailure: false);
+            if (!passwordCheck.Succeeded)
+            {
+                _logger.LogWarning("Şifre değiştirme - Mevcut şifre yanlış: UserId={UserId}", userId);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Mevcut şifre yanlış"
+                };
+            }
+
+            // Yeni şifreyi güncelle
+            var changePasswordResult = await _userManager.ChangePasswordAsync(user, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword);
+            
+            if (!changePasswordResult.Succeeded)
+            {
+                var errors = string.Join(", ", changePasswordResult.Errors.Select(e => e.Description));
+                _logger.LogError("Şifre değiştirme başarısız: UserId={UserId}, Errors={Errors}", userId, errors);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = $"Şifre değiştirme başarısız: {errors}"
+                };
+            }
+
+            // UpdatedAt'i güncelle
+            user.UpdatedAt = DateTime.UtcNow;
+            await _userManager.UpdateAsync(user);
+
+            _logger.LogInformation("Şifre başarıyla değiştirildi: UserId={UserId}", userId);
+
+            return new AuthResponseDto
+            {
+                Success = true,
+                Message = "Şifreniz başarıyla değiştirildi"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Şifre değiştirme işlemi sırasında hata oluştu: UserId={UserId}", userId);
+            return new AuthResponseDto
+            {
+                Success = false,
+                Message = "Şifre değiştirme işlemi sırasında bir hata oluştu"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Güvenli şifre sıfırlama token'ı oluştur
+    /// </summary>
+    private static string GeneratePasswordResetToken()
+    {
+        var randomBytes = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+        return Convert.ToBase64String(randomBytes);
     }
 }

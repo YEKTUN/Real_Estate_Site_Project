@@ -7,6 +7,7 @@ using RealEstateAPI.DTOs.Auth;
 using RealEstateAPI.Models;
 using RealEstateAPI.Repositories.Auth;
 using RealEstateAPI.Services.Auth;
+using RealEstateAPI.Services.Email;
 using RealEstateAPI.Tests.Helpers;
 using Xunit;
 
@@ -29,6 +30,7 @@ public class AuthServiceTests
     private readonly Mock<IAuthRepository> _authRepositoryMock;
     private readonly Mock<IConfiguration> _configurationMock;
     private readonly Mock<ILogger<AuthService>> _loggerMock;
+    private readonly Mock<IEmailService> _emailServiceMock;
     private readonly AuthService _authService;
 
     /// <summary>
@@ -53,6 +55,7 @@ public class AuthServiceTests
         _authRepositoryMock = new Mock<IAuthRepository>();
         _configurationMock = new Mock<IConfiguration>();
         _loggerMock = new Mock<ILogger<AuthService>>();
+        _emailServiceMock = new Mock<IEmailService>();
 
         // JWT Settings mock
         SetupJwtConfiguration();
@@ -63,7 +66,8 @@ public class AuthServiceTests
             _signInManagerMock.Object,
             _authRepositoryMock.Object,
             _configurationMock.Object,
-            _loggerMock.Object);
+            _loggerMock.Object,
+            _emailServiceMock.Object);
     }
 
     /// <summary>

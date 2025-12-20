@@ -67,6 +67,21 @@ public class ApplicationUser : IdentityUser
     public bool IsGoogleUser => !string.IsNullOrEmpty(GoogleId);
 
     // ============================================================================
+    // PASSWORD RESET FIELDS
+    // ============================================================================
+
+    /// <summary>
+    /// Şifre sıfırlama token'ı
+    /// </summary>
+    [StringLength(500)]
+    public string? PasswordResetToken { get; set; }
+
+    /// <summary>
+    /// Şifre sıfırlama token'ının son geçerlilik tarihi
+    /// </summary>
+    public DateTime? PasswordResetExpires { get; set; }
+
+    // ============================================================================
     // İLAN İLİŞKİLERİ
     // ============================================================================
 

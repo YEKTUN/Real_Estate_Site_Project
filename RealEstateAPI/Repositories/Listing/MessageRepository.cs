@@ -20,15 +20,24 @@ public class MessageRepository : IMessageRepository
             .FirstOrDefaultAsync(t => t.ListingId == listingId && t.BuyerId == buyerId && t.SellerId == sellerId);
     }
 
-    public async Task<ListingMessageThread?> GetThreadByIdAsync(int threadId)
+    public async Task<ListingMessageThread?> GetThreadByIdAsync(int threadId, string? userId = null)
     {
-        return await _context.ListingMessageThreads
+        var query = _context.ListingMessageThreads
             .Include(t => t.Seller)
             .Include(t => t.Buyer)
             .Include(t => t.Messages.OrderBy(m => m.CreatedAt))
                 .ThenInclude(m => m.Sender)
             .Include(t => t.Listing)
-            .FirstOrDefaultAsync(t => t.Id == threadId);
+            .Where(t => t.Id == threadId);
+
+        // Eğer userId verildiyse, kullanıcının silmediği thread'leri getir
+        if (!string.IsNullOrEmpty(userId))
+        {
+            query = query.Where(t => !(t.BuyerId == userId && t.DeletedByBuyer)
+                && !(t.SellerId == userId && t.DeletedBySeller));
+        }
+
+        return await query.FirstOrDefaultAsync();
     }
 
     public async Task<List<ListingMessageThread>> GetThreadsForUserAsync(string userId)
@@ -39,7 +48,9 @@ public class MessageRepository : IMessageRepository
             .Include(t => t.Buyer)
             .Include(t => t.Messages.OrderByDescending(m => m.CreatedAt))
                 .ThenInclude(m => m.Sender)
-            .Where(t => t.BuyerId == userId || t.SellerId == userId)
+            .Where(t => (t.BuyerId == userId || t.SellerId == userId)
+                && !(t.BuyerId == userId && t.DeletedByBuyer)
+                && !(t.SellerId == userId && t.DeletedBySeller))
             .OrderByDescending(t => t.LastMessageAt ?? t.CreatedAt)
             .ToListAsync();
     }
@@ -52,7 +63,9 @@ public class MessageRepository : IMessageRepository
             .Include(t => t.Messages.OrderByDescending(m => m.CreatedAt))
                 .ThenInclude(m => m.Sender)
             .Include(t => t.Listing)
-            .Where(t => t.ListingId == listingId && (t.BuyerId == userId || t.SellerId == userId))
+            .Where(t => t.ListingId == listingId && (t.BuyerId == userId || t.SellerId == userId)
+                && !(t.BuyerId == userId && t.DeletedByBuyer)
+                && !(t.SellerId == userId && t.DeletedBySeller))
             .OrderByDescending(t => t.LastMessageAt ?? t.CreatedAt)
             .FirstOrDefaultAsync();
     }
@@ -60,7 +73,6 @@ public class MessageRepository : IMessageRepository
     public async Task<bool> DeleteThreadAsync(int threadId, string userId)
     {
         var thread = await _context.ListingMessageThreads
-            .Include(t => t.Messages)
             .FirstOrDefaultAsync(t => t.Id == threadId && (t.BuyerId == userId || t.SellerId == userId));
 
         if (thread == null)
@@ -68,8 +80,17 @@ public class MessageRepository : IMessageRepository
             return false;
         }
 
-        _context.ListingMessages.RemoveRange(thread.Messages);
-        _context.ListingMessageThreads.Remove(thread);
+        // Soft delete: Kullanıcının rolüne göre ilgili flag'i set et
+        if (thread.BuyerId == userId)
+        {
+            thread.DeletedByBuyer = true;
+        }
+        else if (thread.SellerId == userId)
+        {
+            thread.DeletedBySeller = true;
+        }
+
+        thread.UpdatedAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
         return true;
     }
@@ -95,6 +116,43 @@ public class MessageRepository : IMessageRepository
         _context.ListingMessageThreads.Add(thread);
         await _context.SaveChangesAsync();
         return thread;
+    }
+
+    public async Task<bool> MarkMessageAsReadAsync(int messageId, string userId)
+    {
+        // Mesajı ve thread'i birlikte getir
+        var message = await _context.ListingMessages
+            .Include(m => m.Thread)
+            .FirstOrDefaultAsync(m => m.Id == messageId);
+
+        if (message == null)
+        {
+            return false;
+        }
+
+        // Kullanıcının bu mesaja erişim hakkı var mı kontrol et (thread'in seller veya buyer'ı olmalı)
+        var thread = message.Thread;
+        if (thread == null || (thread.BuyerId != userId && thread.SellerId != userId))
+        {
+            return false;
+        }
+
+        // Sadece kullanıcının kendi gönderdiği mesajları okundu yapmamalıyız
+        // Ancak kullanıcı mesajı görüyorsa okundu yapabilir
+        // En önemli kural: Sadece diğer kullanıcıdan gelen mesajları okundu yapabiliriz
+        if (message.SenderId == userId)
+        {
+            // Kendi mesajınız zaten okundu sayılır
+            message.IsRead = true;
+        }
+        else
+        {
+            // Başkasından gelen mesajı okundu yap
+            message.IsRead = true;
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     public Task SaveChangesAsync() => _context.SaveChangesAsync();

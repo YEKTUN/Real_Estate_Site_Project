@@ -79,6 +79,11 @@ public interface IListingRepository
     /// </summary>
     Task<List<Models.Listing>> GetSimilarAsync(int listingId, int count);
 
+    /// <summary>
+    /// Admin paneli için ilan listesi (tüm durumlar)
+    /// </summary>
+    Task<(List<Models.Listing> Listings, int TotalCount)> GetForAdminAsync(AdminListingFilterDto filter);
+
     // ============================================================================
     // İLAN DURUMU
     // ============================================================================
@@ -86,7 +91,7 @@ public interface IListingRepository
     /// <summary>
     /// İlan durumunu güncelle
     /// </summary>
-    Task<bool> UpdateStatusAsync(int listingId, ListingStatus status);
+    Task<bool> UpdateStatusAsync(int listingId, ListingStatus status, string? rejectionReason = null);
 
     /// <summary>
     /// Görüntülenme sayısını artır

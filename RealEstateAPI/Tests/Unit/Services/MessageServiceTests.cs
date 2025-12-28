@@ -53,7 +53,9 @@ public class MessageServiceTests
             Id = 1,
             ListingId = listingId,
             BuyerId = senderId,
-            SellerId = sellerId
+            SellerId = sellerId,
+            DeletedByBuyer = false,
+            DeletedBySeller = false
         };
 
         var message = new ListingMessage
@@ -67,6 +69,9 @@ public class MessageServiceTests
         _listingRepositoryMock.Setup(x => x.GetByIdAsync(listingId))
             .ReturnsAsync(listing);
         _messageRepositoryMock.Setup(x => x.GetThreadAsync(listingId, senderId, sellerId))
+            .ReturnsAsync(thread);
+        // GetThreadByIdAsync çağrısı için mock (userId opsiyonel olduğu için null geçebiliriz)
+        _messageRepositoryMock.Setup(x => x.GetThreadByIdAsync(thread.Id, It.IsAny<string?>()))
             .ReturnsAsync(thread);
         _messageRepositoryMock.Setup(x => x.AddMessageAsync(It.IsAny<ListingMessage>()))
             .ReturnsAsync(message);
@@ -133,7 +138,9 @@ public class MessageServiceTests
         {
             Id = threadId,
             BuyerId = userId,
-            SellerId = Guid.NewGuid().ToString()
+            SellerId = Guid.NewGuid().ToString(),
+            DeletedByBuyer = false,
+            DeletedBySeller = false
         };
 
         var messages = new List<ListingMessage>
@@ -141,7 +148,7 @@ public class MessageServiceTests
             new ListingMessage { Id = 1, ThreadId = threadId, Content = "Test" }
         };
 
-        _messageRepositoryMock.Setup(x => x.GetThreadByIdAsync(threadId))
+        _messageRepositoryMock.Setup(x => x.GetThreadByIdAsync(threadId, userId))
             .ReturnsAsync(thread);
         _messageRepositoryMock.Setup(x => x.GetMessagesAsync(threadId))
             .ReturnsAsync(messages);

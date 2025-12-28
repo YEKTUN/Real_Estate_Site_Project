@@ -69,6 +69,11 @@ public interface IListingService
     Task<ListingListResponseDto> GetLatestAsync(int count = 10);
 
     /// <summary>
+    /// Admin paneli için ilan listesi
+    /// </summary>
+    Task<ListingListResponseDto> GetForAdminAsync(AdminListingFilterDto filter);
+
+    /// <summary>
     /// Benzer ilanları getir
     /// </summary>
     Task<ListingListResponseDto> GetSimilarAsync(int listingId, int count = 6);
@@ -81,6 +86,11 @@ public interface IListingService
     /// İlan durumunu güncelle
     /// </summary>
     Task<ListingResponseDto> UpdateStatusAsync(int listingId, Models.ListingStatus status, string userId);
+
+    /// <summary>
+    /// Admin olarak ilan durumunu güncelle
+    /// </summary>
+    Task<ListingResponseDto> UpdateStatusAsAdminAsync(int listingId, Models.ListingStatus status, string adminUserId, string? note = null, bool autoApprove = false);
 
     // ============================================================================
     // GÖRSEL İŞLEMLERİ

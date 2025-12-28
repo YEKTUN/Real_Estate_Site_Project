@@ -35,11 +35,6 @@ x86/
 # Hassas Dosyalar - GITHUB'A ATILMAYACAK
 # ============================================================================
 
-# ASP.NET Core appsettings (hassas bilgiler içerir)
-RealEstateAPI/appsettings.json
-RealEstateAPI/appsettings.Development.json
-RealEstateAPI/appsettings.Production.json
-
 # User Secrets
 secrets.json
 
@@ -59,16 +54,16 @@ build/
 dist/
 
 # Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-frontend/.env
-frontend/.env.local
-frontend/.env.development.local
-frontend/.env.test.local
-frontend/.env.production.local
+# .env
+# .env.local
+# .env.development.local
+# .env.test.local
+# .env.production.local
+# frontend/.env
+# frontend/.env.local
+# frontend/.env.development.local
+# frontend/.env.test.local
+# frontend/.env.production.local
 
 # ============================================================================
 # IDE & OS

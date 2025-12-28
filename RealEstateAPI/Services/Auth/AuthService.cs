@@ -486,7 +486,8 @@ public class AuthService : IAuthService
             Surname = user.Surname,
             Phone = user.Phone,
             Email = user.Email ?? string.Empty,
-            ProfilePictureUrl = user.ProfilePictureUrl
+            ProfilePictureUrl = user.ProfilePictureUrl,
+            IsAdmin = user.IsAdmin
         };
     }
 
@@ -514,7 +515,9 @@ public class AuthService : IAuthService
                 new Claim(JwtRegisteredClaimNames.GivenName, user.Name),
                 new Claim(JwtRegisteredClaimNames.FamilyName, user.Surname),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.NameIdentifier, user.Id)
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User"),
+                new Claim("isAdmin", user.IsAdmin.ToString().ToLowerInvariant())
             };
 
             // Profil fotoğrafı varsa custom "picture" claim'i olarak ekle

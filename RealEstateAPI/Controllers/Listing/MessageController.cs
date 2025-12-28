@@ -107,6 +107,29 @@ public class MessageController : ControllerBase
     }
 
     /// <summary>
+    /// Bir mesajı okundu olarak işaretle
+    /// </summary>
+    [HttpPatch("{messageId:int}/read")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> MarkMessageAsRead(int messageId)
+    {
+        var userId = GetUserId();
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var result = await _messageService.MarkMessageAsReadAsync(messageId, userId);
+        if (!result)
+        {
+            return NotFound(new { success = false, message = "Mesaj bulunamadı veya erişim yetkiniz yok" });
+        }
+
+        return Ok(new { success = true, message = "Mesaj okundu olarak işaretlendi" });
+    }
+
+    /// <summary>
     /// Bir mesajlaşma thread'ini ve içindeki mesajları kalıcı olarak sil
     /// </summary>
     [HttpDelete("{threadId:int}")]

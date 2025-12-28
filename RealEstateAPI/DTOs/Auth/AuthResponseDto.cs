@@ -74,6 +74,11 @@ public class UserDto
     /// Profil fotoğrafı URL'i
     /// </summary>
     public string? ProfilePictureUrl { get; set; }
+
+    /// <summary>
+    /// Kullanıcının admin yetkisi var mı?
+    /// </summary>
+    public bool IsAdmin { get; set; }
 }
 
 /**

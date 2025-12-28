@@ -295,6 +295,17 @@ public class Listing
     public DateTime? ExpiresAt { get; set; }
 
     /// <summary>
+    /// Reddedilme sebebi (Admin tarafından reddedildiğinde)
+    /// </summary>
+    [StringLength(1000)]
+    public string? RejectionReason { get; set; }
+
+    /// <summary>
+    /// Reddedilme tarihi
+    /// </summary>
+    public DateTime? RejectedAt { get; set; }
+
+    /// <summary>
     /// Görüntülenme sayısı
     /// </summary>
     public int ViewCount { get; set; } = 0;

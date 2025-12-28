@@ -8,6 +8,7 @@ public class ListingMessageDto
     public string SenderName { get; set; } = string.Empty;
     public string? SenderSurname { get; set; }
     public string? SenderProfilePictureUrl { get; set; }
+    public bool IsAdminSender { get; set; }
     public string Content { get; set; } = string.Empty;
     public decimal? OfferPrice { get; set; }
     public bool IsOffer { get; set; }

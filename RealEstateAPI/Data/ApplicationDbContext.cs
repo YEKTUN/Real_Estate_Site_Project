@@ -85,6 +85,7 @@ public class ApplicationDbContext : IdentityUserContext<ApplicationUser>
     /// İlan Mesajları
     /// </summary>
     public DbSet<ListingMessage> ListingMessages { get; set; }
+    public DbSet<RealEstateAPI.Models.Admin.AdminModerationRule> AdminModerationRules { get; set; }
 
     /// <summary>
     /// Model yapılandırması
@@ -325,6 +326,16 @@ public class ApplicationDbContext : IdentityUserContext<ApplicationUser>
                 .WithMany()
                 .HasForeignKey(e => e.SenderId)
                 .OnDelete(DeleteBehavior.NoAction);
+        });
+
+        // AdminModerationRule yapılandırması
+        builder.Entity<RealEstateAPI.Models.Admin.AdminModerationRule>(entity =>
+        {
+            entity.ToTable("AdminModerationRules");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.AdminUserId);
+            entity.Property(e => e.Statuses).HasColumnType("integer[]");
+            entity.Property(e => e.BlockedKeywords).HasColumnType("text[]");
         });
     }
 

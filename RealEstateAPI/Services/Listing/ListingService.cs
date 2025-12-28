@@ -15,17 +15,23 @@ public class ListingService : IListingService
     private readonly IListingRepository _listingRepository;
     private readonly IFavoriteRepository _favoriteRepository;
     private readonly ICommentRepository _commentRepository;
+    private readonly Services.Admin.IAdminModerationRuleService _adminModerationRuleService;
+    private readonly IMessageService _messageService;
     private readonly ILogger<ListingService> _logger;
 
     public ListingService(
         IListingRepository listingRepository,
         IFavoriteRepository favoriteRepository,
         ICommentRepository commentRepository,
+        Services.Admin.IAdminModerationRuleService adminModerationRuleService,
+        IMessageService messageService,
         ILogger<ListingService> logger)
     {
         _listingRepository = listingRepository;
         _favoriteRepository = favoriteRepository;
         _commentRepository = commentRepository;
+        _adminModerationRuleService = adminModerationRuleService;
+        _messageService = messageService;
         _logger = logger;
     }
 
@@ -77,6 +83,7 @@ public class ListingService : IListingService
             };
 
             var createdListing = await _listingRepository.CreateAsync(listing);
+            await TryAutoApproveAsync(createdListing);
 
             // Özellikleri ekle (null kontrolü ile)
             if (dto.InteriorFeatures != null && dto.InteriorFeatures.Any())
@@ -122,6 +129,43 @@ public class ListingService : IListingService
                 Success = false,
                 Message = errorMessage
             };
+        }
+    }
+
+    private async Task TryAutoApproveAsync(Models.Listing listing)
+    {
+        try
+        {
+            var rule = await _adminModerationRuleService.GetEnabledAsync();
+            if (rule == null || !rule.IsAutomataEnabled)
+            {
+                return;
+            }
+
+            if (rule.Statuses != null && rule.Statuses.Any() && !rule.Statuses.Contains(listing.Status))
+                return;
+
+            if (rule.BlockedKeywords != null && rule.BlockedKeywords.Count > 0)
+            {
+                var title = listing.Title?.ToLowerInvariant() ?? string.Empty;
+                var desc = listing.Description?.ToLowerInvariant() ?? string.Empty;
+                var hasBlocked = rule.BlockedKeywords.Any(k =>
+                {
+                    var kw = k.ToLowerInvariant();
+                    return title.Contains(kw) || desc.Contains(kw);
+                });
+                if (hasBlocked) return;
+            }
+
+            var updated = await _listingRepository.UpdateStatusAsync(listing.Id, ListingStatus.Active, null);
+            if (updated)
+            {
+                _logger.LogInformation("Otomatik onay uygulandı. ListingId: {ListingId}", listing.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Otomatik onay kontrolü sırasında hata. ListingId: {ListingId}", listing.Id);
         }
     }
 
@@ -272,8 +316,11 @@ public class ListingService : IListingService
                 };
             }
 
-            // Görüntülenme sayısını artır
-            await _listingRepository.IncrementViewCountAsync(listingId);
+            // Görüntülenme sayısını artır (İlan sahibi değilse)
+            if (string.IsNullOrEmpty(userId) || listing.UserId != userId)
+            {
+                await _listingRepository.IncrementViewCountAsync(listingId);
+            }
 
             var detailDto = MapToDetailDto(listing);
             
@@ -458,6 +505,31 @@ public class ListingService : IListingService
         }
     }
 
+    public async Task<ListingListResponseDto> GetForAdminAsync(AdminListingFilterDto filter)
+    {
+        try
+        {
+            var (listings, totalCount) = await _listingRepository.GetForAdminAsync(filter);
+
+            return new ListingListResponseDto
+            {
+                Success = true,
+                Message = $"{totalCount} ilan bulundu",
+                Listings = listings.Select(MapToListDto).ToList(),
+                Pagination = CreatePagination(filter.Page, filter.PageSize, totalCount)
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Admin ilan listesi alınırken hata oluştu");
+            return new ListingListResponseDto
+            {
+                Success = false,
+                Message = "Admin ilan listesi alınırken bir hata oluştu"
+            };
+        }
+    }
+
     public async Task<ListingListResponseDto> GetSimilarAsync(int listingId, int count = 6)
     {
         try
@@ -490,23 +562,128 @@ public class ListingService : IListingService
     {
         try
         {
-            if (!await _listingRepository.IsOwnerAsync(listingId, userId))
+            var listing = await _listingRepository.GetByIdAsync(listingId);
+            if (listing == null)
             {
-                return new ListingResponseDto
-                {
-                    Success = false,
-                    Message = "Bu ilanın durumunu değiştirme yetkiniz yok"
-                };
+                return new ListingResponseDto { Success = false, Message = "İlan bulunamadı" };
             }
 
-            var result = await _listingRepository.UpdateStatusAsync(listingId, status);
-            if (!result)
+            if (listing.UserId != userId)
+            {
+                return new ListingResponseDto { Success = false, Message = "Bu ilanın durumunu değiştirme yetkiniz yok" };
+            }
+
+            // KULLANICI YETKİ KONTROLLERİ
+            // 1. Kullanıcı sadece Active (Yayında) veya Inactive (Yayında Değil) yapabilir
+            if (status != ListingStatus.Active && status != ListingStatus.Inactive)
+            {
+                return new ListingResponseDto { Success = false, Message = "Bu duruma geçiş yetkiniz yok" };
+            }
+
+            // 2. Eğer ilan Rejected (Reddedildi) ise, kullanıcı bunu Aktif yapamaz
+            // Reddedilen ilanı sadece Admin tekrar Pending yapabilir veya Admin onaylayabilir.
+            if (listing.Status == ListingStatus.Rejected && status == ListingStatus.Active)
+            {
+                return new ListingResponseDto { Success = false, Message = "Reddedilen ilanı yayına alamazsınız. Lütfen admin ile iletişime geçin." };
+            }
+
+            // 3. Eğer ilan Pending (Bekliyor) ise, kullanıcı bunu Aktif yapamaz (Admin onayı beklemeli)
+            if (listing.Status == ListingStatus.Pending && status == ListingStatus.Active)
+            {
+                return new ListingResponseDto { Success = false, Message = "İlanınız henüz onaylanmamış. Lütfen onaylanmasını bekleyin." };
+            }
+
+            var result = await _listingRepository.UpdateStatusAsync(listingId, status, null);
+            return new ListingResponseDto
+            {
+                Success = true,
+                Message = status == ListingStatus.Active ? "İlan yayına alındı" : "İlan yayından kaldırıldı (Pasif)"
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "İlan durumu güncelleme hatası. ListingId: {ListingId}", listingId);
+            return new ListingResponseDto
+            {
+                Success = false,
+                Message = "İlan durumu güncellenirken bir hata oluştu"
+            };
+        }
+    }
+
+    public async Task<ListingResponseDto> UpdateStatusAsAdminAsync(int listingId, ListingStatus status, string adminUserId, string? note = null, bool autoApprove = false)
+    {
+        try
+        {
+            var exists = await _listingRepository.ExistsAsync(listingId);
+            if (!exists)
             {
                 return new ListingResponseDto
                 {
                     Success = false,
                     Message = "İlan bulunamadı"
                 };
+            }
+
+            // İlan bilgilerini al (mesaj göndermek için)
+            var listing = await _listingRepository.GetByIdAsync(listingId);
+            if (listing == null)
+            {
+                return new ListingResponseDto
+                {
+                    Success = false,
+                    Message = "İlan bulunamadı"
+                };
+            }
+
+            // Reddedilme durumunda note'u rejectionReason olarak kullan
+            string? rejectionReason = status == ListingStatus.Rejected ? note : null;
+            var updateResult = await _listingRepository.UpdateStatusAsync(listingId, status, rejectionReason);
+            if (!updateResult)
+            {
+                return new ListingResponseDto
+                {
+                    Success = false,
+                    Message = "İlan durumu güncellenemedi"
+                };
+            }
+
+            var action = autoApprove ? "otomatik" : "manuel";
+            _logger.LogInformation("Admin ilan durumu güncelledi. ListingId: {ListingId}, Status: {Status}, AdminId: {AdminId}, Mode: {Mode}, Note: {Note}",
+                listingId, status, adminUserId, action, note ?? "-");
+
+            // İlan sahibine mesaj gönder
+            try
+            {
+                string messageContent = status switch
+                {
+                    ListingStatus.Active => $"İlanınız (#{listing.ListingNumber} - {listing.Title}) onaylandı ve yayına alındı. İlanınız artık aktif durumda.",
+                    ListingStatus.Rejected => $"İlanınız (#{listing.ListingNumber} - {listing.Title}) reddedildi." + 
+                        (!string.IsNullOrEmpty(rejectionReason) ? $" Red sebebi: {rejectionReason}" : ""),
+                    ListingStatus.Pending => $"İlanınız (#{listing.ListingNumber} - {listing.Title}) onay bekliyor durumuna döndürüldü. İnceleme sonrası tekrar değerlendirilecektir.",
+                    ListingStatus.Inactive => $"İlanınız (#{listing.ListingNumber} - {listing.Title}) yayından kaldırıldı. İlanınız artık pasif durumda.",
+                    _ => $"İlanınızın (#{listing.ListingNumber} - {listing.Title}) durumu güncellendi."
+                };
+
+                _logger.LogInformation("İlan sahibine mesaj gönderme denemesi başlatılıyor. ListingId: {ListingId}, Status: {Status}, SellerId: {SellerId}", 
+                    listingId, status, listing.UserId);
+                
+                var messageSent = await _messageService.SendAdminNotificationAsync(listingId, adminUserId, messageContent);
+                
+                if (messageSent)
+                {
+                    _logger.LogInformation("İlan sahibine bildirim mesajı başarıyla gönderildi. ListingId: {ListingId}, Status: {Status}", listingId, status);
+                }
+                else
+                {
+                    _logger.LogWarning("İlan sahibine bildirim mesajı gönderilemedi (false döndü). ListingId: {ListingId}, Status: {Status}", listingId, status);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Mesaj gönderme hatası durumunda işlemi durdurmuyoruz, sadece logluyoruz
+                _logger.LogError(ex, "İlan sahibine bildirim mesajı gönderilirken exception oluştu. ListingId: {ListingId}, Error: {Error}", 
+                    listingId, ex.Message);
             }
 
             return new ListingResponseDto
@@ -517,7 +694,7 @@ public class ListingService : IListingService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "İlan durumu güncelleme hatası. ListingId: {ListingId}", listingId);
+            _logger.LogError(ex, "Admin ilan durumu güncelleme hatası. ListingId: {ListingId}", listingId);
             return new ListingResponseDto
             {
                 Success = false,
@@ -698,11 +875,17 @@ public class ListingService : IListingService
                             ?? listing.Images.FirstOrDefault()?.ImageUrl,
             Status = listing.Status,
             OwnerType = listing.OwnerType,
+            OwnerId = listing.User?.Id,
+            OwnerName = listing.User?.Name,
+            OwnerSurname = listing.User?.Surname,
+            OwnerEmail = listing.User?.Email,
             CreatedAt = listing.CreatedAt,
             ViewCount = listing.ViewCount,
             FavoriteCount = listing.FavoriteCount,
             IsFeatured = listing.IsFeatured,
-            IsUrgent = listing.IsUrgent
+            IsUrgent = listing.IsUrgent,
+            RejectionReason = listing.RejectionReason,
+            RejectedAt = listing.RejectedAt
         };
     }
 
@@ -725,6 +908,7 @@ public class ListingService : IListingService
             City = listing.City,
             District = listing.District,
             Neighborhood = listing.Neighborhood,
+            FullAddress = listing.FullAddress,
             Latitude = listing.Latitude,
             Longitude = listing.Longitude,
             GrossSquareMeters = listing.GrossSquareMeters,
@@ -762,7 +946,9 @@ public class ListingService : IListingService
             ViewCount = listing.ViewCount,
             FavoriteCount = listing.FavoriteCount,
             IsFeatured = listing.IsFeatured,
-            IsUrgent = listing.IsUrgent
+            IsUrgent = listing.IsUrgent,
+            RejectionReason = listing.RejectionReason,
+            RejectedAt = listing.RejectedAt
         };
     }
 

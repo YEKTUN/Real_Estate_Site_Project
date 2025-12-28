@@ -27,6 +27,12 @@ public class ListingMessageThread
     public DateTime? UpdatedAt { get; set; }
     public DateTime? LastMessageAt { get; set; }
 
+    /// <summary>Buyer tarafından silindi mi?</summary>
+    public bool DeletedByBuyer { get; set; } = false;
+
+    /// <summary>Seller tarafından silindi mi?</summary>
+    public bool DeletedBySeller { get; set; } = false;
+
     // Navigation
     public virtual Listing Listing { get; set; } = null!;
 

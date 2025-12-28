@@ -31,11 +31,17 @@ public class ListingListDto
     public string? CoverImageUrl { get; set; }
     public ListingStatus Status { get; set; }
     public ListingOwnerType OwnerType { get; set; }
+    public string? OwnerId { get; set; }
+    public string? OwnerName { get; set; }
+    public string? OwnerSurname { get; set; }
+    public string? OwnerEmail { get; set; }
     public DateTime CreatedAt { get; set; }
     public int ViewCount { get; set; }
     public int FavoriteCount { get; set; }
     public bool IsFeatured { get; set; }
     public bool IsUrgent { get; set; }
+    public string? RejectionReason { get; set; }
+    public DateTime? RejectedAt { get; set; }
 }
 
 /// <summary>
@@ -64,6 +70,7 @@ public class ListingDetailDto
     public string City { get; set; } = string.Empty;
     public string District { get; set; } = string.Empty;
     public string? Neighborhood { get; set; }
+    public string? FullAddress { get; set; }
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
     
@@ -104,6 +111,8 @@ public class ListingDetailDto
     public int CommentCount { get; set; }
     public bool IsFeatured { get; set; }
     public bool IsUrgent { get; set; }
+    public string? RejectionReason { get; set; }
+    public DateTime? RejectedAt { get; set; }
     
     // Kullanıcı durumu (giriş yapmış kullanıcı için)
     public bool IsFavorited { get; set; }

@@ -90,9 +90,9 @@ public class ListingRepository : IListingRepository
 
     public async Task<(List<Models.Listing> Listings, int TotalCount)> GetAllAsync(int page, int pageSize)
     {
-        // Active ve Pending durumundaki ilanları göster (Pending = onay bekleyen, kullanıcılar görebilir)
+        // Sadece onaylanmış (Active) ilanları göster
         var query = _context.Listings
-            .Where(l => l.Status == ListingStatus.Active || l.Status == ListingStatus.Pending)
+            .Where(l => l.Status == ListingStatus.Active)
             .Include(l => l.Images.Where(i => i.IsCoverImage))
             .OrderByDescending(l => l.CreatedAt);
 
@@ -107,9 +107,9 @@ public class ListingRepository : IListingRepository
 
     public async Task<(List<Models.Listing> Listings, int TotalCount)> SearchAsync(ListingSearchDto searchDto)
     {
-        // Active ve Pending durumundaki ilanları göster (Pending = onay bekleyen, kullanıcılar görebilir)
+        // Sadece onaylanmış (Active) ilanları göster
         var query = _context.Listings
-            .Where(l => l.Status == ListingStatus.Active || l.Status == ListingStatus.Pending)
+            .Where(l => l.Status == ListingStatus.Active)
             .Include(l => l.Images.Where(i => i.IsCoverImage))
             .Include(l => l.InteriorFeatures)
             .Include(l => l.ExteriorFeatures)
@@ -254,10 +254,101 @@ public class ListingRepository : IListingRepository
         return (listings, totalCount);
     }
 
+    public async Task<(List<Models.Listing> Listings, int TotalCount)> GetForAdminAsync(AdminListingFilterDto filter)
+    {
+        var query = _context.Listings
+            .Include(l => l.Images.Where(i => i.IsCoverImage))
+            .Include(l => l.User)
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
+        {
+            var term = filter.SearchTerm.Trim();
+            var termLower = term.ToLower();
+            
+            // İlan numarası tam eşleşmesi kontrolü (benzersiz)
+            // İlan numarası genellikle sadece rakamlardan oluşur (9 haneli)
+            if (term.All(char.IsDigit) && term.Length >= 6)
+            {
+                // Tam eşleşme varsa sadece o ilanı döndür (sadece Pending olanları)
+                var exactMatch = await _context.Listings
+                    .Include(l => l.Images.Where(i => i.IsCoverImage))
+                    .Include(l => l.User)
+                    .FirstOrDefaultAsync(l => l.ListingNumber == term && l.Status == ListingStatus.Pending);
+                    
+                if (exactMatch != null)
+                {
+                    return (new List<Models.Listing> { exactMatch }, 1);
+                }
+                // Eğer tam eşleşme varsa ama Pending değilse, boş liste döndür
+                return (new List<Models.Listing>(), 0);
+            }
+            
+            // Tam eşleşme yoksa normal arama yap
+            query = query.Where(l =>
+                l.ListingNumber.ToLower().Contains(termLower) ||
+                l.Title.ToLower().Contains(termLower) ||
+                l.Description.ToLower().Contains(termLower) ||
+                l.City.ToLower().Contains(termLower) ||
+                l.District.ToLower().Contains(termLower) ||
+                (l.User != null && l.User.Email != null && l.User.Email.ToLower().Contains(termLower)));
+        }
+
+        // Varsayılan olarak sadece Pending (onay bekleyen) ilanları göster
+        // Eğer statuses filtresi belirtilmişse onu kullan, yoksa sadece Pending göster
+        if (filter.Statuses != null && filter.Statuses.Any())
+        {
+            query = query.Where(l => filter.Statuses.Contains(l.Status));
+        }
+        else
+        {
+            // Statuses filtresi yoksa, sadece Pending ilanları göster
+            query = query.Where(l => l.Status == ListingStatus.Pending);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.City))
+        {
+            var city = filter.City.ToLower();
+            query = query.Where(l => l.City.ToLower() == city);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.District))
+        {
+            var district = filter.District.ToLower();
+            query = query.Where(l => l.District.ToLower() == district);
+        }
+
+        if (!string.IsNullOrWhiteSpace(filter.OwnerEmail))
+        {
+            var ownerEmail = filter.OwnerEmail.ToLower();
+            query = query.Where(l => l.User != null && l.User.Email != null && l.User.Email.ToLower() == ownerEmail);
+        }
+
+        if (filter.Type.HasValue)
+        {
+            query = query.Where(l => l.Type == filter.Type.Value);
+        }
+
+        if (filter.Category.HasValue)
+        {
+            query = query.Where(l => l.Category == filter.Category.Value);
+        }
+
+        query = query.OrderByDescending(l => l.CreatedAt);
+
+        var totalCount = await query.CountAsync();
+        var listings = await query
+            .Skip((filter.Page - 1) * filter.PageSize)
+            .Take(filter.PageSize)
+            .ToListAsync();
+
+        return (listings, totalCount);
+    }
+
     public async Task<(List<Models.Listing> Listings, int TotalCount)> GetByUserIdAsync(string userId, int page, int pageSize)
     {
         var query = _context.Listings
-            .Where(l => l.UserId == userId && l.Status != ListingStatus.Inactive)
+            .Where(l => l.UserId == userId)
             .Include(l => l.Images.Where(i => i.IsCoverImage))
             .OrderByDescending(l => l.CreatedAt);
 
@@ -311,7 +402,7 @@ public class ListingRepository : IListingRepository
     // İLAN DURUMU
     // ============================================================================
 
-    public async Task<bool> UpdateStatusAsync(int listingId, ListingStatus status)
+    public async Task<bool> UpdateStatusAsync(int listingId, ListingStatus status, string? rejectionReason = null)
     {
         var listing = await _context.Listings.FindAsync(listingId);
         if (listing == null) return false;
@@ -322,6 +413,19 @@ public class ListingRepository : IListingRepository
         if (status == ListingStatus.Active && listing.PublishedAt == null)
         {
             listing.PublishedAt = DateTime.UtcNow;
+        }
+
+        // Reddedilme durumunda RejectionReason ve RejectedAt set et
+        if (status == ListingStatus.Rejected)
+        {
+            listing.RejectionReason = rejectionReason;
+            listing.RejectedAt = DateTime.UtcNow;
+        }
+        // Pending'e geri dönüldüğünde (reopen) reddedilme bilgilerini temizle
+        else if (status == ListingStatus.Pending)
+        {
+            listing.RejectionReason = null;
+            listing.RejectedAt = null;
         }
 
         await _context.SaveChangesAsync();
@@ -342,11 +446,28 @@ public class ListingRepository : IListingRepository
     {
         var random = new Random();
         string listingNumber;
+        int maxAttempts = 100; // Maksimum deneme sayısı
+        int attempt = 0;
         
         do
         {
+            attempt++;
             // Format: 123456789 (9 haneli)
             listingNumber = random.Next(100000000, 999999999).ToString();
+            
+            // Eğer maksimum deneme sayısına ulaşıldıysa, timestamp ekleyerek benzersizlik sağla
+            if (attempt >= maxAttempts)
+            {
+                var timestamp = DateTime.UtcNow.Ticks % 1000000000; // Son 9 haneyi al
+                listingNumber = timestamp.ToString().PadLeft(9, '0');
+                // Hala varsa, GUID'in son 9 karakterini kullan
+                if (await _context.Listings.AnyAsync(l => l.ListingNumber == listingNumber))
+                {
+                    var guidPart = Guid.NewGuid().ToString("N").Substring(0, 9);
+                    listingNumber = guidPart;
+                }
+                break;
+            }
         } 
         while (await _context.Listings.AnyAsync(l => l.ListingNumber == listingNumber));
 

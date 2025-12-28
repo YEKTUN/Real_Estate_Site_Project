@@ -1,7 +1,8 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 using RealEstateAPI.Data;
 using RealEstateAPI.Models;
@@ -32,8 +33,8 @@ builder.Services.AddControllers()
     {
         // JSON property isimlerini camelCase yap (frontend ile uyumluluk için)
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-        // Enum'ları integer olarak serialize/deserialize et (frontend number[] gönderiyor)
-        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        // Enum'ları integer olarak serialize/deserialize et (frontend number bekliyor)
+        // options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 
 // CORS Policy - Frontend ile iletişim için
@@ -96,6 +97,13 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+// Authorization - Admin policy
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireClaim(ClaimTypes.Role, "Admin"));
+});
+
 // AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
@@ -152,6 +160,8 @@ builder.Services.AddScoped<IListingRepository, ListingRepository>();
 builder.Services.AddScoped<IListingService, ListingService>();
 builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddScoped<RealEstateAPI.Repositories.Admin.IAdminModerationRuleRepository, RealEstateAPI.Repositories.Admin.AdminModerationRuleRepository>();
+builder.Services.AddScoped<RealEstateAPI.Services.Admin.IAdminModerationRuleService, RealEstateAPI.Services.Admin.AdminModerationRuleService>();
 
 // Comment (Yorum)
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
@@ -194,6 +204,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var configuration = services.GetRequiredService<IConfiguration>();
     try
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
@@ -232,7 +243,58 @@ using (var scope = app.Services.CreateScope())
     {
         var logger = services.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "❌ Veritabanı oluşturulurken hata oluştu");
+        }
+
+        // Admin kullanıcısını otomatik oluştur
+        try
+        {
+            var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+            var logger = services.GetRequiredService<ILogger<Program>>();
+
+            var adminEmail = configuration["Admin:Email"] ?? "admin@realestate.local";
+            var adminPassword = configuration["Admin:Password"] ?? "Admin123!";
+            var adminName = configuration["Admin:Name"] ?? "System";
+            var adminSurname = configuration["Admin:Surname"] ?? "Admin";
+
+            if (!string.IsNullOrWhiteSpace(adminEmail) && !string.IsNullOrWhiteSpace(adminPassword))
+            {
+                var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+
+                if (existingAdmin == null)
+                {
+                    var adminUser = new ApplicationUser
+                    {
+                        UserName = adminEmail,
+                        Email = adminEmail,
+                        Name = adminName,
+                        Surname = adminSurname,
+                        EmailConfirmed = true,
+                        IsAdmin = true
+                    };
+
+                    var createResult = await userManager.CreateAsync(adminUser, adminPassword);
+                    if (createResult.Succeeded)
+                    {
+                        logger.LogInformation("✅ Admin kullanıcısı oluşturuldu: {Email}", adminEmail);
+                    }
+                    else
+                    {
+                        logger.LogWarning("⚠️ Admin kullanıcısı oluşturulamadı: {Errors}", string.Join(", ", createResult.Errors.Select(e => e.Description)));
+                    }
+                }
+                else if (!existingAdmin.IsAdmin)
+                {
+                    existingAdmin.IsAdmin = true;
+                    await userManager.UpdateAsync(existingAdmin);
+                    logger.LogInformation("ℹ️ Var olan kullanıcı admin olarak işaretlendi: {Email}", adminEmail);
+                }
+            }
     }
+        catch (Exception ex)
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "❌ Admin kullanıcısı oluşturulurken hata oluştu");
+        }
 }
 
 // Development ortamında Swagger kullan

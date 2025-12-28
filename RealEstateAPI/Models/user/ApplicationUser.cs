@@ -44,6 +44,12 @@ public class ApplicationUser : IdentityUser
     /// </summary>
     public DateTime? UpdatedAt { get; set; }
 
+    /// <summary>
+    /// Admin kullanıcı mı?
+    /// Yönetim paneli erişimi için kullanılır.
+    /// </summary>
+    public bool IsAdmin { get; set; } = false;
+
     // ============================================================================
     // GOOGLE OAUTH FIELDS
     // ============================================================================

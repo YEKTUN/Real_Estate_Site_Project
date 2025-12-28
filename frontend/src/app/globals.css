@@ -2,7 +2,7 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #111827; /* Dark gray (gray-900) instead of black for more premium feel */
 }
 
 @theme inline {
@@ -12,15 +12,37 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* 
+ * Varsayılan text rengini koyulaştırıyoruz.
+ * Sistem dark mode'da olsa bile bg-white olan yerlerde yazıların okunması için 
+ * global bir text rengi atıyoruz.
+ */
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Input ve TextArea'lar için varsayılan text rengini zorla koyu yapıyoruz (bg-white oldukları için) */
+input, textarea, select {
+  color: #111827 !important;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* 
+     * Eğer tüm site dark mode uyumlu değilse (bg-white kullanılıyorsa), 
+     * foreground'u çok açmamak gerekir. 
+     * Şimdilik kullanıcı şikayeti üzerine burayı daha okunabilir tutuyoruz.
+     */
+    --background: #f9fafb; /* Tam siyah yerine çok açık gri yapalım ki bg-white'lar sırıtmasın */
+    --foreground: #111827;
+  }
+}
+

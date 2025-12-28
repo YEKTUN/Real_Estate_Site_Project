@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppSelector, useAppDispatch } from '@/body/redux/hooks';
 import { selectIsAuthenticated, selectUser, logoutAsync } from '@/body/redux/slices/auth/AuthSlice';
@@ -9,19 +11,21 @@ import { selectIsAuthenticated, selectUser, logoutAsync } from '@/body/redux/sli
  * Navbar Component
  * 
  * Ana navigasyon bileşeni.
- * Responsive tasarım ile desktop ve mobile görünümler.
- * Auth durumuna göre farklı butonlar gösterir.
- * Token kontrolü AuthGuard tarafından global olarak yapılır.
+ * Marka ismi: Real Estimate
+ * Kategoriler: Satılık, Kiralık, Konut, İş Yeri
  */
 
 export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
-  
+
   // Auth state
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const user = useAppSelector(selectUser);
+
+  // Dropdown state for mobile
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   /**
    * Çıkış yap handler
@@ -33,149 +37,148 @@ export default function Navbar() {
       router.push('/login');
     } catch (error) {
       console.error('Çıkış hatası:', error);
-      // Hata olsa bile login'e yönlendir
       router.push('/login');
     }
   };
 
   /**
-   * Navbar menü öğeleri
+   * Emlak kategorileri
    */
-  const navItems = [
-    { name: 'Ana Sayfa', href: '/' },
-    { name: 'İlanlar', href: '/listing' },
-    { name: 'Hakkımızda', href: '/about' },
-    { name: 'İletişim', href: '/contact' },
+  const categories = [
+    { name: 'Satılık', query: '?type=1' },
+    { name: 'Kiralık', query: '?type=2' },
+    { name: 'Konut', query: '?category=1' },
+    { name: 'İş Yeri', query: '?category=2' },
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-md">
+    <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-100">
       <nav className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="text-3xl">🏠</span>
-            <span className="text-2xl font-bold text-gray-800">
-              Real Estate
+          {/* Logo & Brand */}
+          <Link href="/" className="flex items-center space-x-2 shrink-0">
+            <div className="bg-blue-600 p-1.5 rounded-lg">
+              <Image
+                src="/real_estimate.png"
+                alt="Real Estimate Logo"
+                width={32}
+                height={32}
+                className="object-contain brightness-0 invert"
+                unoptimized
+              />
+            </div>
+            <span className="text-2xl font-extrabold tracking-tight text-gray-900">
+              Real<span className="text-blue-600">Estimate</span>
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`text-lg font-medium transition-colors hover:text-blue-600 ${
-                  pathname === item.href
-                    ? 'text-blue-600 border-b-2 border-blue-600'
-                    : 'text-gray-700'
-                }`}
-              >
-                {item.name}
-              </Link>
-            ))}
+          {/* Desktop Navigation - Emlak Menüsü */}
+          <div className="hidden md:flex items-center space-x-1">
+            <div className="relative group">
+              <button className="flex items-center gap-1.5 px-4 py-2 text-lg font-semibold text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                <span>🏠 Emlak</span>
+                <span className="text-xs opacity-50">▼</span>
+              </button>
+
+              {/* Dropdown Menu */}
+              <div className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-100 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all transform origin-top translate-y-2 group-hover:translate-y-0 z-50">
+                <div className="p-2 space-y-1">
+                  {categories.map((cat) => (
+                    <Link
+                      key={cat.name}
+                      href={`/${cat.query}`}
+                      className="block px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                    >
+                      {cat.name}
+                    </Link>
+                  ))}
+                  <div className="border-t border-gray-100 my-1 pt-1">
+                    <Link
+                      href="/"
+                      className="block px-4 py-2.5 text-sm font-bold text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    >
+                      Tüm İlanlar
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* User Actions */}
           <div className="flex items-center space-x-3">
             {isAuthenticated ? (
-              <>
-                {/* Giriş yapmış kullanıcı için */}
-                {/* Panel'de değilse "Panel'e Git" göster */}
-                {pathname !== '/panel' && (
-                  <Link
-                    href="/panel"
-                    className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg transition-colors text-gray-700 hover:bg-gray-100"
-                  >
-                    <span className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {user?.name?.charAt(0).toUpperCase() || '?'}
-                    </span>
-                    <span className="font-medium">Panel'e Git</span>
-                  </Link>
-                )}
-                {/* Panel'deyse sadece avatar göster */}
-                {pathname === '/panel' && (
-                  <div className="hidden md:flex items-center gap-2 px-4 py-2">
-                    <span className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                      {user?.name?.charAt(0).toUpperCase() || '?'}
-                    </span>
-                    <span className="font-medium text-gray-700">{user?.name}</span>
-                  </div>
-                )}
-                {/* Çıkış Yap butonu */}
+              <div className="flex items-center gap-2">
+                <Link
+                  href={user?.isAdmin ? '/admin' : '/panel'}
+                  className="flex items-center gap-2 px-3 py-2 rounded-full border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all"
+                >
+                  <span className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
+                    {user?.name?.charAt(0).toUpperCase() || '?'}
+                  </span>
+                  <span className="hidden sm:inline font-semibold text-gray-700">{user?.name}</span>
+                </Link>
                 <button
                   onClick={handleLogout}
-                  className="hidden md:flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                  className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-all"
+                  title="Çıkış Yap"
                 >
-                  <span>🚪</span>
-                  <span>Çıkış Yap</span>
+                  <span className="text-xl">🚪</span>
                 </button>
-              </>
+              </div>
             ) : (
-              <>
-                {/* Giriş yapmamış kullanıcı için */}
+              <div className="flex items-center gap-2">
                 <Link
                   href="/login"
-                  className="hidden md:block px-4 py-2 text-gray-700 hover:text-blue-600 transition-colors font-medium"
+                  className="px-4 py-2 text-gray-700 font-semibold hover:text-blue-600 transition-colors"
                 >
-                  Giriş Yap
+                  Giriş
                 </Link>
                 <Link
                   href="/register"
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-md font-medium"
+                  className="px-5 py-2 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:scale-95"
                 >
                   Kayıt Ol
                 </Link>
-              </>
+              </div>
             )}
+
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+            >
+              {isMobileMenuOpen ? '✕' : '☰'}
+            </button>
           </div>
         </div>
 
         {/* Mobile Navigation */}
-        <div className="md:hidden mt-4 flex flex-wrap gap-4 items-center">
-          {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`text-sm font-medium transition-colors ${
-                pathname === item.href
-                  ? 'text-blue-600'
-                  : 'text-gray-700 hover:text-blue-600'
-              }`}
-            >
-              {item.name}
-            </Link>
-          ))}
-          {/* Mobil için auth butonları */}
-          {isAuthenticated ? (
-            <>
-              {pathname !== '/panel' && (
-                <Link
-                  href="/panel"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700"
-                >
-                  Panel
-                </Link>
-              )}
-              <button
-                onClick={handleLogout}
-                className="text-sm font-medium text-red-600 hover:text-red-700"
+        {isMobileMenuOpen && (
+          <div className="md:hidden mt-4 pb-4 space-y-2 border-t border-gray-100 pt-4">
+            <p className="px-4 text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Emlak Kategorileri</p>
+            {categories.map((cat) => (
+              <Link
+                key={cat.name}
+                href={`/${cat.query}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block px-4 py-2 text-lg font-medium text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg"
               >
-                Çıkış
-              </button>
-            </>
-          ) : (
+                {cat.name}
+              </Link>
+            ))}
             <Link
-              href="/login"
-              className="text-sm font-medium text-blue-600 hover:text-blue-700"
+              href="/"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="block px-4 py-2 text-lg font-bold text-blue-600 hover:bg-blue-50 rounded-lg"
             >
-              Giriş Yap
+              Tüm İlanlar
             </Link>
-          )}
-        </div>
+          </div>
+        )}
       </nav>
     </header>
   );
 }
+
 

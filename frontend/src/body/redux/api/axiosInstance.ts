@@ -19,6 +19,24 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // .NET'in dizi parametrelerini doğru algılaması için (statuses=0&statuses=5 gibi)
+  paramsSerializer: {
+    serialize: (params) => {
+      const parts: string[] = [];
+      Object.entries(params).forEach(([key, value]) => {
+        if (value === null || value === undefined) return;
+
+        if (Array.isArray(value)) {
+          value.forEach(v => {
+            parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(v)}`);
+          });
+        } else {
+          parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`);
+        }
+      });
+      return parts.join('&');
+    }
+  }
 });
 
 // Token yenileme işlemi devam ediyor mu?
@@ -143,7 +161,7 @@ export const isTokenValid = (): boolean => {
  * eklendi. Burada bu alanı da okuyarak frontend'de initial state oluştururken
  * profil fotoğrafının kaybolmamasını sağlıyoruz.
  */
-export const getUserFromToken = (): { id: string; name: string; surname: string; email: string; profilePictureUrl?: string } | null => {
+export const getUserFromToken = (): { id: string; name: string; surname: string; email: string; profilePictureUrl?: string; isAdmin?: boolean } | null => {
   const token = getToken();
   if (!token) return null;
 
@@ -156,6 +174,7 @@ export const getUserFromToken = (): { id: string; name: string; surname: string;
       email: payload.email,
       // Backend'deki custom "picture" claim'i
       profilePictureUrl: payload.picture || undefined,
+      isAdmin: typeof payload.isAdmin === 'boolean' ? payload.isAdmin : payload.role === 'Admin',
     };
   } catch {
     return null;
@@ -171,7 +190,7 @@ export const getUserFromToken = (): { id: string; name: string; surname: string;
  */
 export const refreshAccessToken = async (): Promise<string | null> => {
   const refreshToken = getRefreshToken();
-  
+
   if (!refreshToken) {
     return null;
   }
@@ -185,7 +204,8 @@ export const refreshAccessToken = async (): Promise<string | null> => {
       saveTokens(response.data.token, response.data.refreshToken);
       return response.data.token;
     }
-    
+
+    clearTokens(); // Eklenen satır
     return null;
   } catch {
     clearTokens();
@@ -204,11 +224,11 @@ export const refreshAccessToken = async (): Promise<string | null> => {
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = getToken();
-    
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     return config;
   },
   (error: AxiosError) => {
@@ -261,7 +281,7 @@ axiosInstance.interceptors.response.use(
 
       try {
         const newToken = await refreshAccessToken();
-        
+
         if (newToken) {
           processQueue(null, newToken);
           if (originalRequest.headers) {
@@ -287,7 +307,7 @@ axiosInstance.interceptors.response.use(
         isRefreshing = false;
       }
     }
-    
+
     return Promise.reject(error);
   }
 );

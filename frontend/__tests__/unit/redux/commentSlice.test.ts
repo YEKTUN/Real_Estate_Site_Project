@@ -151,7 +151,7 @@ describe('CommentSlice', () => {
 
     test('should handle rejected state', () => {
       // rejectedWithValue senaryosunu simüle et: payload direkt hata mesajı
-      const action = fetchListingComments.rejected('Test error' as any, '', 1);
+      const action = fetchListingComments.rejected(null, '', 1, 'Test error');
       const result = commentReducer(initialState, action);
 
       expect(result.isLoading).toBe(false);

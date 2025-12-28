@@ -9,10 +9,11 @@ import Link from 'next/link';
 
 export default function Footer() {
   const navItems = [
-    { name: 'Ana Sayfa', href: '/' },
-    { name: 'İlanlar', href: '/properties' },
-    { name: 'Hakkımızda', href: '/about' },
-    { name: 'İletişim', href: '/contact' },
+    { name: 'Tüm İlanlar', href: '/' },
+    { name: 'Satılık', href: '/?type=1' },
+    { name: 'Kiralık', href: '/?type=2' },
+    { name: 'Konut', href: '/?category=1' },
+    { name: 'İş Yeri', href: '/?category=2' },
   ];
 
   return (
@@ -21,7 +22,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Company Info */}
           <div>
-            <h3 className="text-xl font-bold mb-4">🏠 Real Estate</h3>
+            <h3 className="text-xl font-bold mb-4">🏠 Real Estimate</h3>
             <p className="text-gray-400">
               Hayalinizdeki evi bulmak için en iyi platform.
             </p>
@@ -48,7 +49,7 @@ export default function Footer() {
           <div>
             <h4 className="text-lg font-semibold mb-4">İletişim</h4>
             <ul className="space-y-2 text-gray-400">
-              <li>📧 info@realestate.com</li>
+              <li>📧 info@realestimate.com</li>
               <li>📞 +90 555 123 4567</li>
               <li>📍 İstanbul, Türkiye</li>
             </ul>
@@ -57,7 +58,7 @@ export default function Footer() {
 
         {/* Copyright */}
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
-          <p>© 2024 Real Estate. Tüm hakları saklıdır.</p>
+          <p>© 2024 Real Estimate. Tüm hakları saklıdır.</p>
         </div>
       </div>
     </footer>

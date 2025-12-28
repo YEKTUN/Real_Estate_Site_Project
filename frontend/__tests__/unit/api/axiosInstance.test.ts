@@ -17,13 +17,28 @@ import axiosInstance, {
   getUserFromToken,
   refreshAccessToken,
 } from '@/body/redux/api/axiosInstance';
-import axios from 'axios';
 
 // ============================================================================
 // MOCK SETUP
 // ============================================================================
 
-jest.mock('axios');
+jest.mock('axios', () => {
+  const mockAxios = {
+    create: jest.fn(() => mockAxios),
+    interceptors: {
+      request: { use: jest.fn(), eject: jest.fn() },
+      response: { use: jest.fn(), eject: jest.fn() },
+    },
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+    delete: jest.fn(),
+    defaults: { headers: { common: {} } },
+  };
+  return mockAxios;
+});
+
+const axios = require('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
 // localStorage mock
@@ -54,7 +69,6 @@ Object.defineProperty(window, 'localStorage', {
 
 // Mock JWT token (expires in 1 hour)
 const mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE5MTYyMzkwMjJ9.test-signature';
-const mockExpiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyLCJleHAiOjE1MTYyMzkwMjJ9.test-signature';
 const mockRefreshToken = 'mock-refresh-token';
 
 // ============================================================================
@@ -112,14 +126,14 @@ describe('AxiosInstance Token Management', () => {
       setToken(mockToken);
       setRefreshToken(mockRefreshToken);
       clearTokens();
-      
+
       expect(localStorage.getItem('token')).toBeNull();
       expect(localStorage.getItem('refreshToken')).toBeNull();
     });
 
     test('saveTokens should store both tokens', () => {
       saveTokens(mockToken, mockRefreshToken);
-      
+
       expect(localStorage.getItem('token')).toBe(mockToken);
       expect(localStorage.getItem('refreshToken')).toBe(mockRefreshToken);
     });
@@ -138,7 +152,7 @@ describe('AxiosInstance Token Management', () => {
         exp: futureExp,
       }));
       const validToken = `header.${validTokenPayload}.signature`;
-      
+
       setToken(validToken);
       expect(isTokenValid()).toBe(true);
     });
@@ -151,7 +165,7 @@ describe('AxiosInstance Token Management', () => {
         exp: pastExp,
       }));
       const expiredToken = `header.${expiredTokenPayload}.signature`;
-      
+
       setToken(expiredToken);
       expect(isTokenValid()).toBe(false);
     });
@@ -176,15 +190,17 @@ describe('AxiosInstance Token Management', () => {
       };
       const tokenPayload = btoa(JSON.stringify(userPayload));
       const token = `header.${tokenPayload}.signature`;
-      
+
       setToken(token);
       const user = getUserFromToken();
-      
+
       expect(user).toEqual({
         id: 'user123',
         name: 'John',
         surname: 'Doe',
         email: 'john@example.com',
+        isAdmin: false,
+        profilePictureUrl: undefined,
       });
     });
 
@@ -202,10 +218,10 @@ describe('AxiosInstance Token Management', () => {
 
     test('should refresh token successfully', async () => {
       setRefreshToken(mockRefreshToken);
-      
+
       const newToken = 'new-access-token';
       const newRefreshToken = 'new-refresh-token';
-      
+
       mockedAxios.post.mockResolvedValueOnce({
         data: {
           success: true,
@@ -215,7 +231,7 @@ describe('AxiosInstance Token Management', () => {
       });
 
       const result = await refreshAccessToken();
-      
+
       expect(result).toBe(newToken);
       expect(localStorage.getItem('token')).toBe(newToken);
       expect(localStorage.getItem('refreshToken')).toBe(newRefreshToken);
@@ -228,11 +244,11 @@ describe('AxiosInstance Token Management', () => {
     test('should clear tokens when refresh fails', async () => {
       setRefreshToken(mockRefreshToken);
       setToken(mockToken);
-      
+
       mockedAxios.post.mockRejectedValueOnce(new Error('Refresh failed'));
 
       const result = await refreshAccessToken();
-      
+
       expect(result).toBeNull();
       expect(localStorage.getItem('token')).toBeNull();
       expect(localStorage.getItem('refreshToken')).toBeNull();
@@ -241,7 +257,7 @@ describe('AxiosInstance Token Management', () => {
     test('should clear tokens when refresh response is unsuccessful', async () => {
       setRefreshToken(mockRefreshToken);
       setToken(mockToken);
-      
+
       mockedAxios.post.mockResolvedValueOnce({
         data: {
           success: false,
@@ -249,11 +265,10 @@ describe('AxiosInstance Token Management', () => {
       });
 
       const result = await refreshAccessToken();
-      
+
       expect(result).toBeNull();
       expect(localStorage.getItem('token')).toBeNull();
       expect(localStorage.getItem('refreshToken')).toBeNull();
     });
   });
 });
-

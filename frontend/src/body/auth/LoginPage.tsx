@@ -9,7 +9,8 @@ import {
   clearError, 
   selectIsLoading, 
   selectError, 
-  selectIsAuthenticated 
+  selectIsAuthenticated,
+  selectUser
 } from '@/body/redux/slices/auth/AuthSlice';
 import { LoginRequestDto } from '@/body/redux/slices/auth/DTOs/AuthDTOs';
 import GoogleLoginButton from './components/GoogleLoginButton';
@@ -29,6 +30,7 @@ export default function LoginPage() {
   const isLoading = useAppSelector(selectIsLoading);
   const error = useAppSelector(selectError);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const user = useAppSelector(selectUser);
 
   // Form state
   const [formData, setFormData] = useState<LoginRequestDto>({
@@ -38,14 +40,15 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   /**
-   * Başarılı giriş sonrası panel sayfasına yönlendirme
+   * Başarılı giriş sonrası role bazlı yönlendirme
    */
   useEffect(() => {
-    if (isAuthenticated) {
-      console.log('Login: Kullanıcı authenticated, panel sayfasına yönlendiriliyor...');
-      router.push('/panel');
+    if (isAuthenticated && user) {
+      const target = user.isAdmin ? '/admin' : '/panel';
+      console.log(`Login: Kullanıcı authenticated, yönlendirme: ${target}`);
+      router.push(target);
     }
-  }, [isAuthenticated, router]);
+  }, [isAuthenticated, router, user]);
 
   /**
    * Component unmount olduğunda error'u temizle

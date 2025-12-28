@@ -5,6 +5,7 @@ import commentReducer from './slices/comment/CommentSlice';
 import favoriteReducer from './slices/favorite/FavoriteSlice';
 import cloudinaryReducer from './slices/cloudinary/CloudinarySlice';
 import messageReducer from './slices/message/MessageSlice';
+import adminListingReducer from './slices/admin/AdminListingSlice';
 
 /**
  * Redux Store Yapılandırması
@@ -40,6 +41,9 @@ export const store = configureStore({
 
     // Message Slice - Mesaj/teklif işlemleri
     message: messageReducer,
+
+    // Admin Listing Slice - Admin ilan yönetimi
+    adminListing: adminListingReducer,
   },
   // Middleware yapılandırması (varsayılan middleware'ler otomatik eklenir)
   middleware: (getDefaultMiddleware) =>

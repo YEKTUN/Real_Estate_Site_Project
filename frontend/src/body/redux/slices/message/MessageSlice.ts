@@ -9,7 +9,7 @@ import {
   ListingMessageDto,
   ListingMessageThreadDto,
 } from './DTOs/MessageDTOs';
-import { getThreadsApi, getMessagesApi, sendMessageApi, deleteThreadApi } from '../../api/messageApi';
+import { getThreadsApi, getMessagesApi, sendMessageApi, deleteThreadApi, markMessageAsReadApi } from '../../api/messageApi';
 
 const computeUnread = (messages: ListingMessageDto[] | undefined, currentUserId?: string | null) =>
   (messages || []).filter((m) => !m.isRead && m.senderId !== currentUserId).length;
@@ -54,26 +54,14 @@ export const sendMessage = createAsyncThunk<
 >(
   'message/sendMessage',
   async ({ listingId, data }, { rejectWithValue }) => {
-    console.log('MessageSlice.sendMessage: Başlatılıyor', { listingId, data });
     try {
       const res = await sendMessageApi(listingId, data);
-      console.log('MessageSlice.sendMessage: API yanıtı alındı', { res });
       if (!res.success) {
-        console.warn('MessageSlice.sendMessage: API başarısız yanıt', { message: res.message });
         return rejectWithValue(res.message);
       }
-      console.log('MessageSlice.sendMessage: Başarılı', { data: res.data });
       return res;
     } catch (err: any) {
-      console.error('MessageSlice.sendMessage: Hata yakalandı', {
-        error: err,
-        response: err?.response,
-        responseData: err?.response?.data,
-        responseStatus: err?.response?.status,
-        message: err?.message,
-      });
       const msg = err?.response?.data?.message || err?.message || 'Mesaj gönderilirken hata oluştu';
-      console.error('MessageSlice.sendMessage: Hata mesajı', { msg });
       return rejectWithValue(msg);
     }
   }
@@ -90,6 +78,18 @@ export const deleteThreadAsync = createAsyncThunk<number, number>(
     }
   }
 );
+
+export const markMessageRead = createAsyncThunk<
+  { messageId: number; threadId: number },
+  { messageId: number; threadId: number }
+>('message/markMessageRead', async ({ messageId, threadId }, { rejectWithValue }) => {
+  try {
+    await markMessageAsReadApi(messageId);
+    return { messageId, threadId };
+  } catch {
+    return rejectWithValue('Mesaj okundu olarak işaretlenirken hata oluştu');
+  }
+});
 
 const messageSlice = createSlice({
   name: 'message',
@@ -109,9 +109,9 @@ const messageSlice = createSlice({
       state.threads = state.threads.map((t) =>
         t.id === threadId
           ? {
-              ...t,
-              messages: (t.messages || []).map((m) => ({ ...m, isRead: true })),
-            }
+            ...t,
+            messages: (t.messages || []).map((m) => ({ ...m, isRead: true })),
+          }
           : t
       );
     },
@@ -138,11 +138,11 @@ const messageSlice = createSlice({
         fetchMessages.fulfilled,
         (state, action: PayloadAction<ListingMessageListResponseDto & { threadId: number }>) => {
           state.isLoading = false;
-          const readMessages = action.payload.messages.map((m) => ({ ...m, isRead: true }));
-          state.messagesByThread[action.payload.threadId] = readMessages;
+          const messages = action.payload.messages;
+          state.messagesByThread[action.payload.threadId] = messages;
           state.threads = state.threads.map((t) =>
             t.id === action.payload.threadId
-              ? { ...t, messages: readMessages, lastMessageAt: readMessages.at(-1)?.createdAt ?? t.lastMessageAt }
+              ? { ...t, messages: messages, lastMessageAt: messages.at(-1)?.createdAt ?? t.lastMessageAt }
               : t
           );
         }
@@ -157,21 +157,19 @@ const messageSlice = createSlice({
       })
       .addCase(sendMessage.fulfilled, (state, action: PayloadAction<ListingMessageResponseDto>) => {
         state.isSending = false;
-        const msg = action.payload.data;
-        if (msg) {
-          // Gönderen kullanıcının kendi mesajı; okunmuş kabul et
-          msg.isRead = true;
-          // ThreadId bilinmiyor olabilir; mesajı ilgili thread listesinde bul
+        const msgData = action.payload.data;
+        if (msgData) {
+          const msg = { ...msgData, isRead: true };
           const threadId = msg.threadId;
           if (!state.messagesByThread[threadId]) state.messagesByThread[threadId] = [];
           state.messagesByThread[threadId] = [...state.messagesByThread[threadId], msg];
           state.threads = state.threads.map((t) =>
             t.id === threadId
               ? {
-                  ...t,
-                  messages: [...(t.messages || []), msg],
-                  lastMessageAt: msg.createdAt,
-                }
+                ...t,
+                messages: [...(t.messages || []), msg],
+                lastMessageAt: msg.createdAt,
+              }
               : t
           );
         }
@@ -187,6 +185,26 @@ const messageSlice = createSlice({
       })
       .addCase(deleteThreadAsync.rejected, (state, action) => {
         state.error = action.payload as string;
+      })
+      .addCase(markMessageRead.fulfilled, (state, action) => {
+        const { messageId, threadId } = action.payload;
+        if (state.messagesByThread[threadId]) {
+          state.messagesByThread[threadId] = state.messagesByThread[threadId].map((m) =>
+            m.id === messageId ? { ...m, isRead: true } : m
+          );
+        }
+        state.threads = state.threads.map((t) => {
+          if (t.id === threadId) {
+            const updatedMessages = (t.messages || []).map((m) =>
+              m.id === messageId ? { ...m, isRead: true } : m
+            );
+            return {
+              ...t,
+              messages: updatedMessages,
+            };
+          }
+          return t;
+        });
       });
   },
 });
@@ -218,4 +236,3 @@ export const selectTotalUnread = (state: RootState) => {
 };
 
 export default messageSlice.reducer;
-

@@ -69,16 +69,18 @@ export interface ListingImageUploadResponseDto {
 export interface CloudinaryState {
   // Yükleme durumu
   isUploading: boolean;
+  isUploadingFile: boolean;
   isUploadingMultiple: boolean;
   isDeleting: boolean;
-  
+
   // Son yüklenen görseller
   lastUploadedImage: CloudinaryUploadResultDto | null;
+  lastUploadedFile: CloudinaryUploadResultDto | null;
   lastUploadedImages: CloudinaryUploadResultDto[];
-  
+
   // Hata durumu
   error: string | null;
-  
+
   // İlan görseli yükleme durumu
   isUploadingListingImage: boolean;
   lastListingImageUpload: ListingImageUploadResponseDto | null;

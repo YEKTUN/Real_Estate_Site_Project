@@ -16,9 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Real Estate - Hayalinizdeki Evi Bulun",
+  title: "Real Estimate - Hayalinizdeki Evi Bulun",
   description: "Türkiye'nin en kapsamlı gayrimenkul platformu. Binlerce satılık ve kiralık ev ilanı arasından size en uygun olanı bulun.",
-  keywords: ["gayrimenkul", "ev", "daire", "satılık", "kiralık", "emlak"],
+  keywords: ["gayrimenkul", "ev", "daire", "satılık", "kiralık", "emlak", "real estimate"],
 };
 
 export default function RootLayout({

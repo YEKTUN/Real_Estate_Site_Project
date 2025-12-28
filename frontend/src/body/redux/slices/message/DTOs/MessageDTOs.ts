@@ -5,6 +5,7 @@ export interface ListingMessageDto {
   senderName: string;
   senderSurname?: string | null;
   senderProfilePictureUrl?: string | null;
+  isAdminSender?: boolean;
   content: string;
   offerPrice?: number | null;
   isOffer: boolean;

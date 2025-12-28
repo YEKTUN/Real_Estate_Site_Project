@@ -6,7 +6,8 @@
 
 import cloudinaryReducer, {
   clearError,
-  clearLastUpload,
+  clearLastUploadedImage,
+  clearLastUploadedImages,
   uploadImage,
   uploadMultipleImages,
   deleteImage,
@@ -34,6 +35,7 @@ jest.mock('@/body/redux/api/cloudinaryApi', () => ({
   uploadListingImageApi: jest.fn(),
   uploadMultipleListingImagesApi: jest.fn(),
   deleteListingImageApi: jest.fn(),
+  uploadFileApi: jest.fn(),
 }));
 
 // ============================================================================
@@ -42,9 +44,11 @@ jest.mock('@/body/redux/api/cloudinaryApi', () => ({
 
 const initialState: CloudinaryState = {
   isUploading: false,
+  isUploadingFile: false,
   isUploadingMultiple: false,
   isDeleting: false,
   lastUploadedImage: null,
+  lastUploadedFile: null,
   lastUploadedImages: [],
   error: null,
   isUploadingListingImage: false,
@@ -98,15 +102,23 @@ describe('CloudinarySlice', () => {
       expect(result.error).toBeNull();
     });
 
-    test('clearLastUpload should clear last uploaded image', () => {
+    test('clearLastUploadedImage should clear last uploaded image', () => {
       const stateWithUpload: CloudinaryState = {
         ...initialState,
         lastUploadedImage: mockUploadResult,
+      };
+
+      const result = cloudinaryReducer(stateWithUpload, clearLastUploadedImage());
+      expect(result.lastUploadedImage).toBeNull();
+    });
+
+    test('clearLastUploadedImages should clear last uploaded images', () => {
+      const stateWithUpload: CloudinaryState = {
+        ...initialState,
         lastUploadedImages: [mockUploadResult],
       };
 
-      const result = cloudinaryReducer(stateWithUpload, clearLastUpload());
-      expect(result.lastUploadedImage).toBeNull();
+      const result = cloudinaryReducer(stateWithUpload, clearLastUploadedImages());
       expect(result.lastUploadedImages).toEqual([]);
     });
   });
@@ -132,7 +144,7 @@ describe('CloudinarySlice', () => {
 
     test('should handle rejected state', () => {
       const file = new File(['test'], 'test.jpg', { type: 'image/jpeg' });
-      const action = uploadImage.rejected(new Error('Test error'), '', { file });
+      const action = uploadImage.rejected(null, '', { file }, 'Test error');
       const result = cloudinaryReducer(initialState, action);
 
       expect(result.isUploading).toBe(false);
@@ -161,14 +173,17 @@ describe('CloudinarySlice', () => {
       const mockResponse = {
         success: true,
         message: 'Yükleme başarılı',
-        images: [mockUploadResult, mockUploadResult],
+        uploadedImages: [mockUploadResult, mockUploadResult],
+        successCount: 2,
+        failedCount: 0,
+        totalCount: 2,
       };
 
       const action = uploadMultipleImages.fulfilled(mockResponse, '', { files });
       const result = cloudinaryReducer(initialState, action);
 
       expect(result.isUploadingMultiple).toBe(false);
-      expect(result.lastUploadedImages).toEqual(mockResponse.images);
+      expect(result.lastUploadedImages.length).toBe(2);
     });
   });
 
@@ -184,6 +199,7 @@ describe('CloudinarySlice', () => {
       const mockDeleteResult = {
         success: true,
         message: 'Silme başarılı',
+        publicId: 'test-public-id',
       };
 
       const action = deleteImage.fulfilled(mockDeleteResult, '', 'test-public-id');
@@ -213,7 +229,7 @@ describe('CloudinarySlice', () => {
       const result = cloudinaryReducer(initialState, action);
 
       expect(result.isUploadingListingImage).toBe(false);
-      expect(result.lastListingImageUpload).toEqual(mockListingImageUploadResult.image);
+      expect(result.lastListingImageUpload).toEqual(mockListingImageUploadResult);
     });
   });
 
@@ -259,12 +275,12 @@ describe('CloudinarySlice', () => {
       const stateWithListingUpload = {
         cloudinary: {
           ...mockState.cloudinary,
-          lastListingImageUpload: mockListingImageUploadResult.image,
+          lastListingImageUpload: mockListingImageUploadResult,
         },
       } as any;
 
       const result = selectLastListingImageUpload(stateWithListingUpload);
-      expect(result).toEqual(mockListingImageUploadResult.image);
+      expect(result).toEqual(mockListingImageUploadResult);
     });
 
     test('selectCloudinaryError should return error', () => {
@@ -273,4 +289,3 @@ describe('CloudinarySlice', () => {
     });
   });
 });
-

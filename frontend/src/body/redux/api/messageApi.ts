@@ -20,6 +20,11 @@ export const deleteThreadApi = async (threadId: number): Promise<void> => {
   await axiosInstance.delete(`/messages/${threadId}`);
 };
 
+export const markMessageAsReadApi = async (messageId: number): Promise<{ success: boolean; message: string }> => {
+  const response = await axiosInstance.patch<{ success: boolean; message: string }>(`/messages/${messageId}/read`);
+  return response.data;
+};
+
 export const sendMessageApi = async (
   listingId: number,
   data: CreateListingMessageDto

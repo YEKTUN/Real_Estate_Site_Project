@@ -42,6 +42,9 @@ const initialState: AuthState = {
   error: null,
 };
 
+const normalizeUser = (user?: UserDto | null): UserDto | null =>
+  user ? { ...user, isAdmin: user.isAdmin ?? false } : null;
+
 // ============================================================================
 // ASYNC THUNKS
 // ============================================================================
@@ -299,7 +302,7 @@ export const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = true;
-        state.user = action.payload.user || null;
+        state.user = normalizeUser(action.payload.user);
         state.token = action.payload.token || null;
         state.refreshToken = action.payload.refreshToken || null;
         state.error = null;
@@ -319,7 +322,7 @@ export const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = true;
-        state.user = action.payload.user || null;
+        state.user = normalizeUser(action.payload.user);
         state.token = action.payload.token || null;
         state.refreshToken = action.payload.refreshToken || null;
         state.error = null;
@@ -339,7 +342,7 @@ export const authSlice = createSlice({
       .addCase(googleLogin.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isAuthenticated = true;
-        state.user = action.payload.user || null;
+        state.user = normalizeUser(action.payload.user);
         state.token = action.payload.token || null;
         state.refreshToken = action.payload.refreshToken || null;
         state.error = null;
@@ -359,7 +362,7 @@ export const authSlice = createSlice({
         state.isLoading = false;
         state.token = action.payload.token || null;
         state.refreshToken = action.payload.refreshToken || null;
-        state.user = action.payload.user || state.user;
+        state.user = normalizeUser(action.payload.user) || state.user;
       })
       .addCase(refreshToken.rejected, (state, action) => {
         state.isLoading = false;
@@ -377,7 +380,7 @@ export const authSlice = createSlice({
       })
       .addCase(getCurrentUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.user || null;
+        state.user = normalizeUser(action.payload.user);
       })
       .addCase(getCurrentUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -391,7 +394,7 @@ export const authSlice = createSlice({
       })
       .addCase(initializeAuth.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.user;
+        state.user = normalizeUser(action.payload.user);
         state.token = action.payload.token;
         state.refreshToken = action.payload.refreshToken;
         state.isAuthenticated = action.payload.isAuthenticated;
@@ -415,7 +418,7 @@ export const authSlice = createSlice({
     builder
       .addCase(updateProfilePicture.fulfilled, (state, action) => {
         if (action.payload.user) {
-          state.user = action.payload.user;
+          state.user = normalizeUser(action.payload.user);
         }
       })
       .addCase(updateProfilePicture.rejected, (state, action) => {

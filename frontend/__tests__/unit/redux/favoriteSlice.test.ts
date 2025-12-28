@@ -140,7 +140,7 @@ describe('FavoriteSlice', () => {
 
     test('should handle rejected state', () => {
       // rejectedWithValue senaryosunu simüle et: payload doğrudan hata mesajı
-      const action = fetchMyFavorites.rejected('Test error' as any, '', undefined);
+      const action = fetchMyFavorites.rejected(null, '', undefined, 'Test error');
       const result = favoriteReducer(initialState, action);
 
       expect(result.isLoading).toBe(false);
@@ -240,6 +240,7 @@ describe('FavoriteSlice', () => {
         ...initialState,
         favorites: [mockFavoriteListing],
         favoriteIds: [1],
+        pagination: mockFavoriteListResponse.pagination,
         isLoading: true,
         isToggling: false,
         error: 'Test error',

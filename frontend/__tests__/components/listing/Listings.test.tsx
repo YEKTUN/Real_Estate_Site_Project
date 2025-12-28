@@ -13,15 +13,29 @@ import favoriteReducer from '@/body/redux/slices/favorite/FavoriteSlice';
 import authReducer from '@/body/redux/slices/auth/AuthSlice';
 import { ListingCategory, ListingType, Currency, ListingStatus } from '@/body/redux/slices/listing/DTOs/ListingDTOs';
 
+jest.mock('@/body/redux/slices/listing/ListingSlice', () => {
+  const original = jest.requireActual('@/body/redux/slices/listing/ListingSlice');
+  return {
+    ...original,
+    fetchAllListings: jest.fn(() => ({ type: 'listing/fetchAllListings/pending' })),
+    searchListings: jest.fn(() => ({ type: 'listing/searchListings/pending' })),
+  };
+});
+
 // ============================================================================
 // MOCK SETUP
 // ============================================================================
+
+const mockSearchParams = {
+  get: jest.fn(),
+};
 
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
     replace: jest.fn(),
   }),
+  useSearchParams: () => mockSearchParams,
 }));
 
 // ============================================================================

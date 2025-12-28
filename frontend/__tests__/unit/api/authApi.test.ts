@@ -26,6 +26,7 @@ jest.mock('@/body/redux/api/axiosInstance');
 const mockedAxiosInstance = axiosInstance as jest.Mocked<typeof axiosInstance>;
 const mockedSaveTokens = saveTokens as jest.MockedFunction<typeof saveTokens>;
 const mockedClearTokens = clearTokens as jest.MockedFunction<typeof clearTokens>;
+const mockedGetRefreshToken = require('@/body/redux/api/axiosInstance').getRefreshToken as jest.MockedFunction<any>;
 
 // ============================================================================
 // TEST DATA
@@ -154,11 +155,12 @@ describe('AuthApi', () => {
 
   describe('refreshTokenApi', () => {
     it('should refresh token successfully', async () => {
+      mockedGetRefreshToken.mockReturnValueOnce('old-refresh-token');
       mockedAxiosInstance.post.mockResolvedValueOnce({
         data: mockAuthResponse,
       } as any);
 
-      const result = await refreshTokenApi('old-refresh-token');
+      const result = await refreshTokenApi();
 
       expect(result.success).toBe(true);
       expect(mockedSaveTokens).toHaveBeenCalledWith('mock-jwt-token', 'mock-refresh-token');
@@ -167,13 +169,13 @@ describe('AuthApi', () => {
 
   describe('logoutApi', () => {
     it('should logout successfully and clear tokens', async () => {
+      mockedGetRefreshToken.mockReturnValueOnce('old-refresh-token');
       mockedAxiosInstance.post.mockResolvedValueOnce({
         data: { success: true, message: 'Çıkış başarılı' },
       } as any);
 
-      const result = await logoutApi();
+      await logoutApi();
 
-      expect(result.success).toBe(true);
       expect(mockedClearTokens).toHaveBeenCalled();
     });
   });

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 
 /**
  * Auth Layout
@@ -14,8 +15,8 @@ import type { Metadata } from "next";
  */
 
 export const metadata: Metadata = {
-  title: "Giriş Yap | Real Estate",
-  description: "Real Estate platformuna giriş yapın veya kayıt olun",
+  title: "Giriş Yap | Real Estimate",
+  description: "Real Estimate platformuna giriş yapın veya kayıt olun",
 };
 
 export default function AuthLayout({
@@ -30,9 +31,19 @@ export default function AuthLayout({
         <div className="w-full max-w-md">
           {/* Logo veya Branding Alanı */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-800 mb-2">
-              🏠 Real Estate
-            </h1>
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <Image
+                src="/real_estimate.png"
+                alt="Real Estimate Logo"
+                width={50}
+                height={50}
+                className="object-contain"
+                unoptimized
+              />
+              <h1 className="text-4xl font-bold text-gray-800">
+                Real Estimate
+              </h1>
+            </div>
             <p className="text-gray-600">
               Hayalinizdeki evi bulun
             </p>
@@ -45,7 +56,7 @@ export default function AuthLayout({
 
           {/* Footer Text */}
           <div className="text-center mt-6 text-sm text-gray-600">
-            <p>© 2024 Real Estate. Tüm hakları saklıdır.</p>
+            <p>© 2024 Real Estimate. Tüm hakları saklıdır.</p>
           </div>
         </div>
       </div>

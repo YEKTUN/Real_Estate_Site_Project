@@ -43,6 +43,24 @@ import {
  * CRUD, arama, listeleme ve görsel işlemleri.
  */
 
+// Backend'den gelen string durumları (Pending, Rejected vb.) sayısal enum'a çevir
+const statusMap: Record<string, number> = {
+  'Pending': ListingStatus.Pending,
+  'Active': ListingStatus.Active,
+  'Inactive': ListingStatus.Inactive,
+  'Sold': ListingStatus.Sold,
+  'Rented': ListingStatus.Rented,
+  'Rejected': ListingStatus.Rejected,
+  'Expired': ListingStatus.Expired
+};
+
+const mapListingStatus = (listing: any) => ({
+  ...listing,
+  status: typeof listing.status === 'string'
+    ? (statusMap[listing.status] ?? listing.status)
+    : listing.status
+});
+
 // ============================================================================
 // INITIAL STATE
 // ============================================================================
@@ -93,7 +111,7 @@ export const createListing = createAsyncThunk<ListingResponseDto, CreateListingD
  * İlan güncelle
  */
 export const updateListing = createAsyncThunk<
-  ListingResponseDto, 
+  ListingResponseDto,
   { listingId: number; data: UpdateListingDto }
 >(
   'listing/update',
@@ -170,7 +188,7 @@ export const fetchListingByNumber = createAsyncThunk<ListingResponseDto, string>
  * Tüm ilanları getir
  */
 export const fetchAllListings = createAsyncThunk<
-  ListingListResponseDto, 
+  ListingListResponseDto,
   { page?: number; pageSize?: number } | void
 >(
   'listing/fetchAll',
@@ -211,7 +229,7 @@ export const searchListings = createAsyncThunk<ListingListResponseDto, ListingSe
  * Kullanıcının ilanlarını getir
  */
 export const fetchMyListings = createAsyncThunk<
-  ListingListResponseDto, 
+  ListingListResponseDto,
   { page?: number; pageSize?: number } | void
 >(
   'listing/fetchMine',
@@ -270,7 +288,7 @@ export const fetchLatestListings = createAsyncThunk<ListingListResponseDto, numb
  * Benzer ilanları getir
  */
 export const fetchSimilarListings = createAsyncThunk<
-  ListingListResponseDto, 
+  ListingListResponseDto,
   { listingId: number; count?: number }
 >(
   'listing/fetchSimilar',
@@ -293,7 +311,7 @@ export const fetchSimilarListings = createAsyncThunk<
  * İlan durumunu güncelle
  */
 export const updateListingStatus = createAsyncThunk<
-  ListingResponseDto, 
+  ListingResponseDto,
   { listingId: number; status: ListingStatus }
 >(
   'listing/updateStatus',
@@ -318,7 +336,7 @@ export const updateListingStatus = createAsyncThunk<
  * @deprecated Cloudinary entegrasyonu için uploadListingImageFile kullanın
  */
 export const addListingImage = createAsyncThunk<
-  ImageResponseDto, 
+  ImageResponseDto,
   { listingId: number; data: UploadImageDto }
 >(
   'listing/addImage',
@@ -362,7 +380,7 @@ export const uploadListingImageFile = createAsyncThunk<
       });
 
       const response = await uploadListingImageFileApi(listingId, file, options);
-      
+
       if (!response.success) {
         return rejectWithValue(response.message);
       }
@@ -392,7 +410,7 @@ export const uploadMultipleListingImageFiles = createAsyncThunk<
       });
 
       const response = await uploadMultipleListingImageFilesApi(listingId, files);
-      
+
       if (!response.success) {
         return rejectWithValue(response.message);
       }
@@ -410,7 +428,7 @@ export const uploadMultipleListingImageFiles = createAsyncThunk<
  * Görsel sil
  */
 export const deleteListingImage = createAsyncThunk<
-  ImageResponseDto, 
+  ImageResponseDto,
   { listingId: number; imageId: number }
 >(
   'listing/deleteImage',
@@ -431,7 +449,7 @@ export const deleteListingImage = createAsyncThunk<
  * Kapak fotoğrafını değiştir
  */
 export const setCoverImage = createAsyncThunk<
-  ImageResponseDto, 
+  ImageResponseDto,
   { listingId: number; imageId: number }
 >(
   'listing/setCoverImage',
@@ -478,24 +496,24 @@ export const listingSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    
+
     // Current listing'i temizle
     clearCurrentListing: (state) => {
       state.currentListing = null;
       state.currentListingImages = [];
     },
-    
+
     // Search params'ı ayarla
     setSearchParams: (state, action: PayloadAction<ListingSearchDto | null>) => {
       state.searchParams = action.payload;
     },
-    
+
     // Listings'i temizle
     clearListings: (state) => {
       state.listings = [];
       state.pagination = null;
     },
-    
+
     // State'i sıfırla
     resetListingState: () => initialState,
   },
@@ -550,7 +568,7 @@ export const listingSlice = createSlice({
       })
       .addCase(fetchListingById.fulfilled, (state, action) => {
         state.isLoadingDetail = false;
-        state.currentListing = action.payload.listing || null;
+        state.currentListing = action.payload.listing ? mapListingStatus(action.payload.listing) : null;
       })
       .addCase(fetchListingById.rejected, (state, action) => {
         state.isLoadingDetail = false;
@@ -565,7 +583,7 @@ export const listingSlice = createSlice({
       })
       .addCase(fetchListingByNumber.fulfilled, (state, action) => {
         state.isLoadingDetail = false;
-        state.currentListing = action.payload.listing || null;
+        state.currentListing = action.payload.listing ? mapListingStatus(action.payload.listing) : null;
       })
       .addCase(fetchListingByNumber.rejected, (state, action) => {
         state.isLoadingDetail = false;
@@ -580,7 +598,7 @@ export const listingSlice = createSlice({
       })
       .addCase(fetchAllListings.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.listings = action.payload.listings;
+        state.listings = (action.payload.listings || []).map(mapListingStatus);
         state.pagination = action.payload.pagination;
       })
       .addCase(fetchAllListings.rejected, (state, action) => {
@@ -596,7 +614,7 @@ export const listingSlice = createSlice({
       })
       .addCase(searchListings.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.listings = action.payload.listings;
+        state.listings = (action.payload.listings || []).map(mapListingStatus);
         state.pagination = action.payload.pagination;
       })
       .addCase(searchListings.rejected, (state, action) => {
@@ -612,7 +630,7 @@ export const listingSlice = createSlice({
       })
       .addCase(fetchMyListings.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.myListings = action.payload.listings;
+        state.myListings = (action.payload.listings || []).map(mapListingStatus);
         state.pagination = action.payload.pagination;
       })
       .addCase(fetchMyListings.rejected, (state, action) => {
@@ -628,7 +646,7 @@ export const listingSlice = createSlice({
       })
       .addCase(fetchFeaturedListings.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.featuredListings = action.payload.listings;
+        state.featuredListings = (action.payload.listings || []).map(mapListingStatus);
       })
       .addCase(fetchFeaturedListings.rejected, (state, action) => {
         state.isLoading = false;
@@ -643,7 +661,7 @@ export const listingSlice = createSlice({
       })
       .addCase(fetchLatestListings.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.latestListings = action.payload.listings;
+        state.latestListings = (action.payload.listings || []).map(mapListingStatus);
       })
       .addCase(fetchLatestListings.rejected, (state, action) => {
         state.isLoading = false;
@@ -658,7 +676,7 @@ export const listingSlice = createSlice({
       })
       .addCase(fetchSimilarListings.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.similarListings = action.payload.listings;
+        state.similarListings = (action.payload.listings || []).map(mapListingStatus);
       })
       .addCase(fetchSimilarListings.rejected, (state, action) => {
         state.isLoading = false;
@@ -792,12 +810,12 @@ export const listingSlice = createSlice({
 // ============================================================================
 
 // Actions
-export const { 
-  clearError, 
-  clearCurrentListing, 
-  setSearchParams, 
+export const {
+  clearError,
+  clearCurrentListing,
+  setSearchParams,
   clearListings,
-  resetListingState 
+  resetListingState
 } = listingSlice.actions;
 
 // Selectors

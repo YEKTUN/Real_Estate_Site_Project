@@ -143,7 +143,7 @@ describe('CloudinaryApi', () => {
       expect(mockedAxiosInstance.post).toHaveBeenCalled();
       const callArgs = mockedAxiosInstance.post.mock.calls[0];
       // Gerçek endpoint: /ImageUpload/listing/{id}?isCoverImage=true
-      expect(callArgs[0]).toBe('/ImageUpload/listing/1');
+      expect(callArgs[0]).toBe('/ImageUpload/listing/1?isCoverImage=true');
     });
   });
 

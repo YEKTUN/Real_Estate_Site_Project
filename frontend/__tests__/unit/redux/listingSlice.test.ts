@@ -210,7 +210,7 @@ describe('ListingSlice', () => {
     });
 
     test('should handle rejected state', () => {
-      const action = createListing.rejected('Test error' as any, '', {} as any);
+      const action = createListing.rejected(null, '', {} as any, 'Test error');
       const result = listingReducer(initialState, action);
 
       expect(result.isCreating).toBe(false);
@@ -238,7 +238,7 @@ describe('ListingSlice', () => {
     });
 
     test('should handle rejected state', () => {
-      const action = fetchAllListings.rejected('Test error' as any, '', undefined);
+      const action = fetchAllListings.rejected(null, '', undefined, 'Test error');
       const result = listingReducer(initialState, action);
 
       expect(result.isLoading).toBe(false);

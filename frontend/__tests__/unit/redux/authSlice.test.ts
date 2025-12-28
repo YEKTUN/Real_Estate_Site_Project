@@ -77,7 +77,7 @@ const mockUser: UserDto = {
  * Mock authenticated state
  */
 const authenticatedState: AuthState = {
-  user: mockUser,
+  user: { ...mockUser, isAdmin: false },
   token: 'test-jwt-token',
   refreshToken: 'test-refresh-token',
   isAuthenticated: true,
@@ -110,7 +110,7 @@ describe('AuthSlice', () => {
 
     test('initial state should have correct default values', () => {
       const result = authReducer(undefined, { type: '' });
-      
+
       expect(result.user).toBeNull();
       expect(result.token).toBeNull();
       expect(result.refreshToken).toBeNull();
@@ -123,7 +123,7 @@ describe('AuthSlice', () => {
   // ========================================================================
   // SYNC REDUCER TESTS
   // ========================================================================
-  
+
   describe('Sync Reducers', () => {
     describe('logout', () => {
       test('should reset auth state to initial values', () => {
@@ -165,8 +165,8 @@ describe('AuthSlice', () => {
         };
 
         const result = authReducer(stateWithError, clearError());
-        
-        expect(result.user).toEqual(mockUser);
+
+        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
         expect(result.token).toBe('test-jwt-token');
         expect(result.isAuthenticated).toBe(true);
       });
@@ -175,7 +175,7 @@ describe('AuthSlice', () => {
     describe('setUser', () => {
       test('should update user in state', () => {
         const result = authReducer(initialState, setUser(mockUser));
-        expect(result.user).toEqual(mockUser);
+        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
       });
 
       test('should allow setting user to null', () => {
@@ -204,7 +204,7 @@ describe('AuthSlice', () => {
         };
 
         const result = authReducer(initialState, setTokens(tokens));
-        
+
         expect(result.token).toBe('new-access-token');
         expect(result.refreshToken).toBe('new-refresh-token');
       });
@@ -216,7 +216,7 @@ describe('AuthSlice', () => {
         };
 
         const result = authReducer(authenticatedState, setTokens(tokens));
-        
+
         expect(result.token).toBe('updated-token');
         expect(result.refreshToken).toBe('updated-refresh-token');
       });
@@ -239,7 +239,7 @@ describe('AuthSlice', () => {
         };
 
         const result = authReducer(modifiedState, resetAuth());
-        
+
         expect(result.user).toBeNull();
         expect(result.token).toBeNull();
         expect(result.refreshToken).toBeNull();
@@ -253,7 +253,7 @@ describe('AuthSlice', () => {
   // ========================================================================
   // ASYNC THUNK TESTS - LOGIN
   // ========================================================================
-  
+
   describe('Async Thunks - Login', () => {
     const loginCredentials = {
       emailOrUsername: 'test@example.com',
@@ -286,7 +286,7 @@ describe('AuthSlice', () => {
 
         expect(result.isLoading).toBe(false);
         expect(result.isAuthenticated).toBe(true);
-        expect(result.user).toEqual(mockUser);
+        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
         expect(result.token).toBe('new-jwt-token');
         expect(result.refreshToken).toBe('new-refresh-token');
         expect(result.error).toBeNull();
@@ -336,7 +336,7 @@ describe('AuthSlice', () => {
   // ========================================================================
   // ASYNC THUNK TESTS - REGISTER
   // ========================================================================
-  
+
   describe('Async Thunks - Register', () => {
     const registerData = {
       name: 'Test',
@@ -372,7 +372,7 @@ describe('AuthSlice', () => {
 
         expect(result.isLoading).toBe(false);
         expect(result.isAuthenticated).toBe(true);
-        expect(result.user).toEqual(mockUser);
+        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
         expect(result.token).toBe('new-jwt-token');
         expect(result.refreshToken).toBe('new-refresh-token');
       });
@@ -395,7 +395,7 @@ describe('AuthSlice', () => {
   // ========================================================================
   // ASYNC THUNK TESTS - GOOGLE LOGIN
   // ========================================================================
-  
+
   describe('Async Thunks - Google Login', () => {
     const googleLoginData = {
       idToken: 'mock-google-id-token',
@@ -432,7 +432,7 @@ describe('AuthSlice', () => {
 
         expect(result.isLoading).toBe(false);
         expect(result.isAuthenticated).toBe(true);
-        expect(result.user).toEqual(mockUser);
+        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
         expect(result.token).toBe('new-jwt-token');
         expect(result.refreshToken).toBe('new-refresh-token');
         expect(result.error).toBeNull();
@@ -505,7 +505,7 @@ describe('AuthSlice', () => {
   // ========================================================================
   // ASYNC THUNK TESTS - REFRESH TOKEN
   // ========================================================================
-  
+
   describe('Async Thunks - Refresh Token', () => {
     describe('refreshToken.pending', () => {
       test('should set isLoading to true', () => {
@@ -537,7 +537,7 @@ describe('AuthSlice', () => {
           refreshToken.fulfilled(responseWithoutUser, '', undefined)
         );
 
-        expect(result.user).toEqual(mockUser);
+        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
       });
     });
 
@@ -561,7 +561,7 @@ describe('AuthSlice', () => {
   // ========================================================================
   // ASYNC THUNK TESTS - GET CURRENT USER
   // ========================================================================
-  
+
   describe('Async Thunks - Get Current User', () => {
     describe('getCurrentUser.pending', () => {
       test('should set isLoading to true', () => {
@@ -585,7 +585,7 @@ describe('AuthSlice', () => {
         );
 
         expect(result.isLoading).toBe(false);
-        expect(result.user).toEqual(newUser);
+        expect(result.user).toEqual({ ...newUser, isAdmin: false });
       });
     });
 
@@ -615,7 +615,7 @@ describe('AuthSlice', () => {
   // ========================================================================
   // ASYNC THUNK TESTS - INITIALIZE AUTH
   // ========================================================================
-  
+
   describe('Async Thunks - Initialize Auth', () => {
     describe('initializeAuth.pending', () => {
       test('should set isLoading to true', () => {
@@ -639,7 +639,7 @@ describe('AuthSlice', () => {
         );
 
         expect(result.isLoading).toBe(false);
-        expect(result.user).toEqual(mockUser);
+        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
         expect(result.token).toBe('stored-token');
         expect(result.refreshToken).toBe('stored-refresh-token');
         expect(result.isAuthenticated).toBe(true);
@@ -680,7 +680,7 @@ describe('AuthSlice', () => {
   // ========================================================================
   // ASYNC THUNK TESTS - LOGOUT ASYNC
   // ========================================================================
-  
+
   describe('Async Thunks - Logout Async', () => {
     describe('logoutAsync.fulfilled', () => {
       test('should clear all auth state', () => {
@@ -698,14 +698,14 @@ describe('AuthSlice', () => {
   // ========================================================================
   // SELECTOR TESTS
   // ========================================================================
-  
+
   describe('Selectors', () => {
     const mockRootState = {
       auth: authenticatedState,
     };
 
     test('selectUser should return user from state', () => {
-      expect(selectUser(mockRootState)).toEqual(mockUser);
+      expect(selectUser(mockRootState)).toEqual({ ...mockUser, isAdmin: false });
     });
 
     test('selectToken should return token from state', () => {
@@ -737,7 +737,7 @@ describe('AuthSlice', () => {
 
     test('selectors should handle null values', () => {
       const emptyState = { auth: initialState };
-      
+
       expect(selectUser(emptyState)).toBeNull();
       expect(selectToken(emptyState)).toBeNull();
       expect(selectRefreshToken(emptyState)).toBeNull();

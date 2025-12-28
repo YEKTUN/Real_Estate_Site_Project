@@ -186,7 +186,7 @@ describe('MessageSlice', () => {
     });
 
     it('selectMessagesByThread should return messages for thread', () => {
-      expect(selectMessagesByThread(state)(1)).toEqual([mockMessage]);
+      expect(selectMessagesByThread(1)(state)).toEqual([mockMessage]);
     });
 
     it('selectMessageLoading should return loading state', () => {
@@ -212,6 +212,9 @@ describe('MessageSlice', () => {
             ],
           },
         },
+        auth: {
+          user: { id: 'current-user-id' }
+        }
       } as any;
       expect(selectTotalUnread(stateWithUnread)).toBe(1);
     });

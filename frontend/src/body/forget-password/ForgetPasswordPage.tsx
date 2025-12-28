@@ -23,7 +23,7 @@ export default function ForgetPasswordPage() {
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validasyon
     if (!email.trim()) {
       setMessage({ type: 'error', text: 'Lütfen email adresinizi giriniz' });
@@ -42,25 +42,25 @@ export default function ForgetPasswordPage() {
 
     try {
       const result = await forgetPasswordApi(email);
-      
+
       if (result.success) {
-        setMessage({ 
-          type: 'success', 
-          text: result.message || 'Şifre sıfırlama linki email adresinize gönderilmiştir.' 
+        setMessage({
+          type: 'success',
+          text: result.message || 'Şifre sıfırlama linki email adresinize gönderilmiştir.'
         });
         setEmail(''); // Formu temizle
       } else {
         // Backend'den gelen hata mesajını göster
-        setMessage({ 
-          type: 'error', 
-          text: result.message || 'Şifre sıfırlama isteği gönderilirken bir hata oluştu' 
+        setMessage({
+          type: 'error',
+          text: result.message || 'Şifre sıfırlama isteği gönderilirken bir hata oluştu'
         });
       }
     } catch (error) {
       console.error('Forget password error:', error);
-      setMessage({ 
-        type: 'error', 
-        text: 'Şifre sıfırlama isteği gönderilirken bir hata oluştu' 
+      setMessage({
+        type: 'error',
+        text: 'Şifre sıfırlama isteği gönderilirken bir hata oluştu'
       });
     } finally {
       setIsLoading(false);
@@ -92,11 +92,10 @@ export default function ForgetPasswordPage() {
         {/* Mesaj gösterimi */}
         {message && (
           <div
-            className={`p-4 rounded-lg flex items-start gap-3 ${
-              message.type === 'success'
+            className={`p-4 rounded-lg flex items-start gap-3 ${message.type === 'success'
                 ? 'bg-green-50 text-green-800 border border-green-200'
                 : 'bg-red-50 text-red-800 border border-red-200'
-            }`}
+              }`}
           >
             <span className="text-lg flex-shrink-0">
               {message.type === 'success' ? '✅' : '❌'}
@@ -106,7 +105,7 @@ export default function ForgetPasswordPage() {
         )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6" noValidate>
           {/* Email Input */}
           <div>
             <label

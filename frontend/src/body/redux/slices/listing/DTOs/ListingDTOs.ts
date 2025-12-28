@@ -146,11 +146,17 @@ export interface ListingListDto {
   coverImageUrl?: string;
   status: ListingStatus;
   ownerType: ListingOwnerType;
+  ownerId?: string;
+  ownerName?: string;
+  ownerSurname?: string;
+  ownerEmail?: string;
   createdAt: string;
   viewCount: number;
   favoriteCount: number;
   isFeatured: boolean;
   isUrgent: boolean;
+  rejectionReason?: string;
+  rejectedAt?: string;
 }
 
 /**
@@ -198,6 +204,7 @@ export interface ListingDetailDto {
   city: string;
   district: string;
   neighborhood?: string;
+  fullAddress?: string;
   latitude?: number;
   longitude?: number;
   grossSquareMeters?: number;
@@ -424,24 +431,24 @@ export interface ListingState {
   latestListings: ListingListDto[];
   similarListings: ListingListDto[];
   myListings: ListingListDto[];
-  
+
   // Detay
   currentListing: ListingDetailDto | null;
   currentListingImages: ListingImageDto[];
-  
+
   // Sayfalama
   pagination: PaginationDto | null;
-  
+
   // Arama
   searchParams: ListingSearchDto | null;
-  
+
   // Loading states
   isLoading: boolean;
   isLoadingDetail: boolean;
   isCreating: boolean;
   isUpdating: boolean;
   isDeleting: boolean;
-  
+
   // Error
   error: string | null;
 }

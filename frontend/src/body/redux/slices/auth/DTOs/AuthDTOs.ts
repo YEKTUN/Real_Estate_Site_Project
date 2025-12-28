@@ -63,6 +63,7 @@ export interface UserDto {
   phone?: string;
   email: string;
   profilePictureUrl?: string;
+  isAdmin: boolean;
 }
 
 /**
@@ -110,4 +111,6 @@ export interface TokenPayload {
   aud: string;
   // Backend'deki custom profil fotoğrafı claim'i
   picture?: string;
+  isAdmin?: boolean;
+  role?: string;
 }

@@ -16,7 +16,7 @@ describe('Footer', () => {
     test('should render company name', () => {
       render(<Footer />);
 
-      expect(screen.getByText('🏠 Real Estate')).toBeInTheDocument();
+      expect(screen.getByText('🏠 Real Estimate')).toBeInTheDocument();
     });
 
     test('should render company description', () => {
@@ -43,55 +43,62 @@ describe('Footer', () => {
     test('should render copyright text', () => {
       render(<Footer />);
 
-      expect(screen.getByText(/© 2024 Real Estate/i)).toBeInTheDocument();
+      expect(screen.getByText(/© 2024 Real Estimate/i)).toBeInTheDocument();
     });
 
     test('should render all navigation links', () => {
       render(<Footer />);
 
-      expect(screen.getByRole('link', { name: 'Ana Sayfa' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'İlanlar' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Hakkımızda' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'İletişim' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Tüm İlanlar' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Satılık' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Kiralık' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Konut' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'İş Yeri' })).toBeInTheDocument();
     });
 
     test('should render contact information', () => {
       render(<Footer />);
 
-      expect(screen.getByText(/info@realestate.com/)).toBeInTheDocument();
+      expect(screen.getByText(/info@realestimate.com/)).toBeInTheDocument();
       expect(screen.getByText(/\+90 555 123 4567/)).toBeInTheDocument();
       expect(screen.getByText(/İstanbul, Türkiye/)).toBeInTheDocument();
     });
   });
 
   describe('Links', () => {
-    test('should have correct href for Ana Sayfa', () => {
+    test('should have correct href for Tüm İlanlar', () => {
       render(<Footer />);
 
-      const link = screen.getByRole('link', { name: 'Ana Sayfa' });
+      const link = screen.getByRole('link', { name: 'Tüm İlanlar' });
       expect(link).toHaveAttribute('href', '/');
     });
 
-    test('should have correct href for İlanlar', () => {
+    test('should have correct href for Satılık', () => {
       render(<Footer />);
 
-      const link = screen.getByRole('link', { name: 'İlanlar' });
-      expect(link).toHaveAttribute('href', '/properties');
+      const link = screen.getByRole('link', { name: 'Satılık' });
+      expect(link).toHaveAttribute('href', '/?type=1');
     });
 
-    test('should have correct href for Hakkımızda', () => {
+    test('should have correct href for Kiralık', () => {
       render(<Footer />);
 
-      const link = screen.getByRole('link', { name: 'Hakkımızda' });
-      expect(link).toHaveAttribute('href', '/about');
+      const link = screen.getByRole('link', { name: 'Kiralık' });
+      expect(link).toHaveAttribute('href', '/?type=2');
     });
 
-    test('should have correct href for İletişim', () => {
+    test('should have correct href for Konut', () => {
       render(<Footer />);
 
-      const link = screen.getByRole('link', { name: 'İletişim' });
-      expect(link).toHaveAttribute('href', '/contact');
+      const link = screen.getByRole('link', { name: 'Konut' });
+      expect(link).toHaveAttribute('href', '/?category=1');
+    });
+
+    test('should have correct href for İş Yeri', () => {
+      render(<Footer />);
+
+      const link = screen.getByRole('link', { name: 'İş Yeri' });
+      expect(link).toHaveAttribute('href', '/?category=2');
     });
   });
 });
-

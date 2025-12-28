@@ -35,9 +35,9 @@ export default function ResetPasswordPage() {
    */
   useEffect(() => {
     if (!token || !email) {
-      setMessage({ 
-        type: 'error', 
-        text: 'Geçersiz veya eksik token. Lütfen email\'inizdeki linki kullanın.' 
+      setMessage({
+        type: 'error',
+        text: 'Geçersiz veya eksik token. Lütfen email\'inizdeki linki kullanın.'
       });
     }
   }, [token, email]);
@@ -82,26 +82,26 @@ export default function ResetPasswordPage() {
       );
 
       if (result.success) {
-        setMessage({ 
-          type: 'success', 
-          text: result.message || 'Şifreniz başarıyla sıfırlandı. Yeni şifrenizle giriş yapabilirsiniz.' 
+        setMessage({
+          type: 'success',
+          text: result.message || 'Şifreniz başarıyla sıfırlandı. Yeni şifrenizle giriş yapabilirsiniz.'
         });
-        
+
         // 3 saniye sonra login sayfasına yönlendir
         setTimeout(() => {
           router.push('/login');
         }, 3000);
       } else {
-        setMessage({ 
-          type: 'error', 
-          text: result.message || 'Şifre sıfırlama işlemi başarısız oldu' 
+        setMessage({
+          type: 'error',
+          text: result.message || 'Şifre sıfırlama işlemi başarısız oldu'
         });
       }
     } catch (error) {
       console.error('Reset password error:', error);
-      setMessage({ 
-        type: 'error', 
-        text: 'Şifre sıfırlama işlemi sırasında bir hata oluştu' 
+      setMessage({
+        type: 'error',
+        text: 'Şifre sıfırlama işlemi sırasında bir hata oluştu'
       });
     } finally {
       setIsLoading(false);
@@ -117,7 +117,7 @@ export default function ResetPasswordPage() {
       ...prev,
       [name]: value,
     }));
-    
+
     // Yazarken mesajı temizle
     if (message) {
       setMessage(null);
@@ -138,11 +138,10 @@ export default function ResetPasswordPage() {
         {/* Mesaj gösterimi */}
         {message && (
           <div
-            className={`p-4 rounded-lg ${
-              message.type === 'success'
+            className={`p-4 rounded-lg ${message.type === 'success'
                 ? 'bg-green-50 text-green-800 border border-green-200'
                 : 'bg-red-50 text-red-800 border border-red-200'
-            }`}
+              }`}
           >
             <p className="text-sm">{message.text}</p>
             {message.type === 'success' && (
@@ -164,7 +163,7 @@ export default function ResetPasswordPage() {
 
         {/* Form */}
         {token && email && (
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             {/* Email gösterimi (readonly) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">

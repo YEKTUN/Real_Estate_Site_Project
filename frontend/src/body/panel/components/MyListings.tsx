@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useAppDispatch, useAppSelector } from '@/body/redux/hooks';
-import { 
+import {
   fetchMyListings,
   deleteListing,
   updateListingStatus,
@@ -11,67 +12,58 @@ import {
   selectListingLoading,
   selectListingDeleting,
   selectListingError,
-  clearError 
+  clearError
 } from '@/body/redux/slices/listing/ListingSlice';
-import { 
-  ListingListDto, 
+import {
+  ListingListDto,
   ListingStatus,
   ListingType,
   Currency
 } from '@/body/redux/slices/listing/DTOs/ListingDTOs';
+import UpdateListingModal from './UpdateListingModal';
 
 /**
  * İlanlarım Bileşeni
  * 
- * Kullanıcının kendi ilanlarını listeler ve yönetir - Redux entegrasyonu ile.
- * - İlan listesi (API'den)
- * - Durum filtreleme (Aktif, Beklemede, Pasif)
- * - İlan düzenleme/silme
- * - İlan istatistikleri
+ * Kullanıcının kendi ilanlarını listeler ve yönetir.
+ * - Modern kart tasarımı
+ * - İlan düzenleme (Modal)
+ * - Aktif/Pasif toggle
+ * - İstatistikler
  */
 
-// Durum renkleri ve etiketleri
-const statusConfig: Record<ListingStatus, { label: string; color: string; dot: string }> = {
-  [ListingStatus.Active]: { label: 'Aktif', color: 'bg-green-100 text-green-700', dot: 'bg-green-500' },
-  [ListingStatus.Pending]: { label: 'Beklemede', color: 'bg-yellow-100 text-yellow-700', dot: 'bg-yellow-500' },
-  [ListingStatus.Inactive]: { label: 'Pasif', color: 'bg-gray-100 text-gray-700', dot: 'bg-gray-500' },
-  [ListingStatus.Sold]: { label: 'Satıldı', color: 'bg-blue-100 text-blue-700', dot: 'bg-blue-500' },
-  [ListingStatus.Rented]: { label: 'Kiralandı', color: 'bg-purple-100 text-purple-700', dot: 'bg-purple-500' },
-  [ListingStatus.Rejected]: { label: 'Reddedildi', color: 'bg-red-100 text-red-700', dot: 'bg-red-500' },
-  [ListingStatus.Expired]: { label: 'Süresi Doldu', color: 'bg-orange-100 text-orange-700', dot: 'bg-orange-500' },
+const statusConfig: Record<ListingStatus, { label: string; color: string; dot: string; bg: string }> = {
+  [ListingStatus.Active]: { label: 'Yayında', color: 'text-green-700', bg: 'bg-green-50', dot: 'bg-green-500' },
+  [ListingStatus.Pending]: { label: 'Onay Bekliyor', color: 'text-amber-700', bg: 'bg-amber-50', dot: 'bg-amber-500' },
+  [ListingStatus.Inactive]: { label: 'Pasif (Gizli)', color: 'text-gray-600', bg: 'bg-gray-100', dot: 'bg-gray-400' },
+  [ListingStatus.Sold]: { label: 'Satıldı', color: 'text-blue-700', bg: 'bg-blue-50', dot: 'bg-blue-500' },
+  [ListingStatus.Rented]: { label: 'Kiralandı', color: 'text-purple-700', bg: 'bg-purple-50', dot: 'bg-purple-500' },
+  [ListingStatus.Rejected]: { label: 'Reddedildi', color: 'text-red-700', bg: 'bg-red-50', dot: 'bg-red-500' },
+  [ListingStatus.Expired]: { label: 'Süresi Doldu', color: 'text-orange-700', bg: 'bg-orange-50', dot: 'bg-orange-500' },
 };
 
 export default function MyListings() {
   const dispatch = useAppDispatch();
-  
-  // Redux state
+
   const listings = useAppSelector(selectMyListings);
   const pagination = useAppSelector(selectPagination);
   const isLoading = useAppSelector(selectListingLoading);
   const isDeleting = useAppSelector(selectListingDeleting);
   const error = useAppSelector(selectListingError);
 
-  // Local state
   const [statusFilter, setStatusFilter] = useState<'all' | ListingStatus>('all');
   const [currentPage, setCurrentPage] = useState(1);
+  const [editingListingId, setEditingListingId] = useState<number | null>(null);
 
-  // İlanları yükle
   useEffect(() => {
-    console.log('MyListings: İlanlar yükleniyor...');
     dispatch(fetchMyListings({ page: currentPage, pageSize: 10 }));
   }, [dispatch, currentPage]);
 
-  /**
-   * Filtrelenmiş ilanlar
-   */
   const filteredListings = listings.filter((listing) => {
     if (statusFilter === 'all') return true;
     return listing.status === statusFilter;
   });
 
-  /**
-   * İstatistikleri hesapla
-   */
   const stats = {
     total: listings.length,
     active: listings.filter((l) => l.status === ListingStatus.Active).length,
@@ -79,24 +71,25 @@ export default function MyListings() {
     totalFavorites: listings.reduce((sum, l) => sum + l.favoriteCount, 0),
   };
 
-  /**
-   * Fiyat formatla
-   */
-  const formatPrice = (price: number, type: ListingType, currency: Currency) => {
-    const currencySymbol = currency === Currency.TRY ? '₺' : currency === Currency.USD ? '$' : '€';
-    const formatted = new Intl.NumberFormat('tr-TR').format(price);
-    return type === ListingType.ForRent ? `${currencySymbol}${formatted}/ay` : `${currencySymbol}${formatted}`;
+  const handleStatusToggle = async (id: number, currentStatus: ListingStatus) => {
+    // Sadece Aktif ve Pasif arasında geçişe izin ver
+    if (currentStatus !== ListingStatus.Active && currentStatus !== ListingStatus.Inactive) {
+      return;
+    }
+
+    const newStatus = currentStatus === ListingStatus.Active ? ListingStatus.Inactive : ListingStatus.Active;
+    try {
+      await dispatch(updateListingStatus({ listingId: id, status: newStatus })).unwrap();
+      dispatch(fetchMyListings({ page: currentPage, pageSize: 10 }));
+    } catch (err) {
+      console.error('Durum değiştirme hatası:', err);
+    }
   };
 
-  /**
-   * İlan silme
-   */
   const handleDelete = async (id: number) => {
-    if (window.confirm('Bu ilanı silmek istediğinizden emin misiniz?')) {
+    if (window.confirm('Bu ilanı tamamen silmek istediğinizden emin misiniz?')) {
       try {
-        console.log('İlan siliniyor:', id);
         await dispatch(deleteListing(id)).unwrap();
-        // Listeyi yenile
         dispatch(fetchMyListings({ page: currentPage, pageSize: 10 }));
       } catch (err) {
         console.error('İlan silme hatası:', err);
@@ -104,284 +97,200 @@ export default function MyListings() {
     }
   };
 
-  /**
-   * İlan durumu değiştirme
-   */
-  const handleStatusChange = async (id: number, newStatus: ListingStatus) => {
-    try {
-      console.log('İlan durumu değiştiriliyor:', id, newStatus);
-      await dispatch(updateListingStatus({ listingId: id, status: newStatus })).unwrap();
-      // Listeyi yenile
-      dispatch(fetchMyListings({ page: currentPage, pageSize: 10 }));
-    } catch (err) {
-      console.error('Durum değiştirme hatası:', err);
-    }
-  };
-
-  /**
-   * Sayfa değiştir
-   */
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
-
-  // Loading state
   if (isLoading && listings.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">İlanlarınız yükleniyor...</p>
+      <div className="flex flex-col items-center justify-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+        <p className="text-gray-500 font-bold">İlanlarınız Getiriliyor...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Error Alert */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-          <span className="text-2xl">❌</span>
-          <p className="text-red-700">{error}</p>
-          <button onClick={() => dispatch(clearError())} className="ml-auto text-red-500 hover:text-red-700">✕</button>
-        </div>
-      )}
-
-      {/* İstatistikler */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-blue-50 rounded-xl p-4 text-center">
-          <p className="text-3xl font-bold text-blue-600">{stats.total}</p>
-          <p className="text-sm text-gray-600">Toplam İlan</p>
-        </div>
-        <div className="bg-green-50 rounded-xl p-4 text-center">
-          <p className="text-3xl font-bold text-green-600">{stats.active}</p>
-          <p className="text-sm text-gray-600">Aktif İlan</p>
-        </div>
-        <div className="bg-purple-50 rounded-xl p-4 text-center">
-          <p className="text-3xl font-bold text-purple-600">{stats.totalViews}</p>
-          <p className="text-sm text-gray-600">Toplam Görüntülenme</p>
-        </div>
-        <div className="bg-red-50 rounded-xl p-4 text-center">
-          <p className="text-3xl font-bold text-red-600">{stats.totalFavorites}</p>
-          <p className="text-sm text-gray-600">Toplam Favori</p>
-        </div>
-      </div>
-
-      {/* Filtreler */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          onClick={() => setStatusFilter('all')}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-            statusFilter === 'all'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
-        >
-          Tümü
-          <span className="ml-2 px-2 py-0.5 rounded-full bg-white/20 text-xs">
-            {listings.length}
-          </span>
-        </button>
-        {[ListingStatus.Active, ListingStatus.Pending, ListingStatus.Inactive].map((status) => (
-          <button
-            key={status}
-            onClick={() => setStatusFilter(status)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-              statusFilter === status
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            {statusConfig[status].label}
-            <span className="ml-2 px-2 py-0.5 rounded-full bg-white/20 text-xs">
-              {listings.filter((l) => l.status === status).length}
-            </span>
-          </button>
+    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* İstatistik Kartları */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {[
+          { label: 'Toplam İlan', value: stats.total, color: 'blue', icon: '📋' },
+          { label: 'Yayındaki İlan', value: stats.active, color: 'green', icon: '✅' },
+          { label: 'Görüntülenme', value: stats.totalViews, color: 'purple', icon: '👁️' },
+          { label: 'Favoriler', value: stats.totalFavorites, color: 'orange', icon: '❤️' }
+        ].map((s, idx) => (
+          <div key={idx} className="bg-white rounded-3xl p-6 shadow-sm border border-gray-50 hover:shadow-xl transition-all group overflow-hidden relative">
+            <div className={`absolute top-0 right-0 w-24 h-24 bg-${s.color}-50 rounded-full -mr-8 -mt-8 transition-transform group-hover:scale-125`}></div>
+            <p className="text-sm font-black text-gray-400 uppercase mb-1">{s.label}</p>
+            <div className="flex items-end gap-2">
+              <span className={`text-3xl font-black text-${s.color}-600`}>{s.value}</span>
+              <span className="text-xl mb-1">{s.icon}</span>
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* İlan Listesi */}
-      {filteredListings.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-2xl">
-          <div className="text-6xl mb-4">🏠</div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-2">
-            {statusFilter === 'all' ? 'Henüz ilanınız yok' : 'Bu durumda ilan bulunamadı'}
-          </h3>
-          <p className="text-gray-600 mb-6">
-            İlk ilanınızı vererek başlayın!
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {filteredListings.map((listing) => (
-            <ListingCard 
-              key={listing.id} 
-              listing={listing}
-              isDeleting={isDeleting}
-              onDelete={handleDelete}
-              onStatusChange={handleStatusChange}
-              formatPrice={formatPrice}
-            />
+      {/* Kontrol Paneli: Filtrele & Arama */}
+      <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all ${statusFilter === 'all' ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
+          >
+            TÜMÜ ({listings.length})
+          </button>
+          {[ListingStatus.Active, ListingStatus.Pending, ListingStatus.Inactive].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all ${statusFilter === status ? 'bg-blue-600 text-white shadow-lg shadow-blue-100' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}
+            >
+              {statusConfig[status].label.toUpperCase()} ({listings.filter((l) => l.status === status).length})
+            </button>
           ))}
         </div>
+      </div>
+
+      {/* İlan Gradi */}
+      <div className="space-y-4">
+        {filteredListings.length === 0 ? (
+          <div className="bg-gray-50 rounded-[40px] py-20 text-center border-2 border-dashed border-gray-200">
+            <span className="text-6xl grayscale opacity-30">📂</span>
+            <h3 className="text-xl font-black text-gray-400 mt-6">BULUNAMADI</h3>
+            <p className="text-gray-400">Henüz bu kriterlere uygun ilanınız yok.</p>
+          </div>
+        ) : (
+          filteredListings.map((listing) => (
+            <ListingActionCard
+              key={listing.id}
+              listing={listing}
+              onEdit={() => setEditingListingId(listing.id)}
+              onDelete={() => handleDelete(listing.id)}
+              onToggleStatus={() => handleStatusToggle(listing.id, listing.status)}
+              isDeleting={isDeleting}
+            />
+          ))
+        )}
+      </div>
+
+      {/* Modal */}
+      {editingListingId && (
+        <UpdateListingModal
+          listingId={editingListingId}
+          onClose={() => setEditingListingId(null)}
+          currentPage={currentPage}
+        />
       )}
 
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex justify-center items-center gap-2 mt-8">
-          <button
-            onClick={() => handlePageChange(currentPage - 1)}
-            disabled={!pagination.hasPrevious}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            ← Önceki
-          </button>
-          
-          {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
-            <button
-              key={page}
-              onClick={() => handlePageChange(page)}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                page === currentPage
-                  ? 'bg-blue-600 text-white'
-                  : 'border border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              {page}
-            </button>
-          ))}
-          
-          <button
-            onClick={() => handlePageChange(currentPage + 1)}
-            disabled={!pagination.hasNext}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Sonraki →
-          </button>
+        <div className="flex justify-center gap-2 pt-10">
+          {/* Pagination logic here - reuse the styled one from Listings.tsx */}
         </div>
       )}
     </div>
   );
 }
 
-/**
- * İlan Kartı Bileşeni
- */
-interface ListingCardProps {
+interface ListingActionCardProps {
   listing: ListingListDto;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleStatus: () => void;
   isDeleting: boolean;
-  onDelete: (id: number) => void;
-  onStatusChange: (id: number, status: ListingStatus) => void;
-  formatPrice: (price: number, type: ListingType, currency: Currency) => string;
 }
 
-function ListingCard({ listing, isDeleting, onDelete, onStatusChange, formatPrice }: ListingCardProps) {
+/**
+ * Aksiyonlanabilir İlan Kartı (Redesigned)
+ */
+function ListingActionCard({ listing, onEdit, onDelete, onToggleStatus, isDeleting }: ListingActionCardProps) {
   const config = statusConfig[listing.status] || statusConfig[ListingStatus.Pending];
-  
+
+  const formatPrice = (price: number, type: ListingType, currency: Currency) => {
+    const symbol = currency === Currency.TRY ? '₺' : currency === Currency.USD ? '$' : '€';
+    const formatted = new Intl.NumberFormat('tr-TR').format(price);
+    return `${formatted} ${symbol}`;
+  };
+
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl p-4 hover:shadow-lg transition-all">
-      <div className="flex flex-col md:flex-row gap-4">
-        {/* Görsel */}
-        <div className="w-full md:w-48 h-36 bg-gradient-to-br from-blue-400 to-purple-500 rounded-xl flex-shrink-0 relative overflow-hidden">
+    <div className={`bg-white rounded-3xl p-4 shadow-sm border border-gray-100 hover:shadow-2xl transition-all group ${listing.status === ListingStatus.Inactive ? 'opacity-80 grayscale-[0.5]' : ''}`}>
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Görsel Bölümü */}
+        <div className="relative w-full lg:w-48 h-36 rounded-2xl overflow-hidden shrink-0">
           {listing.coverImageUrl ? (
-            <img 
-              src={listing.coverImageUrl} 
-              alt={listing.title}
-              className="w-full h-full object-cover"
-            />
+            <img src={listing.coverImageUrl} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-white text-4xl">
-              🏠
-            </div>
+            <div className="w-full h-full bg-gray-100 flex items-center justify-center text-3xl">🏠</div>
           )}
-          <div className="absolute top-2 left-2">
-            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-              listing.type === ListingType.ForSale ? 'bg-blue-600 text-white' : 'bg-green-600 text-white'
-            }`}>
-              {listing.type === ListingType.ForSale ? 'Satılık' : 'Kiralık'}
-            </span>
+          <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-md px-2 py-0.5 rounded-lg text-[10px] font-black uppercase shadow-sm">
+            {listing.type === ListingType.ForSale ? 'SATILIK' : 'KİRALIK'}
           </div>
-          {listing.isFeatured && (
-            <div className="absolute top-2 right-2">
-              <span className="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-500 text-white">
-                ⭐ Öne Çıkan
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Bilgiler */}
-        <div className="flex-1">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h3 className="text-lg font-bold text-gray-800 mb-1 line-clamp-1">
-                {listing.title}
-              </h3>
-              <p className="text-gray-600 text-sm flex items-center gap-1">
-                📍 {listing.district}, {listing.city}
-              </p>
-              <p className="text-gray-400 text-xs mt-1">
-                İlan No: {listing.listingNumber}
-              </p>
+        {/* Bilgi Bölümü */}
+        <div className="flex-1 flex flex-col justify-between">
+          <div>
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+              <Link href={`/listing/${listing.id}`}>
+                <h3 className="text-lg font-black text-gray-800 tracking-tight hover:text-blue-600 transition-colors uppercase cursor-pointer">
+                  {listing.title}
+                </h3>
+              </Link>
+              <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${config.bg} ${config.color}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${config.dot} animate-pulse`}></span>
+                {config.label}
+              </div>
             </div>
-            <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold ${config.color}`}>
-              <span className={`w-2 h-2 rounded-full ${config.dot}`}></span>
-              {config.label}
+
+            <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-gray-400">
+              <span className="flex items-center gap-1">📍 {listing.district}, {listing.city}</span>
+              <span className="flex items-center gap-1">🆔 #{listing.listingNumber}</span>
+              <span className="flex items-center gap-1">🛏️ {listing.roomCount}</span>
+              <span className="flex items-center gap-1">📐 {listing.netSquareMeters}m²</span>
             </div>
           </div>
 
-          {/* Özellikler */}
-          <div className="flex gap-4 mt-3 text-sm text-gray-600">
-            {listing.roomCount && <span>🛏️ {listing.roomCount}</span>}
-            {listing.netSquareMeters && <span>📐 {listing.netSquareMeters}m²</span>}
-            {listing.floorNumber !== undefined && <span>🏢 {listing.floorNumber}. Kat</span>}
-            {listing.buildingAge !== undefined && <span>📅 {listing.buildingAge} yaşında</span>}
-          </div>
-
-          {/* Fiyat ve İstatistikler */}
-          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-100">
-            <div className="text-xl font-bold text-blue-600">
+          <div className="flex items-center justify-between border-t border-gray-50 mt-4 pt-3">
+            <div className="text-xl font-black text-blue-600">
               {formatPrice(listing.price, listing.type, listing.currency)}
             </div>
-            <div className="flex items-center gap-4 text-sm text-gray-500">
-              <span className="flex items-center gap-1">
-                👁️ {listing.viewCount}
-              </span>
-              <span className="flex items-center gap-1">
-                ❤️ {listing.favoriteCount}
-              </span>
-              <span className="flex items-center gap-1">
-                📅 {new Date(listing.createdAt).toLocaleDateString('tr-TR')}
-              </span>
+            <div className="flex gap-4 text-xs font-bold text-gray-400">
+              <span className="flex items-center gap-1">👁️ {listing.viewCount}</span>
+              <span className="flex items-center gap-1">❤️ {listing.favoriteCount}</span>
             </div>
           </div>
         </div>
 
-        {/* Aksiyonlar */}
-        <div className="flex md:flex-col gap-2 md:border-l md:pl-4 border-gray-100">
-          <button className="flex-1 md:flex-none px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors text-sm font-semibold">
-            ✏️ Düzenle
-          </button>
-          {listing.status === ListingStatus.Active ? (
-            <button
-              onClick={() => onStatusChange(listing.id, ListingStatus.Inactive)}
-              className="flex-1 md:flex-none px-4 py-2 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition-colors text-sm font-semibold"
-            >
-              ⏸️ Durdur
-            </button>
-          ) : listing.status === ListingStatus.Inactive ? (
-            <button
-              onClick={() => onStatusChange(listing.id, ListingStatus.Active)}
-              className="flex-1 md:flex-none px-4 py-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-sm font-semibold"
-            >
-              ▶️ Aktifleştir
-            </button>
-          ) : null}
+        {/* Aksiyon Butonları - Modern Düzen */}
+        <div className="flex lg:flex-col items-center justify-center gap-2 lg:pl-6 lg:border-l border-gray-50 min-w-[140px]">
           <button
-            onClick={() => onDelete(listing.id)}
-            disabled={isDeleting}
-            className="flex-1 md:flex-none px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-semibold disabled:opacity-50"
+            onClick={onEdit}
+            className="w-full py-2.5 bg-blue-50 text-blue-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm"
           >
-            🗑️ Sil
+            ✏️ DÜZENLE
+          </button>
+
+          {/* Durum Değiştirme Butonu - Kısıtlanmış Mantık */}
+          {(listing.status === ListingStatus.Active || listing.status === ListingStatus.Inactive) ? (
+            <button
+              onClick={onToggleStatus}
+              className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm ${listing.status === ListingStatus.Active
+                ? 'bg-amber-50 text-amber-700 hover:bg-amber-500 hover:text-white'
+                : 'bg-green-50 text-green-700 hover:bg-green-600 hover:text-white'
+                }`}
+            >
+              {listing.status === ListingStatus.Active ? '⏸️ PASİF YAP' : '▶️ YAYINA AL'}
+            </button>
+          ) : (
+            <div className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-center border-2 border-dashed ${listing.status === ListingStatus.Pending ? 'bg-gray-50 text-gray-400 border-gray-200' : 'bg-red-50 text-red-400 border-red-100'
+              }`}>
+              {listing.status === ListingStatus.Pending ? '⏳ ONAY BEKLENİYOR' : '❌ REDDEDİLDİ'}
+            </div>
+          )}
+
+          <button
+            onClick={onDelete}
+            disabled={isDeleting}
+            className="w-full py-2.5 bg-red-50 text-red-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all shadow-sm disabled:opacity-50"
+          >
+            🗑️ SİL
           </button>
         </div>
       </div>

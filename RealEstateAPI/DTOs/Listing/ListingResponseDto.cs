@@ -13,6 +13,7 @@ public class ListingResponseDto
     public string Message { get; set; } = string.Empty;
     public int? ListingId { get; set; }
     public ListingDetailDto? Listing { get; set; }
+    public bool RequiresPhoneVerification { get; set; } = false;
 }
 
 /// <summary>

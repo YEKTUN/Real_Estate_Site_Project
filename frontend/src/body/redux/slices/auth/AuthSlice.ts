@@ -1,17 +1,17 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import type { RootState } from '../../store';
-import { 
-  AuthState, 
-  LoginRequestDto, 
-  RegisterRequestDto, 
+import {
+  AuthState,
+  LoginRequestDto,
+  RegisterRequestDto,
   AuthResponseDto,
   UserDto,
-  GoogleLoginRequestDto 
+  GoogleLoginRequestDto
 } from './DTOs/AuthDTOs';
-import { 
-  loginApi, 
-  registerApi, 
-  logoutApi, 
+import {
+  loginApi,
+  registerApi,
+  logoutApi,
   getCurrentUserApi,
   getUserFromStoredToken,
   checkAuthStatus,
@@ -20,11 +20,12 @@ import {
   refreshTokenApi,
   googleLoginApi,
   updateProfilePictureApi,
+  deactivateAccountApi,
 } from '../../api/authApi';
 
 /**
  * Auth Slice
- * 
+ *
  * Kimlik doğrulama state yönetimi.
  * Login, Register, Logout, Refresh Token ve token işlemleri.
  */
@@ -43,7 +44,7 @@ const initialState: AuthState = {
 };
 
 const normalizeUser = (user?: UserDto | null): UserDto | null =>
-  user ? { ...user, isAdmin: user.isAdmin ?? false } : null;
+  user ? { ...user, isAdmin: user.isAdmin ?? false, isActive: user.isActive ?? true } : null;
 
 // ============================================================================
 // ASYNC THUNKS
@@ -58,11 +59,11 @@ export const login = createAsyncThunk<AuthResponseDto, LoginRequestDto>(
   async (credentials, { rejectWithValue }) => {
     try {
       const response = await loginApi(credentials);
-      
+
       if (!response.success) {
         return rejectWithValue(response.message);
       }
-      
+
       return response;
     } catch {
       return rejectWithValue('Giriş işlemi başarısız oldu');
@@ -79,11 +80,11 @@ export const register = createAsyncThunk<AuthResponseDto, RegisterRequestDto>(
   async (userData, { rejectWithValue }) => {
     try {
       const response = await registerApi(userData);
-      
+
       if (!response.success) {
         return rejectWithValue(response.message);
       }
-      
+
       return response;
     } catch {
       return rejectWithValue('Kayıt işlemi başarısız oldu');
@@ -101,12 +102,12 @@ export const googleLogin = createAsyncThunk<AuthResponseDto, GoogleLoginRequestD
     try {
       console.log('Google Login thunk çalışıyor...');
       const response = await googleLoginApi(googleData);
-      
+
       if (!response.success) {
         console.log('Google Login başarısız:', response.message);
         return rejectWithValue(response.message);
       }
-      
+
       console.log('Google Login başarılı:', response);
       return response;
     } catch {
@@ -125,11 +126,11 @@ export const refreshToken = createAsyncThunk<AuthResponseDto, void>(
   async (_, { rejectWithValue }) => {
     try {
       const response = await refreshTokenApi();
-      
+
       if (!response.success) {
         return rejectWithValue(response.message);
       }
-      
+
       return response;
     } catch {
       return rejectWithValue('Token yenileme başarısız oldu');
@@ -164,11 +165,11 @@ export const getCurrentUser = createAsyncThunk<AuthResponseDto, void>(
   async (_, { rejectWithValue }) => {
     try {
       const response = await getCurrentUserApi();
-      
+
       if (!response.success) {
         return rejectWithValue(response.message);
       }
-      
+
       return response;
     } catch {
       return rejectWithValue('Kullanıcı bilgileri alınamadı');
@@ -181,7 +182,7 @@ export const getCurrentUser = createAsyncThunk<AuthResponseDto, void>(
  * Sayfa yüklendiğinde auth durumunu kontrol et
  */
 export const initializeAuth = createAsyncThunk<
-  { user: UserDto | null; token: string | null; refreshToken: string | null; isAuthenticated: boolean }, 
+  { user: UserDto | null; token: string | null; refreshToken: string | null; isAuthenticated: boolean },
   void
 >(
   'auth/initialize',
@@ -245,6 +246,24 @@ export const logoutAsync = createAsyncThunk<void, void>(
   }
 );
 
+/**
+ * Hesabı Sil (Pasife Al) Thunk
+ */
+export const deactivateAccount = createAsyncThunk<AuthResponseDto, void>(
+  'auth/deactivateAccount',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await deactivateAccountApi();
+      if (!response.success) {
+        return rejectWithValue(response.message);
+      }
+      return response;
+    } catch {
+      return rejectWithValue('Hesap kapatma işlemi başarısız oldu');
+    }
+  }
+);
+
 // ============================================================================
 // SLICE
 // ============================================================================
@@ -264,21 +283,21 @@ export const authSlice = createSlice({
       state.isAuthenticated = false;
       state.error = null;
     },
-    
+
     /**
      * Error'u temizle
      */
     clearError: (state) => {
       state.error = null;
     },
-    
+
     /**
      * User bilgisini güncelle
      */
     setUser: (state, action: PayloadAction<UserDto | null>) => {
       state.user = action.payload;
     },
-    
+
     /**
      * Token'ları güncelle
      */
@@ -286,7 +305,7 @@ export const authSlice = createSlice({
       state.token = action.payload.token;
       state.refreshToken = action.payload.refreshToken;
     },
-    
+
     /**
      * State'i sıfırla
      */
@@ -412,6 +431,24 @@ export const authSlice = createSlice({
         state.refreshToken = null;
         state.isAuthenticated = false;
         state.error = null;
+      });
+
+    // ========== DEACTIVATE ACCOUNT ==========
+    builder
+      .addCase(deactivateAccount.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(deactivateAccount.fulfilled, (state) => {
+        state.isLoading = false;
+        state.user = null;
+        state.token = null;
+        state.refreshToken = null;
+        state.isAuthenticated = false;
+        state.error = null;
+      })
+      .addCase(deactivateAccount.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload as string;
       });
 
     // ========== UPDATE PROFILE PICTURE ==========

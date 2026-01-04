@@ -4,14 +4,15 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/body/redux/hooks';
-import { 
-  register, 
-  clearError, 
-  selectIsLoading, 
-  selectError, 
-  selectIsAuthenticated 
+import {
+  register,
+  clearError,
+  selectIsLoading,
+  selectError,
+  selectIsAuthenticated
 } from '@/body/redux/slices/auth/AuthSlice';
 import { RegisterRequestDto } from '@/body/redux/slices/auth/DTOs/AuthDTOs';
+import { sanitizePhoneInput, getPhoneError } from './utils/validation';
 import GoogleLoginButton from './components/GoogleLoginButton';
 
 /**
@@ -25,7 +26,7 @@ import GoogleLoginButton from './components/GoogleLoginButton';
 export default function RegisterPage() {
   const dispatch = useAppDispatch();
   const router = useRouter();
-  
+
   // Redux state'leri
   const isLoading = useAppSelector(selectIsLoading);
   const error = useAppSelector(selectError);
@@ -40,9 +41,10 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
   });
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [showPassword, setShowPassword] = useState(false);
   const [acceptTerms, setAcceptTerms] = useState(false);
-  const [validationError, setValidationError] = useState<string | null>(null);
+  const [isFocused, setIsFocused] = useState<string | null>(null);
 
   /**
    * Başarılı kayıt sonrası panel sayfasına yönlendirme
@@ -64,334 +66,248 @@ export default function RegisterPage() {
   }, [dispatch]);
 
   /**
-   * Form validasyonu
+   * Real-time Validation
    */
-  const validateForm = (): boolean => {
-    // Ad kontrolü
-    if (formData.name.length < 2) {
-      setValidationError('Ad en az 2 karakter olmalıdır!');
-      return false;
+  const validateField = (name: string, value: string) => {
+    let error = '';
+    switch (name) {
+      case 'name':
+        if (value.length < 2) error = 'Ad en az 2 karakter olmalıdır';
+        break;
+      case 'surname':
+        if (value.length < 2) error = 'Soyad en az 2 karakter olmalıdır';
+        break;
+      case 'email':
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) error = 'Geçerli bir e-posta adresi giriniz';
+        break;
+      case 'password':
+        if (value.length < 8) error = 'Şifre en az 8 karakter olmalıdır';
+        else if (!/[A-Z]/.test(value)) error = 'En az bir büyük harf içermelidir';
+        else if (!/[0-9]/.test(value)) error = 'En az bir rakam içermelidir';
+        break;
+      case 'confirmPassword':
+        if (value !== formData.password) error = 'Şifreler eşleşmiyor';
+        break;
+      case 'phone':
+        const phoneError = getPhoneError(value);
+        if (phoneError) error = phoneError;
+        break;
     }
-
-    // Soyad kontrolü
-    if (formData.surname.length < 2) {
-      setValidationError('Soyad en az 2 karakter olmalıdır!');
-      return false;
-    }
-
-    // Şifre kontrolü
-    if (formData.password !== formData.confirmPassword) {
-      setValidationError('Şifreler eşleşmiyor!');
-      return false;
-    }
-
-    // Şifre uzunluğu kontrolü
-    if (formData.password.length < 8) {
-      setValidationError('Şifre en az 8 karakter olmalıdır!');
-      return false;
-    }
-
-    // Kullanım koşulları kontrolü
-    if (!acceptTerms) {
-      setValidationError('Kullanım koşullarını kabul etmelisiniz!');
-      return false;
-    }
-
-    setValidationError(null);
-    return true;
+    setErrors(prev => ({ ...prev, [name]: error }));
+    return error === '';
   };
 
   /**
    * Form submit handler
-   * Kullanıcı kayıt işlemini gerçekleştirir
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submit edildi', formData);
-    
-    // Validasyon
-    if (!validateForm()) {
-      console.log('Validasyon başarısız');
-      return;
+
+    const fieldsToValidate = ['name', 'surname', 'email', 'password', 'confirmPassword'];
+    let isValid = true;
+    fieldsToValidate.forEach(field => {
+      if (!validateField(field, (formData as any)[field])) isValid = false;
+    });
+
+    if (!acceptTerms) {
+      setErrors(prev => ({ ...prev, terms: 'Kullanım koşullarını kabul etmelisiniz' }));
+      isValid = false;
     }
 
-    console.log('Validasyon başarılı, register dispatch ediliyor...');
-    
-    // Register action'ı dispatch et
-    try {
-      const result = await dispatch(register(formData));
-      console.log('Register sonucu:', result);
-    } catch (err) {
-      console.error('Register hatası:', err);
-    }
+    if (!isValid) return;
+
+    await dispatch(register(formData));
   };
 
   /**
    * Input change handler
-   * Form alanlarındaki değişiklikleri yönetir
    */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+
+    // Telefon alanı için sadece rakam kabul et
+    const sanitizedValue = name === 'phone' ? sanitizePhoneInput(value) : value;
+
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: sanitizedValue,
     }));
-    
-    // Yazarken error'ları temizle
-    if (error) {
-      dispatch(clearError());
-    }
-    if (validationError) {
-      setValidationError(null);
-    }
+
+    validateField(name, sanitizedValue);
   };
 
-  // Gösterilecek error mesajı
-  const displayError = validationError || error;
+  /**
+   * Hata mesajını 3 saniye sonra temizle (Kullanıcı isteği)
+   */
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        dispatch(clearError());
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error, dispatch]);
 
   return (
-    <div className="space-y-6">
-      {/* Başlık */}
+    <div className="space-y-5">
+      {/* Title */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-800">Kayıt Ol</h2>
-        <p className="text-gray-600 mt-2">
-          Yeni hesap oluşturun ve başlayın
+        <h2 className="text-2xl font-bold text-white tracking-tight">Hesap Oluştur</h2>
+        <p className="text-slate-400 text-[11px]">
+          Aramıza katılmak için formu doldurun
         </p>
       </div>
 
-      {/* Error Message */}
-      {displayError && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center justify-between">
-          <span>{displayError}</span>
-          <button 
-            onClick={() => {
-              dispatch(clearError());
-              setValidationError(null);
-            }}
-            className="text-red-500 hover:text-red-700"
-          >
-            ✕
-          </button>
+      {/* Global Error */}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/50 text-red-400 px-3 py-2 rounded-xl flex items-center gap-2 animate-shake">
+          <span className="text-xs font-medium">{error}</span>
+          <button onClick={() => dispatch(clearError())} className="ml-auto text-xs">✕</button>
         </div>
       )}
 
       {/* Register Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Name & Surname Row */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Name Input */}
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Ad
-            </label>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <div className="grid grid-cols-2 gap-3">
+          {/* Name */}
+          <div className="space-y-1">
+            <label className={`text-[10px] font-bold uppercase tracking-widest ${isFocused === 'name' ? 'text-blue-400' : 'text-slate-500'}`}>Ad</label>
             <input
               type="text"
-              id="name"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              required
-              disabled={isLoading}
+              onFocus={() => setIsFocused('name')}
+              onBlur={() => setIsFocused(null)}
               placeholder="Ahmet"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className={`w-full bg-white/5 border px-3 py-2 rounded-xl text-sm text-white outline-none transition-all ${errors.name ? 'border-red-500/50' : 'border-white/5 focus:border-blue-500/30'}`}
             />
+            {errors.name && <p className="text-red-400 text-[9px] font-medium mt-0.5">{errors.name}</p>}
           </div>
 
-          {/* Surname Input */}
-          <div>
-            <label
-              htmlFor="surname"
-              className="block text-sm font-medium text-gray-700 mb-2"
-            >
-              Soyad
-            </label>
+          {/* Surname */}
+          <div className="space-y-1">
+            <label className={`text-[10px] font-bold uppercase tracking-widest ${isFocused === 'surname' ? 'text-blue-400' : 'text-slate-500'}`}>Soyad</label>
             <input
               type="text"
-              id="surname"
               name="surname"
               value={formData.surname}
               onChange={handleChange}
-              required
-              disabled={isLoading}
+              onFocus={() => setIsFocused('surname')}
+              onBlur={() => setIsFocused(null)}
               placeholder="Yılmaz"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className={`w-full bg-white/5 border px-3 py-2 rounded-xl text-sm text-white outline-none transition-all ${errors.surname ? 'border-red-500/50' : 'border-white/5 focus:border-blue-500/30'}`}
             />
+            {errors.surname && <p className="text-red-400 text-[9px] font-medium mt-0.5">{errors.surname}</p>}
           </div>
         </div>
 
-        {/* Phone Input */}
-        <div>
-          <label
-            htmlFor="phone"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Telefon Numarası <span className="text-gray-400">(Opsiyonel)</span>
-          </label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            disabled={isLoading}
-            placeholder="05XX XXX XX XX"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-          />
+        {/* Email & Phone in one row to save space */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className={`text-[10px] font-bold uppercase tracking-widest ${isFocused === 'email' ? 'text-blue-400' : 'text-slate-500'}`}>E-posta</label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              onFocus={() => setIsFocused('email')}
+              onBlur={() => setIsFocused(null)}
+              placeholder="adiniz@ornek.com"
+              className={`w-full bg-white/5 border px-3 py-2 rounded-xl text-sm text-white outline-none transition-all ${errors.email ? 'border-red-500/50' : 'border-white/5 focus:border-blue-500/30'}`}
+            />
+            {errors.email && <p className="text-red-400 text-[9px] font-medium mt-0.5">{errors.email}</p>}
+          </div>
+          <div className="space-y-1">
+            <label className={`text-[10px] font-bold uppercase tracking-widest ${isFocused === 'phone' ? 'text-blue-400' : 'text-slate-500'}`}>Telefon</label>
+            <input
+              type="tel"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              onFocus={() => setIsFocused('phone')}
+              onBlur={() => setIsFocused(null)}
+              placeholder="05342503741"
+              className={`w-full bg-white/5 border px-3 py-2 rounded-xl text-sm text-white outline-none transition-all ${errors.phone ? 'border-red-500/50' : 'border-white/5 focus:border-blue-500/30'}`}
+            />
+            {errors.phone && <p className="text-red-400 text-[9px] font-medium mt-0.5">{errors.phone}</p>}
+          </div>
         </div>
 
-        {/* Email Input */}
-        <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            E-posta Adresi
-          </label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-            placeholder="ornek@email.com"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-          />
-        </div>
-
-        {/* Password Input */}
-        <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Şifre
-          </label>
-          <div className="relative">
+        {/* Password */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label className={`text-[10px] font-bold uppercase tracking-widest ${isFocused === 'password' ? 'text-blue-400' : 'text-slate-500'}`}>Şifre</label>
             <input
               type={showPassword ? 'text' : 'password'}
-              id="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              required
-              disabled={isLoading}
+              onFocus={() => setIsFocused('password')}
+              onBlur={() => setIsFocused(null)}
               placeholder="••••••••"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+              className={`w-full bg-white/5 border px-3 py-2 rounded-xl text-sm text-white outline-none transition-all ${errors.password ? 'border-red-500/50' : 'border-white/5 focus:border-blue-500/30'}`}
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              disabled={isLoading}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 disabled:cursor-not-allowed"
-            >
-              {showPassword ? '🙈' : '👁️'}
-            </button>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            En az 8 karakter, büyük harf, küçük harf ve rakam içermelidir
-          </p>
-        </div>
-
-        {/* Confirm Password Input */}
-        <div>
-          <label
-            htmlFor="confirmPassword"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Şifre Tekrar
-          </label>
-          <input
-            type={showPassword ? 'text' : 'password'}
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-            disabled={isLoading}
-            placeholder="••••••••"
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-          />
-        </div>
-
-        {/* Terms Checkbox */}
-        <div>
-          <label className="flex items-start">
+          <div className="space-y-1">
+            <label className={`text-[10px] font-bold uppercase tracking-widest ${isFocused === 'confirmPassword' ? 'text-blue-400' : 'text-slate-500'}`}>Tekrar</label>
             <input
-              type="checkbox"
-              checked={acceptTerms}
-              onChange={(e) => setAcceptTerms(e.target.checked)}
-              disabled={isLoading}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
+              type={showPassword ? 'text' : 'password'}
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              onFocus={() => setIsFocused('confirmPassword')}
+              onBlur={() => setIsFocused(null)}
+              placeholder="••••••••"
+              className={`w-full bg-white/5 border px-3 py-2 rounded-xl text-sm text-white outline-none transition-all ${errors.confirmPassword ? 'border-red-500/50' : 'border-white/5 focus:border-blue-500/30'}`}
             />
-            <span className="ml-2 text-sm text-gray-600">
-              <Link href="/terms" className="text-blue-600 hover:text-blue-700">
-                Kullanım Koşullarını
-              </Link>{' '}
-              ve{' '}
-              <Link href="/privacy" className="text-blue-600 hover:text-blue-700">
-                Gizlilik Politikasını
-              </Link>{' '}
-              kabul ediyorum
-            </span>
-          </label>
+          </div>
         </div>
+        {(errors.password || errors.confirmPassword) && (
+          <p className="text-red-400 text-[9px] font-medium">{errors.password || errors.confirmPassword}</p>
+        )}
 
-        {/* Submit Button */}
+        {/* Terms */}
+        <div className="flex items-center gap-2 py-1">
+          <input
+            type="checkbox"
+            checked={acceptTerms}
+            onChange={(e) => {
+              setAcceptTerms(e.target.checked);
+              setErrors(prev => ({ ...prev, terms: '' }));
+            }}
+            className="w-4 h-4 rounded bg-white/5 border-white/10 text-blue-600 focus:ring-0"
+          />
+          <span className="text-[10px] text-slate-400 leading-tight">
+            <Link href="/terms" className="text-blue-400 hover:text-blue-300 transition-colors font-bold">Kullanım Koşullarını</Link> ve <Link href="/privacy" className="text-blue-400 hover:text-blue-300 transition-colors font-bold">Gizlilik Politikasını</Link> kabul ediyorum.
+          </span>
+        </div>
+        {errors.terms && <p className="text-red-400 text-[9px] font-medium">{errors.terms}</p>}
+
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all disabled:bg-blue-400 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none flex items-center justify-center"
+          className="w-full relative overflow-hidden py-3 bg-blue-600 text-white rounded-xl font-bold tracking-wider text-sm transition-all hover:bg-blue-500 hover:shadow-[0_0_20px_rgba(37,99,235,0.4)] disabled:opacity-50 mt-1"
         >
-          {isLoading ? (
-            <>
-              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              Kayıt Yapılıyor...
-            </>
-          ) : (
-            'Kayıt Ol'
-          )}
+          {isLoading ? 'İşleniyor...' : 'Kayıt Ol'}
         </button>
       </form>
 
       {/* Divider */}
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <div className="w-full border-t border-gray-300"></div>
-        </div>
-        <div className="relative flex justify-center text-sm">
-          <span className="px-4 bg-white text-gray-500">veya</span>
-        </div>
+      <div className="relative flex items-center py-1">
+        <div className="flex-grow border-t border-white/5"></div>
+        <span className="mx-3 text-slate-500 text-[9px] font-bold tracking-widest uppercase">VEYA</span>
+        <div className="flex-grow border-t border-white/5"></div>
       </div>
 
-      {/* Google Register Button */}
-      <div className="space-y-3">
-        <GoogleLoginButton 
-          text="signup_with"
-          onSuccess={() => {
-            console.log('Google ile kayıt başarılı, yönlendirme yapılacak...');
-          }}
-          onError={(error) => {
-            console.error('Google ile kayıt hatası:', error);
-          }}
-        />
-      </div>
+      {/* Google Button */}
+      <GoogleLoginButton text="signup_with" />
 
       {/* Login Link */}
-      <div className="text-center">
-        <p className="text-gray-600">
-          Zaten hesabınız var mı?{' '}
-          <Link
-            href="/login"
-            className="text-blue-600 hover:text-blue-700 font-semibold"
-          >
+      <div className="text-center pt-1">
+        <p className="text-slate-500 text-xs">
+          Hesabınız var mı?{' '}
+          <Link href="/login" className="text-blue-400 hover:text-blue-300 font-bold border-b border-blue-400/20 hover:border-blue-300">
             Giriş Yap
           </Link>
         </p>

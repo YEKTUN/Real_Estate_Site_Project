@@ -47,7 +47,7 @@ public interface IAuthService
     /// </summary>
     /// <param name="userId">Kullanıcı ID'si</param>
     /// <returns>Kullanıcı bilgileri</returns>
-    Task<UserDto?> GetUserByIdAsync(string userId);
+    Task<UserDto?> GetUserByIdAsync(string userId, string? currentUserId = null);
 
     /// <summary>
     /// Kullanıcının profil fotoğrafını güncelle
@@ -85,4 +85,21 @@ public interface IAuthService
     /// <param name="changePasswordDto">Mevcut şifre, yeni şifre ve yeni şifre tekrarı</param>
     /// <returns>İşlem sonucu</returns>
     Task<AuthResponseDto> ChangePasswordAsync(string userId, ChangePasswordDto changePasswordDto);
+
+    /// <summary>
+    /// Hesabı pasife al ve ilanlarını pasif yap
+    /// </summary>
+    /// <param name="userId">Kullanıcı ID'si</param>
+    /// <returns>İşlem sonucu</returns>
+    Task<AuthResponseDto> DeactivateAccountAsync(string userId);
+
+    /// <summary>
+    /// Admin için kullanıcıyı email veya kullanıcı adına göre ara
+    /// </summary>
+    Task<AuthResponseDto> GetUserBySearchAsync(string searchTerm);
+
+    /// <summary>
+    /// Kullanıcının aktiflik durumunu tersine çevir
+    /// </summary>
+    Task<AuthResponseDto> ToggleUserStatusAsync(string userId);
 }

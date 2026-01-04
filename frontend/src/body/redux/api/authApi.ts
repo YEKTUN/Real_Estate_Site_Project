@@ -1,17 +1,17 @@
-import axiosInstance, { 
-  saveTokens, 
-  clearTokens, 
-  getToken, 
+import axiosInstance, {
+  saveTokens,
+  clearTokens,
+  getToken,
   getRefreshToken,
-  getUserFromToken, 
-  isTokenValid 
+  getUserFromToken,
+  isTokenValid
 } from './axiosInstance';
-import { 
-  LoginRequestDto, 
-  RegisterRequestDto, 
+import {
+  LoginRequestDto,
+  RegisterRequestDto,
   AuthResponseDto,
   UserDto,
-  GoogleLoginRequestDto 
+  GoogleLoginRequestDto
 } from '../slices/auth/DTOs/AuthDTOs';
 
 /**
@@ -35,19 +35,19 @@ export const loginApi = async (credentials: LoginRequestDto): Promise<AuthRespon
   try {
     const response = await axiosInstance.post<AuthResponseDto>('/auth/login', credentials);
     console.log('Login API yanıtı:', response.data);
-    
+
     // Başarılı giriş - token'ları kaydet
     if (response.data.success && response.data.token && response.data.refreshToken) {
       saveTokens(response.data.token, response.data.refreshToken);
     }
-    
+
     return response.data;
   } catch (error: unknown) {
     console.error('Login API hatası:', error);
     if (isAxiosError(error) && error.response?.data) {
       return error.response.data as AuthResponseDto;
     }
-    
+
     return {
       success: false,
       message: 'Giriş işlemi sırasında bir hata oluştu'
@@ -65,19 +65,19 @@ export const registerApi = async (userData: RegisterRequestDto): Promise<AuthRes
   try {
     const response = await axiosInstance.post<AuthResponseDto>('/auth/register', userData);
     console.log('Register API yanıtı:', response.data);
-    
+
     // Başarılı kayıt - token'ları kaydet
     if (response.data.success && response.data.token && response.data.refreshToken) {
       saveTokens(response.data.token, response.data.refreshToken);
     }
-    
+
     return response.data;
   } catch (error: unknown) {
     console.error('Register API hatası:', error);
     if (isAxiosError(error) && error.response?.data) {
       return error.response.data as AuthResponseDto;
     }
-    
+
     return {
       success: false,
       message: 'Kayıt işlemi sırasında bir hata oluştu'
@@ -95,19 +95,19 @@ export const googleLoginApi = async (googleData: GoogleLoginRequestDto): Promise
   try {
     const response = await axiosInstance.post<AuthResponseDto>('/auth/google', googleData);
     console.log('Google Login API yanıtı:', response.data);
-    
+
     // Başarılı giriş - token'ları kaydet
     if (response.data.success && response.data.token && response.data.refreshToken) {
       saveTokens(response.data.token, response.data.refreshToken);
     }
-    
+
     return response.data;
   } catch (error: unknown) {
     console.error('Google Login API hatası:', error);
     if (isAxiosError(error) && error.response?.data) {
       return error.response.data as AuthResponseDto;
     }
-    
+
     return {
       success: false,
       message: 'Google ile giriş işlemi sırasında bir hata oluştu'
@@ -121,7 +121,7 @@ export const googleLoginApi = async (googleData: GoogleLoginRequestDto): Promise
  */
 export const refreshTokenApi = async (): Promise<AuthResponseDto> => {
   const refreshToken = getRefreshToken();
-  
+
   if (!refreshToken) {
     return {
       success: false,
@@ -133,17 +133,17 @@ export const refreshTokenApi = async (): Promise<AuthResponseDto> => {
     const response = await axiosInstance.post<AuthResponseDto>('/auth/refresh', {
       refreshToken
     });
-    
+
     if (response.data.success && response.data.token && response.data.refreshToken) {
       saveTokens(response.data.token, response.data.refreshToken);
     }
-    
+
     return response.data;
   } catch (error: unknown) {
     if (isAxiosError(error) && error.response?.data) {
       return error.response.data as AuthResponseDto;
     }
-    
+
     return {
       success: false,
       message: 'Token yenileme sırasında bir hata oluştu'
@@ -157,7 +157,7 @@ export const refreshTokenApi = async (): Promise<AuthResponseDto> => {
  */
 export const logoutApi = async (): Promise<void> => {
   const refreshToken = getRefreshToken();
-  
+
   if (refreshToken) {
     try {
       await axiosInstance.post('/auth/logout', { refreshToken });
@@ -166,7 +166,7 @@ export const logoutApi = async (): Promise<void> => {
       console.warn('Logout API hatası, token\'lar temizleniyor');
     }
   }
-  
+
   clearTokens();
 };
 
@@ -182,7 +182,7 @@ export const getCurrentUserApi = async (): Promise<AuthResponseDto> => {
     if (isAxiosError(error) && error.response?.data) {
       return error.response.data as AuthResponseDto;
     }
-    
+
     return {
       success: false,
       message: 'Kullanıcı bilgileri alınamadı'
@@ -242,17 +242,19 @@ export const getUserFromStoredToken = (): UserDto | null => {
   if (!isTokenValid()) {
     return null;
   }
-  
+
   const userData = getUserFromToken();
   if (!userData) return null;
-  
+
   return {
     id: userData.id,
     name: userData.name,
     surname: userData.surname,
     email: userData.email,
-    // JWT içindeki "picture" claim'inden gelen profil fotoğrafı bilgisi
     profilePictureUrl: userData.profilePictureUrl,
+    isAdmin: userData.isAdmin ?? false,
+    isActive: userData.isActive ?? true,
+    phoneVerified: userData.phoneVerified ?? false,
   };
 };
 
@@ -296,7 +298,7 @@ export const forgetPasswordApi = async (email: string): Promise<AuthResponseDto>
     if (isAxiosError(error) && error.response?.data) {
       return error.response.data as AuthResponseDto;
     }
-    
+
     return {
       success: false,
       message: 'Şifre sıfırlama isteği sırasında bir hata oluştu'
@@ -333,7 +335,7 @@ export const resetPasswordApi = async (
     if (isAxiosError(error) && error.response?.data) {
       return error.response.data as AuthResponseDto;
     }
-    
+
     return {
       success: false,
       message: 'Şifre sıfırlama işlemi sırasında bir hata oluştu'
@@ -367,10 +369,39 @@ export const changePasswordApi = async (
     if (isAxiosError(error) && error.response?.data) {
       return error.response.data as AuthResponseDto;
     }
-    
+
     return {
       success: false,
       message: 'Şifre değiştirme işlemi sırasında bir hata oluştu'
+    };
+  }
+};
+
+/**
+ * Hesabı Pasife Al (Hesap Silme)
+ * @returns İşlem sonucu
+ */
+export const deactivateAccountApi = async (): Promise<AuthResponseDto> => {
+  console.log('deactivateAccountApi çağrıldı');
+  try {
+    const response = await axiosInstance.post<AuthResponseDto>('/auth/deactivate');
+    console.log('Deactivate Account API yanıtı:', response.data);
+
+    // Hesap pasife alındığında token'ları temizle
+    if (response.data.success) {
+      clearTokens();
+    }
+
+    return response.data;
+  } catch (error: unknown) {
+    console.error('Deactivate Account API hatası:', error);
+    if (isAxiosError(error) && error.response?.data) {
+      return error.response.data as AuthResponseDto;
+    }
+
+    return {
+      success: false,
+      message: 'Hesap kapatma işlemi sırasında bir hata oluştu'
     };
   }
 };

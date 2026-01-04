@@ -209,7 +209,8 @@ describe('ListingCard', () => {
         />
       );
 
-      expect(screen.getByText(/120m²/)).toBeInTheDocument();
+      expect(screen.getByText('120')).toBeInTheDocument();
+      expect(screen.getByText(/m²/i)).toBeInTheDocument();
     });
 
     test('should render floor number when available', () => {
@@ -223,7 +224,8 @@ describe('ListingCard', () => {
         />
       );
 
-      expect(screen.getByText(/3\. Kat/)).toBeInTheDocument();
+      expect(screen.getByText('3')).toBeInTheDocument();
+      expect(screen.getByText(/Kat/i)).toBeInTheDocument();
     });
   });
 
@@ -239,10 +241,8 @@ describe('ListingCard', () => {
         />
       );
 
-      const card = screen.getByText('Test İlan Başlığı').closest('div');
-      if (card) {
-        fireEvent.click(card);
-      }
+      const image = screen.getByAltText('Test İlan Başlığı');
+      fireEvent.click(image);
 
       expect(mockOnViewDetails).toHaveBeenCalledWith(1);
     });
@@ -294,6 +294,26 @@ describe('ListingCard', () => {
       // Favori butonu içinde ❤️ emoji'si olmalı
       const favoriteButton = screen.getByRole('button', { name: /favorilerden çıkar/i });
       expect(favoriteButton).toBeInTheDocument();
+      expect(screen.getByText('❤️')).toBeInTheDocument();
+    });
+
+    test('should not render favorite button when user is owner', () => {
+      const ownerId = "user-123";
+      const ownListing = { ...mockListing, ownerId: ownerId };
+
+      render(
+        <ListingCard
+          listing={ownListing}
+          isFavorited={false}
+          isToggling={false}
+          onFavoriteToggle={mockOnFavoriteToggle}
+          onViewDetails={mockOnViewDetails}
+          currentUserId={ownerId}
+        />
+      );
+
+      const favoriteButton = screen.queryByRole('button', { name: /favorilere ekle/i });
+      expect(favoriteButton).not.toBeInTheDocument();
     });
   });
 });

@@ -13,6 +13,7 @@ public interface IMessageRepository
     Task<ListingMessage> AddMessageAsync(ListingMessage message);
     Task<ListingMessageThread> AddThreadAsync(ListingMessageThread thread);
     Task<bool> MarkMessageAsReadAsync(int messageId, string userId);
+    Task<ListingMessage?> GetMessageByIdAsync(int messageId);
     Task SaveChangesAsync();
 }
 

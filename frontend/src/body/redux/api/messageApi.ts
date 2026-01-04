@@ -65,3 +65,10 @@ export const sendMessageApi = async (
   }
 };
 
+export const respondToOfferApi = async (messageId: number, accept: boolean): Promise<ListingMessageResponseDto> => {
+  const response = await axiosInstance.post<ListingMessageResponseDto>(`/messages/offer/${messageId}/respond`, null, {
+    params: { accept }
+  });
+  return response.data;
+};
+

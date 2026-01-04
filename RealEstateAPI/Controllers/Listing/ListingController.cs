@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using RealEstateAPI.DTOs.Listing;
 using RealEstateAPI.Models;
@@ -18,11 +19,16 @@ public class ListingController : ControllerBase
 {
     private readonly IListingService _listingService;
     private readonly ILogger<ListingController> _logger;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public ListingController(IListingService listingService, ILogger<ListingController> logger)
+    public ListingController(
+        IListingService listingService, 
+        ILogger<ListingController> logger,
+        UserManager<ApplicationUser> userManager)
     {
         _listingService = listingService;
         _logger = logger;
+        _userManager = userManager;
     }
 
     /// <summary>
@@ -73,6 +79,25 @@ public class ListingController : ControllerBase
         {
             _logger.LogWarning("İlan oluşturma hatası: Kullanıcı kimliği bulunamadı");
             return Unauthorized();
+        }
+
+        // Telefon doğrulama kontrolü
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            _logger.LogWarning("İlan oluşturma hatası: Kullanıcı bulunamadı. UserId: {UserId}", userId);
+            return Unauthorized();
+        }
+
+        if (!user.PhoneVerified)
+        {
+            _logger.LogWarning("İlan oluşturma hatası: Telefon doğrulanmamış. UserId: {UserId}", userId);
+            return BadRequest(new ListingResponseDto
+            {
+                Success = false,
+                Message = "İlan oluşturmak için telefon numaranızı doğrulamanız gerekmektedir.",
+                RequiresPhoneVerification = true
+            });
         }
 
         _logger.LogInformation("İlan oluşturma isteği. UserId: {UserId}, DTO: {@Dto}", userId, dto);

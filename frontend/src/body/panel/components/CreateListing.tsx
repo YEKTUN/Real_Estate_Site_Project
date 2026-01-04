@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { X, ChevronLeft, Rocket, ArrowRight, Check, Info, Sparkles } from 'lucide-react';
+
 import { useAppDispatch, useAppSelector } from '@/body/redux/hooks';
-import { 
+import {
   createListing,
   uploadListingImageFile,
   uploadMultipleListingImageFiles,
   selectListingCreating,
   selectListingError,
-  clearError 
+  clearError
 } from '@/body/redux/slices/listing/ListingSlice';
 import {
   CreateListingDto,
@@ -111,13 +113,13 @@ const exteriorFeatures = [
 
 // İl listesi
 const cities = [
-  'İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Bursa', 'Adana', 
+  'İstanbul', 'Ankara', 'İzmir', 'Antalya', 'Bursa', 'Adana',
   'Konya', 'Gaziantep', 'Mersin', 'Kayseri', 'Trabzon', 'Samsun'
 ];
 
 export default function CreateListing() {
   const dispatch = useAppDispatch();
-  
+
   // Redux state
   const isCreating = useAppSelector(selectListingCreating);
   const error = useAppSelector(selectListingError);
@@ -218,14 +220,14 @@ export default function CreateListing() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
-    
+
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setFormData((prev) => ({ ...prev, [name]: checked }));
     } else {
       setFormData((prev) => ({ ...prev, [name]: value }));
     }
-    
+
     // Error'u temizle
     if (error) {
       dispatch(clearError());
@@ -474,8 +476,8 @@ export default function CreateListing() {
    */
   const handleSubmit = async () => {
     try {
-      console.log('İlan oluşturuluyor:', formData);
-      
+      console.log('📝 İlan oluşturuluyor:', formData);
+
       // CreateListingDto oluştur
       const createDto: CreateListingDto = {
         title: formData.title,
@@ -510,27 +512,28 @@ export default function CreateListing() {
         interiorFeatures: formData.interiorFeatures.length > 0 ? formData.interiorFeatures : undefined,
         exteriorFeatures: formData.exteriorFeatures.length > 0 ? formData.exteriorFeatures : undefined,
       };
-      
-      console.log('CreateListingDto oluşturuldu:', createDto);
+
+      console.log('📤 CreateListingDto oluşturuldu:', createDto);
 
       // İlanı oluştur
       const result = await dispatch(createListing(createDto)).unwrap();
-      
+
       if (result.success && result.listingId) {
         setCreatedListingId(result.listingId);
-        
+        console.log('✅ İlan başarıyla oluşturuldu:', result.listingId);
+
         // Görselleri yükle
         if (selectedImages.length > 0) {
           try {
             await uploadImages(result.listingId);
-          } catch (imageError) {
-            console.error('Görsel yükleme hatası:', imageError);
-            // Görsel yükleme hatası olsa bile ilan oluşturuldu
+          } catch (imageError: any) {
+            console.error('❌ Görsel yükleme hatası:', imageError);
+            alert(`⚠️ İlan oluşturuldu ancak görseller yüklenirken hata oluştu: ${imageError?.message || 'Bilinmeyen hata'}`);
           }
         }
 
-        setSuccessMessage('İlanınız başarıyla oluşturuldu! İnceleme sonrası yayına alınacaktır.');
-        
+        setSuccessMessage('✅ İlanınız başarıyla oluşturuldu! İnceleme sonrası yayına alınacaktır.');
+
         // Formu sıfırla
         setFormData({
           title: '',
@@ -568,8 +571,10 @@ export default function CreateListing() {
         setCurrentStep('basic');
         setCreatedListingId(null);
       }
-    } catch (err) {
-      console.error('İlan oluşturma hatası:', err);
+    } catch (err: any) {
+      console.error('❌ İlan oluşturma hatası:', err);
+      // Error Redux state'inde tutulduğu için UI'da otomatik gösterilecek
+      // Alert'e gerek yok
     }
   };
 
@@ -590,129 +595,136 @@ export default function CreateListing() {
       case 'basic':
         return (
           <div className="space-y-6">
-            {/* Örnek ilan seçimi */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Örnekten doldur (otomatik form doldurma)
-              </label>
-              <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-                <select
-                  value={selectedSampleId}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (!value) {
-                      setSelectedSampleId('');
-                      return;
-                    }
-                    const id = parseInt(value, 10);
-                    setSelectedSampleId(id);
-                    applySampleListing(id);
-                  }}
-                  className="w-full text-gray-900 sm:w-72 px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-sm"
-                >
-                  <option value="">Seçiniz</option>
-                  {sampleListings.map((s) => (
-                    <option className="text-gray-900" key={s.id} value={s.id}>
-                      #{s.id} - {s.title}
-                    </option>
+            {/* Akıllı Form Doldurma - Compact Banner */}
+            <div className="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
+              <div className="w-12 h-12 bg-white rounded-xl shadow-sm flex items-center justify-center shrink-0 border border-indigo-50">
+                <Sparkles className="w-6 h-6 text-indigo-500" />
+              </div>
+              <div className="flex-1 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div className="grow">
+                    <h4 className="text-sm font-black text-indigo-900 uppercase tracking-tight">Akıllı Doldurma</h4>
+                    <p className="text-[11px] text-indigo-700/60 font-medium">Örnek seçerek formu hızlandırın.</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      value={selectedSampleId}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (!value) {
+                          setSelectedSampleId('');
+                          return;
+                        }
+                        const id = parseInt(value, 10);
+                        setSelectedSampleId(id);
+                        applySampleListing(id);
+                      }}
+                      className="px-3 py-1.5 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-[11px] font-bold text-indigo-900 shadow-sm"
+                    >
+                      <option value="">İlan Seçin</option>
+                      {sampleListings.map((s) => (
+                        <option key={s.id} value={s.id}>#{s.id} - {s.title}</option>
+                      ))}
+                    </select>
+                    {selectedSampleId && (
+                      <button
+                        onClick={() => applySampleListing(Number(selectedSampleId))}
+                        className="px-4 py-1.5 bg-indigo-600 text-white rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+                      >
+                        OK
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Kategori ve Tip - Horizontal Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+              {/* İlan Kategorisi */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Kategori</label>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: ListingCategory.Residential, label: 'Konut', icon: '🏠' },
+                    { value: ListingCategory.Commercial, label: 'İşyeri', icon: '🏢' },
+                    { value: ListingCategory.Land, label: 'Arsa', icon: '🌳' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.value}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, category: cat.value }))}
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all duration-300 ${formData.category === cat.value
+                        ? 'border-indigo-600 bg-indigo-50/50 shadow-sm'
+                        : 'border-slate-50 hover:border-slate-200 hover:bg-slate-50'
+                        }`}
+                    >
+                      <span className="text-xl mb-1">{cat.icon}</span>
+                      <span className={`text-[11px] font-bold ${formData.category === cat.value ? 'text-indigo-900' : 'text-slate-600'}`}>{cat.label}</span>
+                    </button>
                   ))}
+                </div>
+              </div>
+
+              {/* İlan Tipi */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">İşlem Tipi</label>
+                </div>
+                <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-100">
+                  {[
+                    { value: ListingType.ForSale, label: 'Satılık', icon: '🏷️' },
+                    { value: ListingType.ForRent, label: 'Kiralık', icon: '🔑' },
+                  ].map((type) => (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, type: type.value }))}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg font-bold text-xs transition-all ${formData.type === type.value
+                        ? 'bg-white text-indigo-600 shadow-sm'
+                        : 'text-slate-500 hover:text-slate-700'
+                        }`}
+                    >
+                      <span>{type.icon}</span> {type.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Başlık ve Mülk Tipi Grubu */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-1">
+                <label htmlFor="propertyType" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Mülk Tipi</label>
+                <select
+                  id="propertyType"
+                  name="propertyType"
+                  value={formData.propertyType}
+                  onChange={(e) => setFormData(prev => ({ ...prev, propertyType: parseInt(e.target.value) }))}
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none h-11"
+                >
+                  <option value={PropertyType.Apartment}>Daire</option>
+                  <option value={PropertyType.Residence}>Rezidans</option>
+                  <option value={PropertyType.Villa}>Villa</option>
+                  <option value={PropertyType.Detached}>Müstakil</option>
+                  <option value={PropertyType.Farmhouse}>Çiftlik</option>
                 </select>
-                <p className="text-xs text-gray-500 sm:ml-2">
-                  Bir örnek seçtiğinizde tüm temel alanlar otomatik doldurulur, siz sadece fotoğraf ekleyip yayına alırsınız.
-                </p>
               </div>
-            </div>
-
-            {/* İlan Kategorisi */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                İlan Kategorisi *
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {[
-                  { value: ListingCategory.Residential, label: '🏠 Konut' },
-                  { value: ListingCategory.Commercial, label: '🏢 İşyeri' },
-                  { value: ListingCategory.Land, label: '🌳 Arsa' },
-                ].map((cat) => (
-                  <button
-                    key={cat.value}
-                    type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, category: cat.value }))}
-                    className={`py-3 rounded-xl border-2 font-semibold transition-all ${
-                      formData.category === cat.value
-                        ? 'border-blue-600 bg-blue-50 text-blue-600'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
+              <div className="md:col-span-2">
+                <label htmlFor="title" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">İlan Başlığı</label>
+                <input
+                  type="text"
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleChange}
+                  placeholder="Deniz Manzaralı 3+1..."
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:ring-2 focus:ring-indigo-500 outline-none h-11"
+                  maxLength={200}
+                />
               </div>
-            </div>
-
-            {/* İlan Tipi */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                İlan Tipi *
-              </label>
-              <div className="flex gap-4">
-                {[
-                  { value: ListingType.ForSale, label: '🏷️ Satılık' },
-                  { value: ListingType.ForRent, label: '🔑 Kiralık' },
-                ].map((type) => (
-                  <button
-                    key={type.value}
-                    type="button"
-                    onClick={() => setFormData((prev) => ({ ...prev, type: type.value }))}
-                    className={`flex-1 py-4 rounded-xl border-2 font-semibold transition-all ${
-                      formData.type === type.value
-                        ? 'border-blue-600 bg-blue-50 text-blue-600'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    {type.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Mülk Tipi */}
-            <div>
-              <label htmlFor="propertyType" className="block text-sm font-medium text-gray-700 mb-2">
-                Mülk Tipi *
-              </label>
-              <select
-                id="propertyType"
-                name="propertyType"
-                value={formData.propertyType}
-                onChange={(e) => setFormData(prev => ({ ...prev, propertyType: parseInt(e.target.value) }))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              >
-                <option value={PropertyType.Apartment}>Daire</option>
-                <option value={PropertyType.Residence}>Rezidans</option>
-                <option value={PropertyType.Villa}>Villa</option>
-                <option value={PropertyType.Detached}>Müstakil Ev</option>
-                <option value={PropertyType.Farmhouse}>Çiftlik Evi</option>
-              </select>
-            </div>
-
-            {/* İlan Başlığı */}
-            <div>
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                İlan Başlığı *
-              </label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="Örn: Deniz Manzaralı 3+1 Lüks Daire"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                minLength={10}
-                maxLength={200}
-              />
-              <p className="text-xs text-gray-500 mt-1">{formData.title.length}/200 karakter</p>
             </div>
 
             {/* Açıklama */}
@@ -734,36 +746,36 @@ export default function CreateListing() {
               <p className="text-xs text-gray-500 mt-1">{formData.description.length}/5000 karakter (min: 50)</p>
             </div>
 
-            {/* Fiyat */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
-                  Fiyat *
-                </label>
-                <input
-                  type="number"
-                  id="price"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleChange}
-                  placeholder="Örn: 2500000"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  min="1"
-                />
-                <p className="text-sm text-gray-500 mt-1">
-                  {formData.type === ListingType.ForRent ? 'Aylık kira bedeli' : 'Satış fiyatı'}
-                </p>
+            {/* Fiyat Grubu - Optimized */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <label htmlFor="price" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Fiyat</label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    id="price"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleChange}
+                    placeholder="2.500.000"
+                    className="w-full pl-4 pr-12 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-black text-indigo-600 focus:ring-2 focus:ring-indigo-500 outline-none h-11"
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 font-black text-xs text-slate-400">₺</div>
+                </div>
               </div>
-              <div className="flex items-end gap-2">
-                <label className="flex items-center gap-2 cursor-pointer">
+              <div className="flex items-end pb-3">
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center transition-all ${formData.isNegotiable ? 'border-indigo-600 bg-indigo-600' : 'border-slate-200 bg-white group-hover:border-indigo-300'}`}>
+                    {formData.isNegotiable && <Check className="w-3 h-3 text-white" />}
+                  </div>
                   <input
                     type="checkbox"
                     name="isNegotiable"
                     checked={formData.isNegotiable}
                     onChange={handleChange}
-                    className="w-5 h-5 text-blue-600 rounded"
+                    className="hidden"
                   />
-                  <span className="text-sm text-gray-700">Pazarlık Payı Var</span>
+                  <span className="text-[11px] font-bold text-slate-600 uppercase tracking-tight">Pazarlık Payı</span>
                 </label>
               </div>
             </div>
@@ -802,54 +814,45 @@ export default function CreateListing() {
               </div>
             )}
 
-            {/* Konum */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Konum Grubu - Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
-                  İl *
-                </label>
+                <label htmlFor="city" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Şehir</label>
                 <select
                   id="city"
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 h-11 outline-none focus:ring-2 focus:ring-indigo-500"
                 >
-                  <option value="">Seçiniz</option>
-                  {cities.map((city) => (
-                    <option key={city} value={city}>{city}</option>
-                  ))}
+                  <option value="">Seç</option>
+                  {cities.map((city) => <option key={city} value={city}>{city}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="district" className="block text-sm font-medium text-gray-700 mb-2">
-                  İlçe *
-                </label>
+                <label htmlFor="district" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">İlçe</label>
                 <input
                   type="text"
                   id="district"
                   name="district"
                   value={formData.district}
                   onChange={handleChange}
-                  placeholder="Örn: Kadıköy"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  placeholder="Kadıköy"
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold h-11 outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
-            </div>
-
-            <div>
-              <label htmlFor="neighborhood" className="block text-sm font-medium text-gray-700 mb-2">
-                Mahalle
-              </label>
-              <input
-                type="text"
-                id="neighborhood"
-                name="neighborhood"
-                value={formData.neighborhood}
-                onChange={handleChange}
-                placeholder="Örn: Caferağa"
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-              />
+              <div>
+                <label htmlFor="neighborhood" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Mahalle</label>
+                <input
+                  type="text"
+                  id="neighborhood"
+                  name="neighborhood"
+                  value={formData.neighborhood}
+                  onChange={handleChange}
+                  placeholder="Acıbadem"
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold h-11 outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
             </div>
           </div>
         );
@@ -857,148 +860,56 @@ export default function CreateListing() {
       case 'details':
         return (
           <div className="space-y-6">
-            {/* Oda Sayısı ve Alan */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Properties Grid - Optimized */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <div>
-                <label htmlFor="roomCount" className="block text-sm font-medium text-gray-700 mb-2">
-                  Oda Sayısı
-                </label>
-                <select
-                  id="roomCount"
-                  name="roomCount"
-                  value={formData.roomCount}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
+                <label htmlFor="roomCount" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Oda Sayısı</label>
+                <select id="roomCount" name="roomCount" value={formData.roomCount} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 h-10 outline-none focus:ring-2 focus:ring-indigo-500">
                   <option value="">Seçiniz</option>
-                  <option value="1+0">1+0 (Stüdyo)</option>
+                  <option value="1+0">1+0</option>
                   <option value="1+1">1+1</option>
                   <option value="2+1">2+1</option>
                   <option value="3+1">3+1</option>
                   <option value="4+1">4+1</option>
                   <option value="5+1">5+1</option>
-                  <option value="5+2">5+2</option>
-                  <option value="6+">6+</option>
                 </select>
               </div>
               <div>
-                <label htmlFor="bathroomCount" className="block text-sm font-medium text-gray-700 mb-2">
-                  Banyo Sayısı
-                </label>
-                <select
-                  id="bathroomCount"
-                  name="bathroomCount"
-                  value={formData.bathroomCount}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
+                <label htmlFor="bathroomCount" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Banyo</label>
+                <select id="bathroomCount" name="bathroomCount" value={formData.bathroomCount} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 h-10 outline-none focus:ring-2 focus:ring-indigo-500">
                   <option value="">Seçiniz</option>
-                  {[1, 2, 3, 4, 5].map((num) => (
-                    <option key={num} value={num}>{num}</option>
-                  ))}
+                  {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
               </div>
-            </div>
+              <div>
+                <label htmlFor="grossSquareMeters" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Brüt m²</label>
+                <input type="number" id="grossSquareMeters" name="grossSquareMeters" value={formData.grossSquareMeters} onChange={handleChange} placeholder="150" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold h-10 outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
+              <div>
+                <label htmlFor="netSquareMeters" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Net m²</label>
+                <input type="number" id="netSquareMeters" name="netSquareMeters" value={formData.netSquareMeters} onChange={handleChange} placeholder="130" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold h-10 outline-none focus:ring-2 focus:ring-indigo-500" />
+              </div>
 
-            {/* Alan */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label htmlFor="grossSquareMeters" className="block text-sm font-medium text-gray-700 mb-2">
-                  Brüt m²
-                </label>
-                <input
-                  type="number"
-                  id="grossSquareMeters"
-                  name="grossSquareMeters"
-                  value={formData.grossSquareMeters}
-                  onChange={handleChange}
-                  placeholder="Örn: 150"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
+                <label htmlFor="floorNumber" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Bulunduğu Kat</label>
+                <input type="number" id="floorNumber" name="floorNumber" value={formData.floorNumber} onChange={handleChange} placeholder="5" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold h-10 outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div>
-                <label htmlFor="netSquareMeters" className="block text-sm font-medium text-gray-700 mb-2">
-                  Net m²
-                </label>
-                <input
-                  type="number"
-                  id="netSquareMeters"
-                  name="netSquareMeters"
-                  value={formData.netSquareMeters}
-                  onChange={handleChange}
-                  placeholder="Örn: 130"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Kat Bilgisi */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="floorNumber" className="block text-sm font-medium text-gray-700 mb-2">
-                  Bulunduğu Kat
-                </label>
-                <input
-                  type="number"
-                  id="floorNumber"
-                  name="floorNumber"
-                  value={formData.floorNumber}
-                  onChange={handleChange}
-                  placeholder="Örn: 5"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
+                <label htmlFor="totalFloors" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Toplam Kat</label>
+                <input type="number" id="totalFloors" name="totalFloors" value={formData.totalFloors} onChange={handleChange} placeholder="10" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold h-10 outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div>
-                <label htmlFor="totalFloors" className="block text-sm font-medium text-gray-700 mb-2">
-                  Toplam Kat Sayısı
-                </label>
-                <input
-                  type="number"
-                  id="totalFloors"
-                  name="totalFloors"
-                  value={formData.totalFloors}
-                  onChange={handleChange}
-                  placeholder="Örn: 10"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
-              </div>
-            </div>
-
-            {/* Bina Yaşı ve Isıtma */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="buildingAge" className="block text-sm font-medium text-gray-700 mb-2">
-                  Bina Yaşı
-                </label>
-                <input
-                  type="number"
-                  id="buildingAge"
-                  name="buildingAge"
-                  value={formData.buildingAge}
-                  onChange={handleChange}
-                  placeholder="Örn: 5"
-                  min="0"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                />
+                <label htmlFor="buildingAge" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Bina Yaşı</label>
+                <input type="number" id="buildingAge" name="buildingAge" value={formData.buildingAge} onChange={handleChange} placeholder="0-30" className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold h-10 outline-none focus:ring-2 focus:ring-indigo-500" />
               </div>
               <div>
-                <label htmlFor="heatingType" className="block text-sm font-medium text-gray-700 mb-2">
-                  Isıtma Tipi
-                </label>
-                <select
-                  id="heatingType"
-                  name="heatingType"
-                  value={formData.heatingType}
-                  onChange={(e) => setFormData(prev => ({ ...prev, heatingType: parseInt(e.target.value) || '' as any }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
+                <label htmlFor="heatingType" className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Isıtma</label>
+                <select id="heatingType" name="heatingType" value={formData.heatingType} onChange={(e) => setFormData(p => ({ ...p, heatingType: parseInt(e.target.value) || '' as any }))} className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 h-10 outline-none focus:ring-2 focus:ring-indigo-500">
                   <option value="">Seçiniz</option>
-                  <option value={HeatingType.Individual}>Bireysel (Kombi)</option>
+                  <option value={HeatingType.Individual}>Kombi</option>
                   <option value={HeatingType.Central}>Merkezi</option>
-                  <option value={HeatingType.FloorHeating}>Yerden Isıtma</option>
                   <option value={HeatingType.NaturalGas}>Doğalgaz</option>
                   <option value={HeatingType.AirConditioning}>Klima</option>
-                  <option value={HeatingType.None}>Yok</option>
                 </select>
               </div>
             </div>
@@ -1077,11 +988,10 @@ export default function CreateListing() {
                     key={feature.id}
                     type="button"
                     onClick={() => handleInteriorFeatureToggle(feature.id)}
-                    className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                      formData.interiorFeatures.includes(feature.id)
-                        ? 'border-blue-600 bg-blue-50 text-blue-600'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${formData.interiorFeatures.includes(feature.id)
+                      ? 'border-blue-600 bg-blue-50 text-blue-600'
+                      : 'border-gray-200 hover:border-gray-300'
+                      }`}
                   >
                     {feature.label}
                   </button>
@@ -1100,11 +1010,10 @@ export default function CreateListing() {
                     key={feature.id}
                     type="button"
                     onClick={() => handleExteriorFeatureToggle(feature.id)}
-                    className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${
-                      formData.exteriorFeatures.includes(feature.id)
-                        ? 'border-green-600 bg-green-50 text-green-600'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
+                    className={`px-4 py-2 rounded-lg border-2 text-sm font-medium transition-all ${formData.exteriorFeatures.includes(feature.id)
+                      ? 'border-green-600 bg-green-50 text-green-600'
+                      : 'border-gray-200 hover:border-gray-300'
+                      }`}
                   >
                     {feature.label}
                   </button>
@@ -1133,11 +1042,10 @@ export default function CreateListing() {
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-2xl p-12 transition-all cursor-pointer ${
-                  isDragging
-                    ? 'border-blue-500 bg-blue-50 scale-105'
-                    : 'border-gray-300 hover:border-blue-400'
-                }`}
+                className={`border-2 border-dashed rounded-2xl p-12 transition-all cursor-pointer ${isDragging
+                  ? 'border-blue-500 bg-blue-50 scale-105'
+                  : 'border-gray-300 hover:border-blue-400'
+                  }`}
               >
                 <div className="text-6xl mb-4">📷</div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
@@ -1269,9 +1177,8 @@ export default function CreateListing() {
                   </div>
                 )}
                 <div className="absolute top-4 left-4 flex gap-2">
-                  <span className={`px-3 py-1 rounded-full text-sm font-semibold text-white backdrop-blur-sm bg-black/30 ${
-                    formData.type === ListingType.ForSale ? 'bg-blue-600/80' : 'bg-green-600/80'
-                  }`}>
+                  <span className={`px-3 py-1 rounded-full text-sm font-semibold text-white backdrop-blur-sm bg-black/30 ${formData.type === ListingType.ForSale ? 'bg-blue-600/80' : 'bg-green-600/80'
+                    }`}>
                     {formData.type === ListingType.ForSale ? 'Satılık' : 'Kiralık'}
                   </span>
                 </div>
@@ -1386,64 +1293,93 @@ export default function CreateListing() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Error Alert */}
+    <div className="max-w-5xl mx-auto py-4 px-2 lg:px-0">
+      {/* Error Alert - Premium */}
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center gap-3">
-          <span className="text-2xl">❌</span>
-          <p className="text-red-700">{error}</p>
-          <button onClick={() => dispatch(clearError())} className="ml-auto text-red-500 hover:text-red-700">✕</button>
+        <div className="bg-rose-50/80 backdrop-blur-sm border-2 border-rose-200 rounded-2xl p-5 mb-6 animate-in slide-in-from-top duration-300 shadow-lg shadow-rose-100/50">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-white rounded-xl shadow-md flex items-center justify-center shrink-0 border border-rose-100">
+              <span className="text-2xl">⚠️</span>
+            </div>
+            <div className="flex-1 space-y-2">
+              <h5 className="font-black text-rose-900 text-sm uppercase tracking-tight">İşlem Başarısız</h5>
+              <p className="text-rose-700 text-sm font-medium leading-relaxed">{error}</p>
+
+              {/* Telefon doğrulama hatası için özel mesaj */}
+              {(error.toLowerCase().includes('phone') || error.toLowerCase().includes('telefon')) && (
+                <div className="mt-3 p-3 bg-white/80 rounded-xl border border-rose-100">
+                  <p className="text-xs text-rose-600 font-bold mb-2">💡 Nasıl düzeltilir?</p>
+                  <p className="text-xs text-slate-600 mb-3">
+                    İlan oluşturabilmek için telefon numaranızı doğrulamanız gerekmektedir.
+                  </p>
+                  <button
+                    onClick={() => {
+                      // Panel'deki activeMenu state'ini değiştirmek için custom event gönder
+                      window.dispatchEvent(new CustomEvent('switchPanelTab', { detail: { tab: 'profile' } }));
+                      // Error'u temizle
+                      dispatch(clearError());
+                    }}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-lg text-xs font-black uppercase tracking-wider hover:bg-rose-700 transition-all shadow-md hover:shadow-lg active:scale-95"
+                  >
+                    <span>📱</span>
+                    Telefonu Doğrula
+                  </button>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => dispatch(clearError())}
+              className="p-2 hover:bg-white rounded-xl transition-colors text-rose-400 hover:text-rose-600 shrink-0"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Progress Steps */}
-      <div className="flex items-center justify-between overflow-x-auto pb-4">
-        {steps.map((step, index) => {
-          const stepOrder: Step[] = ['basic', 'details', 'photos', 'preview'];
-          const currentIndex = stepOrder.indexOf(currentStep);
-          const stepIndex = stepOrder.indexOf(step.id);
-          const isActive = step.id === currentStep;
-          const isCompleted = stepIndex < currentIndex;
+      {/* Progress Header - Minimized */}
+      <div className="bg-white rounded-[24px] border border-slate-100 p-6 shadow-sm mb-6">
+        <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="shrink-0">
+            <h1 className="text-xl font-black text-slate-900 uppercase tracking-tighter leading-none">İLAN OLUŞTUR</h1>
+            <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] mt-1.5 opacity-80">Yeni Kayıt</p>
+          </div>
 
-          return (
-            <div key={step.id} className="flex items-center">
-              <button
-                onClick={() => setCurrentStep(step.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all ${
-                  isActive
-                    ? 'bg-blue-600 text-white'
-                    : isCompleted
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-gray-100 text-gray-500'
-                }`}
-              >
-                <span>{isCompleted ? '✓' : step.icon}</span>
-                <span className="hidden sm:inline font-medium">{step.label}</span>
-              </button>
-              {index < steps.length - 1 && (
-                <div className={`w-8 lg:w-16 h-1 mx-2 rounded ${
-                  isCompleted ? 'bg-green-400' : 'bg-gray-200'
-                }`} />
-              )}
+          <div className="flex items-center bg-slate-50 p-1 rounded-xl border border-slate-100">
+            <div className="flex -space-x-2">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className={`w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-black transition-all ${steps.indexOf(steps.find(s => s.id === currentStep)!) >= i - 1 ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-400'
+                  }`}>
+                  {i}
+                </div>
+              ))}
             </div>
-          );
-        })}
+          </div>
+        </div>
+
+        {/* Minimized Progress Bar */}
+        <div className="relative h-1 bg-slate-50 rounded-full overflow-hidden mb-6">
+          <div
+            className="absolute inset-y-0 left-0 bg-indigo-600 rounded-full transition-all duration-700 ease-out"
+            style={{ width: `${((steps.indexOf(steps.find(s => s.id === currentStep)!) + 1) / steps.length) * 100}%` }}
+          />
+        </div>
+
+        {/* Content Area - Tighter padding */}
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 min-h-[400px]">
+          {renderStepContent()}
+        </div>
       </div>
 
-      {/* Step Content */}
-      <div className="bg-gray-50 rounded-2xl p-6">
-        {renderStepContent()}
-      </div>
-
-      {/* Navigation Buttons */}
-      <div className="flex justify-between pt-4">
+      {/* Navigation - More Compact */}
+      <div className="bg-white/90 backdrop-blur-xl border border-slate-100 p-3 rounded-2xl shadow-lg flex justify-between gap-3 sticky bottom-4 z-30">
         <button
           type="button"
           onClick={handleBack}
           disabled={currentStep === 'basic'}
-          className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          className="flex items-center gap-2 px-5 py-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 transition-all font-black text-[10px] uppercase tracking-widest disabled:opacity-30 border border-slate-200"
         >
-          ← Geri
+          <ChevronLeft className="w-4 h-4" /> geri
         </button>
 
         {currentStep === 'preview' ? (
@@ -1451,29 +1387,24 @@ export default function CreateListing() {
             type="button"
             onClick={handleSubmit}
             disabled={isCreating || uploadingImages}
-            className="px-8 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-semibold disabled:bg-green-400 disabled:cursor-not-allowed flex items-center gap-2"
+            className="flex items-center gap-2 px-8 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-black text-[10px] uppercase tracking-[0.2em] shadow-lg shadow-indigo-200 disabled:opacity-50"
           >
             {isCreating || uploadingImages ? (
-              <>
-                <span className="animate-spin">⏳</span>
-                {isCreating ? 'Yayınlanıyor...' : `Görseller yükleniyor... ${uploadProgress}%`}
-              </>
-            ) : (
-              <>
-                🚀 İlanı Yayınla
-              </>
-            )}
+              <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : <Rocket className="w-3.5 h-3.5" />}
+            {isCreating || uploadingImages ? 'Yayınlanıyor...' : 'Yayınla'}
           </button>
         ) : (
           <button
             type="button"
             onClick={handleNext}
-            className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold"
+            className="flex items-center gap-2 px-8 py-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all font-black text-[10px] uppercase tracking-[0.2em] group"
           >
-            İleri →
+            İlerle <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
           </button>
         )}
       </div>
     </div>
   );
 }
+

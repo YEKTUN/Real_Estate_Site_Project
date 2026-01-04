@@ -155,6 +155,14 @@ public class MessageRepository : IMessageRepository
         return true;
     }
 
+    public async Task<ListingMessage?> GetMessageByIdAsync(int messageId)
+    {
+        return await _context.ListingMessages
+            .Include(m => m.Thread)
+            .Include(m => m.Sender)
+            .FirstOrDefaultAsync(m => m.Id == messageId);
+    }
+
     public Task SaveChangesAsync() => _context.SaveChangesAsync();
 }
 

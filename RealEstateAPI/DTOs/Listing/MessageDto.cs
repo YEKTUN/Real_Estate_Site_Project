@@ -12,6 +12,7 @@ public class ListingMessageDto
     public string Content { get; set; } = string.Empty;
     public decimal? OfferPrice { get; set; }
     public bool IsOffer { get; set; }
+    public int OfferStatus { get; set; }
     public string? AttachmentUrl { get; set; }
     public string? AttachmentType { get; set; }
     public string? AttachmentFileName { get; set; }
@@ -25,6 +26,7 @@ public class ListingMessageThreadDto
     public int Id { get; set; }
     public int ListingId { get; set; }
     public string ListingTitle { get; set; } = string.Empty;
+    public decimal ListingPrice { get; set; }
     public string SellerId { get; set; } = string.Empty;
     public string SellerName { get; set; } = string.Empty;
     public string? SellerSurname { get; set; }
@@ -35,6 +37,7 @@ public class ListingMessageThreadDto
     public string? BuyerProfilePictureUrl { get; set; }
     public DateTime? LastMessageAt { get; set; }
     public int UnreadCount { get; set; }
+    public int ListingCurrency { get; set; } // Para birimi (Enum: TRY=1, USD=2, EUR=3, GBP=4)
     public List<ListingMessageDto> Messages { get; set; } = new();
 }
 

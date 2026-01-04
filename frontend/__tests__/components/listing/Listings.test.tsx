@@ -221,7 +221,7 @@ describe('Listings', () => {
         </Provider>
       );
 
-      expect(screen.getByRole('button', { name: /sonraki/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Go to next page/i })).toBeInTheDocument();
     });
   });
 

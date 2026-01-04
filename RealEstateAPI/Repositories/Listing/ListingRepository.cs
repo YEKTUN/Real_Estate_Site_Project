@@ -73,6 +73,7 @@ public class ListingRepository : IListingRepository
     {
         return await _context.Listings
             .Include(l => l.User)
+                .ThenInclude(u => u.Settings) // Gizlilik ayarlarını yükle
             .Include(l => l.Images.OrderBy(i => i.DisplayOrder))
             .Include(l => l.InteriorFeatures)
             .Include(l => l.ExteriorFeatures)
@@ -93,6 +94,7 @@ public class ListingRepository : IListingRepository
         // Sadece onaylanmış (Active) ilanları göster
         var query = _context.Listings
             .Where(l => l.Status == ListingStatus.Active)
+            .Include(l => l.User)
             .Include(l => l.Images.Where(i => i.IsCoverImage))
             .OrderByDescending(l => l.CreatedAt);
 
@@ -110,122 +112,130 @@ public class ListingRepository : IListingRepository
         // Sadece onaylanmış (Active) ilanları göster
         var query = _context.Listings
             .Where(l => l.Status == ListingStatus.Active)
+            .Include(l => l.User)
             .Include(l => l.Images.Where(i => i.IsCoverImage))
             .Include(l => l.InteriorFeatures)
             .Include(l => l.ExteriorFeatures)
             .AsQueryable();
 
-        // Arama terimi
-        if (!string.IsNullOrWhiteSpace(searchDto.SearchTerm))
+        // İlan Numarası ile Arama (Filtrelerden bağımsız)
+        if (!string.IsNullOrWhiteSpace(searchDto.ListingNumber))
         {
-            var term = searchDto.SearchTerm.ToLower();
-            query = query.Where(l => 
-                l.Title.ToLower().Contains(term) || 
-                l.Description.ToLower().Contains(term) ||
-                l.City.ToLower().Contains(term) ||
-                l.District.ToLower().Contains(term));
+            var number = searchDto.ListingNumber.Trim();
+            query = query.Where(l => l.ListingNumber == number);
         }
-
-        // Kategori & Tip Filtreleri
-        if (searchDto.Category.HasValue)
-            query = query.Where(l => l.Category == searchDto.Category.Value);
-
-        if (searchDto.Type.HasValue)
-            query = query.Where(l => l.Type == searchDto.Type.Value);
-
-        if (searchDto.PropertyType.HasValue)
-            query = query.Where(l => l.PropertyType == searchDto.PropertyType.Value);
-
-        // Fiyat Aralığı
-        if (searchDto.MinPrice.HasValue)
-            query = query.Where(l => l.Price >= searchDto.MinPrice.Value);
-
-        if (searchDto.MaxPrice.HasValue)
-            query = query.Where(l => l.Price <= searchDto.MaxPrice.Value);
-
-        if (searchDto.Currency.HasValue)
-            query = query.Where(l => l.Currency == searchDto.Currency.Value);
-
-        // Konum Filtreleri
-        if (!string.IsNullOrWhiteSpace(searchDto.City))
-            query = query.Where(l => l.City.ToLower() == searchDto.City.ToLower());
-
-        if (!string.IsNullOrWhiteSpace(searchDto.District))
-            query = query.Where(l => l.District.ToLower() == searchDto.District.ToLower());
-
-        if (!string.IsNullOrWhiteSpace(searchDto.Neighborhood))
-            query = query.Where(l => l.Neighborhood != null && l.Neighborhood.ToLower().Contains(searchDto.Neighborhood.ToLower()));
-
-        // Alan Filtreleri (Net m²)
-        if (searchDto.MinSquareMeters.HasValue)
-            query = query.Where(l => l.NetSquareMeters >= searchDto.MinSquareMeters.Value);
-
-        if (searchDto.MaxSquareMeters.HasValue)
-            query = query.Where(l => l.NetSquareMeters <= searchDto.MaxSquareMeters.Value);
-
-        // Oda Filtreleri
-        if (!string.IsNullOrWhiteSpace(searchDto.RoomCount))
-            query = query.Where(l => l.RoomCount == searchDto.RoomCount);
-
-        if (searchDto.RoomCounts != null && searchDto.RoomCounts.Any())
-            query = query.Where(l => l.RoomCount != null && searchDto.RoomCounts.Contains(l.RoomCount));
-
-        // Bina Özellikleri
-        if (searchDto.MinBuildingAge.HasValue)
-            query = query.Where(l => l.BuildingAge >= searchDto.MinBuildingAge.Value);
-
-        if (searchDto.MaxBuildingAge.HasValue)
-            query = query.Where(l => l.BuildingAge <= searchDto.MaxBuildingAge.Value);
-
-        if (searchDto.MinFloor.HasValue)
-            query = query.Where(l => l.FloorNumber >= searchDto.MinFloor.Value);
-
-        if (searchDto.MaxFloor.HasValue)
-            query = query.Where(l => l.FloorNumber <= searchDto.MaxFloor.Value);
-
-        // Diğer Filtreler
-        if (searchDto.HeatingType.HasValue)
-            query = query.Where(l => l.HeatingType == searchDto.HeatingType.Value);
-
-        if (searchDto.BuildingStatus.HasValue)
-            query = query.Where(l => l.BuildingStatus == searchDto.BuildingStatus.Value);
-
-        if (searchDto.UsageStatus.HasValue)
-            query = query.Where(l => l.UsageStatus == searchDto.UsageStatus.Value);
-
-        if (searchDto.DeedStatus.HasValue)
-            query = query.Where(l => l.DeedStatus == searchDto.DeedStatus.Value);
-
-        if (searchDto.OwnerType.HasValue)
-            query = query.Where(l => l.OwnerType == searchDto.OwnerType.Value);
-
-        // Boolean Filtreler
-        if (searchDto.IsSuitableForCredit.HasValue)
-            query = query.Where(l => l.IsSuitableForCredit == searchDto.IsSuitableForCredit.Value);
-
-        if (searchDto.IsSuitableForTrade.HasValue)
-            query = query.Where(l => l.IsSuitableForTrade == searchDto.IsSuitableForTrade.Value);
-
-        if (searchDto.IsFeatured.HasValue)
-            query = query.Where(l => l.IsFeatured == searchDto.IsFeatured.Value);
-
-        if (searchDto.IsUrgent.HasValue)
-            query = query.Where(l => l.IsUrgent == searchDto.IsUrgent.Value);
-
-        // Özellik Filtreleri
-        if (searchDto.InteriorFeatures != null && searchDto.InteriorFeatures.Any())
+        else
         {
-            foreach (var feature in searchDto.InteriorFeatures)
+            // Arama terimi (Başlık ve Açıklama)
+            if (!string.IsNullOrWhiteSpace(searchDto.SearchTerm))
             {
-                query = query.Where(l => l.InteriorFeatures.Any(f => f.FeatureType == feature));
+                var term = searchDto.SearchTerm.ToLower();
+                query = query.Where(l => 
+                    l.Title.ToLower().Contains(term) || 
+                    l.Description.ToLower().Contains(term));
             }
-        }
 
-        if (searchDto.ExteriorFeatures != null && searchDto.ExteriorFeatures.Any())
-        {
-            foreach (var feature in searchDto.ExteriorFeatures)
+            // Kategori & Tip Filtreleri
+            if (searchDto.Category.HasValue)
+                query = query.Where(l => l.Category == searchDto.Category.Value);
+
+            if (searchDto.Type.HasValue)
+                query = query.Where(l => l.Type == searchDto.Type.Value);
+
+            if (searchDto.PropertyType.HasValue)
+                query = query.Where(l => l.PropertyType == searchDto.PropertyType.Value);
+
+            // Fiyat Aralığı
+            if (searchDto.MinPrice.HasValue)
+                query = query.Where(l => l.Price >= searchDto.MinPrice.Value);
+
+            if (searchDto.MaxPrice.HasValue)
+                query = query.Where(l => l.Price <= searchDto.MaxPrice.Value);
+
+            if (searchDto.Currency.HasValue)
+                query = query.Where(l => l.Currency == searchDto.Currency.Value);
+
+            // Konum Filtreleri
+            if (!string.IsNullOrWhiteSpace(searchDto.City))
+                query = query.Where(l => l.City.ToLower() == searchDto.City.ToLower());
+
+            if (!string.IsNullOrWhiteSpace(searchDto.District))
+                query = query.Where(l => l.District.ToLower() == searchDto.District.ToLower());
+
+            if (!string.IsNullOrWhiteSpace(searchDto.Neighborhood))
+                query = query.Where(l => l.Neighborhood != null && l.Neighborhood.ToLower().Contains(searchDto.Neighborhood.ToLower()));
+
+            // Alan Filtreleri (Net m²)
+            if (searchDto.MinSquareMeters.HasValue)
+                query = query.Where(l => l.NetSquareMeters >= searchDto.MinSquareMeters.Value);
+
+            if (searchDto.MaxSquareMeters.HasValue)
+                query = query.Where(l => l.NetSquareMeters <= searchDto.MaxSquareMeters.Value);
+
+            // Oda Filtreleri
+            if (!string.IsNullOrWhiteSpace(searchDto.RoomCount))
+                query = query.Where(l => l.RoomCount == searchDto.RoomCount);
+
+            if (searchDto.RoomCounts != null && searchDto.RoomCounts.Any())
+                query = query.Where(l => l.RoomCount != null && searchDto.RoomCounts.Contains(l.RoomCount));
+
+            // Bina Özellikleri
+            if (searchDto.MinBuildingAge.HasValue)
+                query = query.Where(l => l.BuildingAge >= searchDto.MinBuildingAge.Value);
+
+            if (searchDto.MaxBuildingAge.HasValue)
+                query = query.Where(l => l.BuildingAge <= searchDto.MaxBuildingAge.Value);
+
+            if (searchDto.MinFloor.HasValue)
+                query = query.Where(l => l.FloorNumber >= searchDto.MinFloor.Value);
+
+            if (searchDto.MaxFloor.HasValue)
+                query = query.Where(l => l.FloorNumber <= searchDto.MaxFloor.Value);
+
+            // Diğer Filtreler
+            if (searchDto.HeatingType.HasValue)
+                query = query.Where(l => l.HeatingType == searchDto.HeatingType.Value);
+
+            if (searchDto.BuildingStatus.HasValue)
+                query = query.Where(l => l.BuildingStatus == searchDto.BuildingStatus.Value);
+
+            if (searchDto.UsageStatus.HasValue)
+                query = query.Where(l => l.UsageStatus == searchDto.UsageStatus.Value);
+
+            if (searchDto.DeedStatus.HasValue)
+                query = query.Where(l => l.DeedStatus == searchDto.DeedStatus.Value);
+
+            if (searchDto.OwnerType.HasValue)
+                query = query.Where(l => l.OwnerType == searchDto.OwnerType.Value);
+
+            // Boolean Filtreler
+            if (searchDto.IsSuitableForCredit.HasValue)
+                query = query.Where(l => l.IsSuitableForCredit == searchDto.IsSuitableForCredit.Value);
+
+            if (searchDto.IsSuitableForTrade.HasValue)
+                query = query.Where(l => l.IsSuitableForTrade == searchDto.IsSuitableForTrade.Value);
+
+            if (searchDto.IsFeatured.HasValue)
+                query = query.Where(l => l.IsFeatured == searchDto.IsFeatured.Value);
+
+            if (searchDto.IsUrgent.HasValue)
+                query = query.Where(l => l.IsUrgent == searchDto.IsUrgent.Value);
+
+            // Özellik Filtreleri
+            if (searchDto.InteriorFeatures != null && searchDto.InteriorFeatures.Any())
             {
-                query = query.Where(l => l.ExteriorFeatures.Any(f => f.FeatureType == feature));
+                foreach (var feature in searchDto.InteriorFeatures)
+                {
+                    query = query.Where(l => l.InteriorFeatures.Any(f => f.FeatureType == feature));
+                }
+            }
+
+            if (searchDto.ExteriorFeatures != null && searchDto.ExteriorFeatures.Any())
+            {
+                foreach (var feature in searchDto.ExteriorFeatures)
+                {
+                    query = query.Where(l => l.ExteriorFeatures.Any(f => f.FeatureType == feature));
+                }
             }
         }
 
@@ -365,6 +375,7 @@ public class ListingRepository : IListingRepository
     {
         return await _context.Listings
             .Where(l => l.Status == ListingStatus.Active && l.IsFeatured)
+            .Include(l => l.User)
             .Include(l => l.Images.Where(i => i.IsCoverImage))
             .OrderByDescending(l => l.CreatedAt)
             .Take(count)
@@ -375,6 +386,7 @@ public class ListingRepository : IListingRepository
     {
         return await _context.Listings
             .Where(l => l.Status == ListingStatus.Active)
+            .Include(l => l.User)
             .Include(l => l.Images.Where(i => i.IsCoverImage))
             .OrderByDescending(l => l.CreatedAt)
             .Take(count)
@@ -392,6 +404,7 @@ public class ListingRepository : IListingRepository
                         l.Category == listing.Category &&
                         l.Type == listing.Type &&
                         l.City == listing.City)
+            .Include(l => l.User)
             .Include(l => l.Images.Where(i => i.IsCoverImage))
             .OrderByDescending(l => l.CreatedAt)
             .Take(count)
@@ -587,6 +600,22 @@ public class ListingRepository : IListingRepository
     {
         return await _context.Listings
             .AnyAsync(l => l.Id == listingId && l.UserId == userId);
+    }
+
+    public async Task<bool> UpdateUserListingsStatusAsync(string userId, ListingStatus status)
+    {
+        var listings = await _context.Listings
+            .Where(l => l.UserId == userId)
+            .ToListAsync();
+
+        foreach (var listing in listings)
+        {
+            listing.Status = status;
+            listing.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
     }
 
     public async Task<bool> ExistsAsync(int listingId)

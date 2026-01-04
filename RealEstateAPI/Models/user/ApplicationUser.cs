@@ -35,6 +35,24 @@ public class ApplicationUser : IdentityUser
     public string? Phone { get; set; }
 
     /// <summary>
+    /// Telefon numarası doğrulandı mı?
+    /// İlan oluşturmak için telefon doğrulaması gereklidir
+    /// </summary>
+    public bool PhoneVerified { get; set; } = false;
+
+    /// <summary>
+    /// Telefon doğrulama kodu (Simülasyon için)
+    /// Gerçek uygulamada SMS ile gönderilir
+    /// </summary>
+    [StringLength(6, ErrorMessage = "Doğrulama kodu 6 haneli olmalıdır")]
+    public string? PhoneVerificationCode { get; set; }
+
+    /// <summary>
+    /// Doğrulama kodunun son geçerlilik tarihi
+    /// </summary>
+    public DateTime? PhoneVerificationExpires { get; set; }
+
+    /// <summary>
     /// Hesap oluşturulma tarihi
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
@@ -100,4 +118,15 @@ public class ApplicationUser : IdentityUser
     /// Kullanıcının favori ilanları
     /// </summary>
     public virtual ICollection<FavoriteListing> FavoriteListings { get; set; } = new List<FavoriteListing>();
+
+    /// <summary>
+    /// Kullanıcı Ayarları
+    /// </summary>
+    public virtual UserSettings? Settings { get; set; }
+
+    /// <summary>
+    /// Hesap aktif mi?
+    /// Hesap "silindiğinde" pasife çekilir.
+    /// </summary>
+    public bool IsActive { get; set; } = true;
 }

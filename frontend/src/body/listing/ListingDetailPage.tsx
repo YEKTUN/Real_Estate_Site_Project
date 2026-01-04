@@ -16,7 +16,7 @@ import {
   Mail,
   ArrowLeft,
   CheckCircle2,
-  Share2,
+  Copy,
   ChevronLeft,
   ChevronRight,
   Home,
@@ -46,6 +46,7 @@ import {
 } from '@/body/redux/slices/comment/CommentSlice';
 import { sendMessage } from '@/body/redux/slices/message/MessageSlice';
 import { formatPrice } from './components/formatPrice';
+import { formatPhone } from '@/body/auth/utils/validation';
 import UserAvatar from '../panel/components/UserAvatar';
 import { ListingStatus, Currency, HeatingType, BuildingStatus, UsageStatus, FacingDirection, DeedStatus, PropertyType, ListingCategory } from '@/body/redux/slices/listing/DTOs/ListingDTOs';
 
@@ -70,15 +71,19 @@ export default function ListingDetailPage() {
   const comments = useAppSelector(selectCommentsByListing(listingId || 0));
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [showImageModal, setShowImageModal] = useState(false);
   const [commentText, setCommentText] = useState('');
-  const [showOfferModal, setShowOfferModal] = useState(false);
-  const [showMessageModal, setShowMessageModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [messageType, setMessageType] = useState<'offer' | 'message'>('message');
   const [offerPrice, setOfferPrice] = useState<number | ''>('');
-  const [offerNote, setOfferNote] = useState('');
-  const [directMessage, setDirectMessage] = useState('');
+  const [messageContent, setMessageContent] = useState('');
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
-  const isListingOwnerUser = !!listing?.owner.id && currentUser?.id === listing.owner.id;
+  const isListingOwnerUser = useMemo(() => {
+    if (!listing?.owner.id || !currentUser?.id) return false;
+    return String(listing.owner.id) === String(currentUser.id);
+  }, [listing?.owner.id, currentUser?.id]);
+
   const isFavorited = listing ? favoriteIds.includes(listing.id) : false;
 
   useEffect(() => {
@@ -91,6 +96,19 @@ export default function ListingDetailPage() {
     };
   }, [dispatch, listingId]);
 
+  // Debug: Gizlilik ayarlarını kontrol et
+  useEffect(() => {
+    if (listing) {
+      console.log('🔍 İlan Detay - Gizlilik Verisi:', {
+        ownerEmail: listing.owner.email,
+        ownerPhone: listing.owner.phone,
+        showEmailSetting: listing.owner.showEmail,
+        showPhoneSetting: listing.owner.showPhone,
+        isOwnerView: isListingOwnerUser
+      });
+    }
+  }, [listing, isListingOwnerUser]);
+
   const handleFavoriteToggle = async () => {
     if (!listingId) return;
     if (!isAuthenticated) return router.push('/login');
@@ -101,32 +119,51 @@ export default function ListingDetailPage() {
     }
   };
 
-  const handleSendOffer = () => {
-    if (!isAuthenticated || !listingId || offerPrice === '' || Number(offerPrice) <= 0) return;
+  const handleSendContact = () => {
+    if (!isAuthenticated || !listingId || !messageContent.trim()) return;
+
+    // messageType'a göre isOffer değerini belirle
+    const isOffer = messageType === 'offer';
+
+    // Eğer teklif ise, fiyat kontrolü yap
+    if (isOffer) {
+      if (offerPrice === '' || Number(offerPrice) <= 0) {
+        setFeedback({ type: 'error', message: 'Lütfen geçerli bir teklif tutarı girin.' });
+        return;
+      }
+
+      // Fiyat doğrulama: İlan fiyatının %50'sinden az, %150'sinden fazla teklif verilemesin
+      const minOffer = listing!.price * 0.5;
+      const maxOffer = listing!.price * 1.5;
+      const priceVal = Number(offerPrice);
+
+      if (priceVal < minOffer) {
+        setFeedback({ type: 'error', message: `Teklif çok düşük. En az ${formatPrice(minOffer, listing!.type, listing!.currency)} teklif verebilirsiniz.` });
+        return;
+      }
+      if (priceVal > maxOffer) {
+        setFeedback({ type: 'error', message: `Teklif çok yüksek. En fazla ${formatPrice(maxOffer, listing!.type, listing!.currency)} teklif verebilirsiniz.` });
+        return;
+      }
+    }
+
     dispatch(sendMessage({
       listingId,
-      data: { content: offerNote || 'Teklif İsteği', offerPrice: Number(offerPrice), isOffer: true }
+      data: {
+        content: messageContent.trim(),
+        offerPrice: isOffer ? Number(offerPrice) : undefined,
+        isOffer
+      }
     })).unwrap().then(() => {
-      setFeedback({ type: 'success', message: 'Teklifiniz başarıyla iletildi.' });
-      setShowOfferModal(false);
+      setFeedback({ type: 'success', message: isOffer ? 'Teklifiniz başarıyla iletildi.' : 'Mesajınız başarıyla gönderildi.' });
+      setShowContactModal(false);
+      setMessageContent('');
+      setOfferPrice('');
     }).catch(err => {
-      setFeedback({ type: 'error', message: err?.message || 'Teklif gönderilemedi.' });
+      setFeedback({ type: 'error', message: err?.message || (isOffer ? 'Teklif gönderilemedi.' : 'Mesaj gönderilemedi.') });
     });
   };
 
-  const handleSendMessage = () => {
-    if (!isAuthenticated || !listingId || !directMessage.trim()) return;
-    dispatch(sendMessage({
-      listingId,
-      data: { content: directMessage.trim(), isOffer: false }
-    })).unwrap().then(() => {
-      setFeedback({ type: 'success', message: 'Mesajınız başarıyla gönderildi.' });
-      setShowMessageModal(false);
-      setDirectMessage('');
-    }).catch(err => {
-      setFeedback({ type: 'error', message: err?.message || 'Mesaj gönderilemedi.' });
-    });
-  };
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
     setFeedback({ type: 'success', message: 'İlan bağlantısı kopyalandı!' });
@@ -146,17 +183,24 @@ export default function ListingDetailPage() {
           <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
           GERİ DÖN
         </button>
-        <div className="flex gap-1.5">
-          <button
-            onClick={handleShare}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 transition-all"
-          >
-            <Share2 className="w-4 h-4" />
-          </button>
+        <div className="flex gap-1.5 items-center">
+          {/* Custom Tooltip Copy Button */}
+          <div className="relative group/tooltip">
+            <button
+              onClick={handleShare}
+              className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 transition-all flex items-center justify-center"
+            >
+              <Copy className="w-4 h-4" />
+            </button>
+            <div className="absolute top-full right-0 mt-2 whitespace-nowrap px-3 py-1.5 bg-gray-900 text-white text-[10px] font-black uppercase tracking-widest rounded-lg pointer-events-none opacity-0 translate-y-1 group-hover/tooltip:opacity-100 group-hover/tooltip:translate-y-0 transition-all z-50 shadow-xl border border-white/10">
+              İlan bağlantısını kopyala
+            </div>
+          </div>
           {!isListingOwnerUser && (
             <button
               onClick={handleFavoriteToggle}
               disabled={isToggling}
+              aria-label={isFavorited ? "Favorilerden çıkar" : "Favorilere ekle"}
               className={`p-2 rounded-lg transition-all ${isFavorited ? 'bg-red-50 text-red-500' : 'hover:bg-gray-100 text-gray-400'}`}
             >
               <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
@@ -179,39 +223,95 @@ export default function ListingDetailPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column */}
           <div className="lg:col-span-8 space-y-6">
-            {/* Compact Gallery */}
-            <div className="bg-white rounded-3xl p-2 shadow-sm border border-gray-100">
-              <div className="relative group rounded-2xl overflow-hidden aspect-video bg-gray-50">
-                <img
-                  src={images[activeImageIndex].imageUrl}
-                  alt={listing.title}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                />
-
-                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/40 to-transparent p-4 flex justify-between items-end">
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
-                    {images.length > 1 && images.map((img, idx) => (
-                      <button
-                        key={img.id}
-                        onClick={() => setActiveImageIndex(idx)}
-                        className={`w-12 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition-all ${activeImageIndex === idx ? 'border-white scale-105' : 'border-transparent opacity-50 hover:opacity-100'}`}
-                      >
-                        <img src={img.imageUrl} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                  <div className="bg-black/20 backdrop-blur-md px-2.5 py-1 rounded-lg text-[9px] font-black text-white border border-white/10 uppercase tracking-widest leading-none">
-                    {activeImageIndex + 1} / {images.length}
-                  </div>
+            {/* Premium Carousel Gallery */}
+            <div className="bg-white rounded-3xl p-2 shadow-sm border border-gray-100 group/gallery">
+              <div className="relative rounded-2xl overflow-hidden aspect-[16/10] bg-slate-900">
+                {/* Main Slider */}
+                <div
+                  className="flex w-full h-full transition-transform duration-500 ease-out"
+                  style={{ transform: `translateX(-${activeImageIndex * 100}%)` }}
+                >
+                  {images.map((img, idx) => (
+                    <div key={img.id} className="w-full h-full shrink-0 relative">
+                      <img
+                        src={img.imageUrl}
+                        alt={`${listing.title} - ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                      {/* Dark gradient overlay for better visibility of controls */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 opacity-0 group-hover/gallery:opacity-100 transition-opacity duration-300" />
+                    </div>
+                  ))}
                 </div>
 
+                {/* Navigation Arrows */}
                 {images.length > 1 && (
                   <>
-                    <button onClick={() => setActiveImageIndex(p => p === 0 ? images.length - 1 : p - 1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-white hover:text-blue-600 transition-all opacity-0 group-hover:opacity-100"><ChevronLeft className="w-4 h-4" /></button>
-                    <button onClick={() => setActiveImageIndex(p => p === images.length - 1 ? 0 : p + 1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/20 backdrop-blur-md text-white flex items-center justify-center hover:bg-white hover:text-blue-600 transition-all opacity-0 group-hover:opacity-100"><ChevronRight className="w-4 h-4" /></button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setActiveImageIndex(p => p === 0 ? images.length - 1 : p - 1); }}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl text-white border border-white/20 flex items-center justify-center hover:bg-white hover:text-indigo-600 transition-all opacity-0 group-hover/gallery:opacity-100 translate-x-[-10px] group-hover/gallery:translate-x-0"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setActiveImageIndex(p => p === images.length - 1 ? 0 : p + 1); }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-xl text-white border border-white/20 flex items-center justify-center hover:bg-white hover:text-indigo-600 transition-all opacity-0 group-hover/gallery:opacity-100 translate-x-[10px] group-hover/gallery:translate-x-0"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
                   </>
                 )}
+
+                {/* Counter & Fullscreen Toggle */}
+                <div className="absolute bottom-6 inset-x-6 flex items-end justify-between pointer-events-none">
+                  <div className="flex gap-2 p-1 bg-black/30 backdrop-blur-xl rounded-xl border border-white/10 pointer-events-auto">
+                    {images.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveImageIndex(idx)}
+                        className={`w-2 h-2 rounded-full transition-all duration-300 ${activeImageIndex === idx ? 'bg-white w-6' : 'bg-white/40 hover:bg-white/60'}`}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="bg-black/30 backdrop-blur-xl px-4 py-2 rounded-xl text-[10px] font-black text-white border border-white/10 tracking-[0.2em]">
+                      {activeImageIndex + 1} <span className="text-white/40 mx-1">/</span> {images.length}
+                    </div>
+                    <button
+                      onClick={() => setShowImageModal(true)}
+                      className="w-10 h-10 bg-black/30 backdrop-blur-xl rounded-xl text-white border border-white/10 flex items-center justify-center hover:bg-white hover:text-indigo-600 transition-all pointer-events-auto"
+                    >
+                      <Maximize2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
+
+              {/* Thumbnails Bar */}
+              {images.length > 1 && (
+                <div className="mt-2 flex gap-2 overflow-x-auto p-1 pb-2 scrollbar-none snap-x">
+                  {images.map((img, idx) => (
+                    <button
+                      key={img.id}
+                      onClick={() => setActiveImageIndex(idx)}
+                      className={`relative w-24 aspect-[4/3] rounded-xl overflow-hidden shrink-0 transition-all snap-start border-2 ${activeImageIndex === idx
+                        ? 'border-indigo-600 ring-4 ring-indigo-500/10'
+                        : 'border-transparent opacity-60 hover:opacity-100'
+                        }`}
+                    >
+                      <img src={img.imageUrl} className="w-full h-full object-cover" />
+                      {activeImageIndex === idx && (
+                        <div className="absolute inset-0 bg-indigo-600/10 flex items-center justify-center">
+                          <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-lg">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-indigo-600" />
+                          </div>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Title & Stats */}
@@ -326,10 +426,20 @@ export default function ListingDetailPage() {
               {/* Sticky Actions */}
               {!isListingOwnerUser && (
                 <div className="flex flex-col gap-2">
-                  <button onClick={() => setShowOfferModal(true)} className="flex items-center justify-center gap-2 p-3.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
+                  <button
+                    onClick={() => {
+                      setMessageType('offer');
+                      setShowContactModal(true);
+                    }}
+                    className="flex items-center justify-center gap-2 p-3.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100">
                     <Send className="w-3.5 h-3.5" /> TEKLİF GÖNDER
                   </button>
-                  <button onClick={() => setShowMessageModal(true)} className="flex items-center justify-center gap-2 p-3.5 bg-white border-2 border-blue-600 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 transition-all">
+                  <button
+                    onClick={() => {
+                      setMessageType('message');
+                      setShowContactModal(true);
+                    }}
+                    className="flex items-center justify-center gap-2 p-3.5 bg-white border-2 border-blue-600 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-50 transition-all">
                     <MessageCircle className="w-3.5 h-3.5" /> MESAJ GÖNDER
                   </button>
                 </div>
@@ -349,20 +459,46 @@ export default function ListingDetailPage() {
                 </Link>
 
                 <div className="w-full space-y-2 pt-5 mt-5 border-t border-gray-50">
-                  <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl">
-                    <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center text-blue-600 shadow-sm"><Phone className="w-3.5 h-3.5" /></div>
-                    <div className="flex flex-col">
-                      <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">TEL</span>
-                      <span className="text-[10px] font-bold text-gray-700">{listing.owner.phone || '-'}</span>
+                  {/* Telefon - showPhone true ise göster */}
+                  {listing.owner.showPhone === true && listing.owner.phone && (
+                    <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-xl">
+                      <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center text-blue-600 shadow-sm"><Phone className="w-3.5 h-3.5" /></div>
+                      <div className="flex flex-col flex-1">
+                        <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">TEL</span>
+                        <span className="text-[10px] font-bold text-gray-700">{formatPhone(listing.owner.phone)}</span>
+                      </div>
+                      <a
+                        href={`tel:${listing.owner.phone}`}
+                        className="px-3 py-1.5 bg-green-500 hover:bg-green-600 text-white rounded-lg text-[8px] font-black uppercase tracking-widest transition-all shadow-sm hover:shadow-md flex items-center gap-1"
+                      >
+                        <Phone className="w-3 h-3" />
+                        ARA
+                      </a>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl">
-                    <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center text-blue-600 shadow-sm"><Mail className="w-3.5 h-3.5" /></div>
-                    <div className="flex flex-col truncate">
-                      <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">POSTA</span>
-                      <span className="text-[10px] font-bold text-gray-700 truncate max-w-[120px]">{listing.owner.email}</span>
+                  )}
+
+                  {/* Email - showEmail true ise göster */}
+                  {listing.owner.showEmail === true && listing.owner.email && (
+                    <div className="flex items-center gap-3 p-2 bg-gray-50 rounded-xl">
+                      <div className="w-7 h-7 bg-white rounded-lg flex items-center justify-center text-blue-600 shadow-sm"><Mail className="w-3.5 h-3.5" /></div>
+                      <div className="flex flex-col truncate">
+                        <span className="text-[7px] font-black text-gray-400 uppercase tracking-widest">POSTA</span>
+                        <span className="text-[10px] font-bold text-gray-700 truncate max-w-[120px]">{listing.owner.email}</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {/* Gizlilik mesajı - Bilgiler gizliyse */}
+                  {listing.owner.showPhone !== true && listing.owner.showEmail !== true && (
+                    <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-xl border border-amber-100">
+                      <span className="text-lg">🔒</span>
+                      <p className="text-[9px] font-bold text-amber-700 leading-tight">
+                        {isListingOwnerUser
+                          ? "Gizlilik ayarlarınız nedeniyle iletişim bilgileriniz başkaları tarafından görülemez."
+                          : "İlan sahibi iletişim bilgilerini gizlemiştir. Mesaj göndererek iletişime geçebilirsiniz."}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -371,8 +507,31 @@ export default function ListingDetailPage() {
       </div>
 
       {/* Modals using fixed positioning */}
-      {showOfferModal && <OfferModal listing={listing} onClose={() => setShowOfferModal(false)} onSend={handleSendOffer} offerPrice={offerPrice} setOfferPrice={setOfferPrice} offerNote={offerNote} setOfferNote={setOfferNote} />}
-      {showMessageModal && <MessageModal listing={listing} onClose={() => setShowMessageModal(false)} onSend={handleSendMessage} directMessage={directMessage} setDirectMessage={setDirectMessage} />}
+      {showContactModal && (
+        <ContactModal
+          listing={listing}
+          messageType={messageType}
+          onClose={() => {
+            setShowContactModal(false);
+            setMessageContent('');
+            setOfferPrice('');
+          }}
+          onSend={handleSendContact}
+          offerPrice={offerPrice}
+          setOfferPrice={setOfferPrice}
+          messageContent={messageContent}
+          setMessageContent={setMessageContent}
+          setMessageType={setMessageType}
+        />
+      )}
+      {showImageModal && (
+        <ImageModal
+          images={images}
+          activeIndex={activeImageIndex}
+          onClose={() => setShowImageModal(false)}
+          onNavigate={setActiveImageIndex}
+        />
+      )}
     </div>
   );
 }
@@ -387,44 +546,146 @@ function ErrorState({ error }: { error: string | null }) {
 }
 
 // Compact Modals
-function OfferModal({ listing, onClose, onSend, offerPrice, setOfferPrice, offerNote, setOfferNote }: any) {
+function ContactModal({ listing, messageType, onClose, onSend, offerPrice, setOfferPrice, messageContent, setMessageContent, setMessageType }: any) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-6 animate-in zoom-in-95 duration-200">
         <div className="flex justify-between items-center">
-          <h3 className="font-black text-gray-800 uppercase tracking-widest text-[11px]">TEKLİF VER</h3>
+          <h3 className="font-black text-gray-800 uppercase tracking-widest text-[11px]">
+            {messageType === 'offer' ? 'TEKLİF GÖNDER' : 'MESAJ GÖNDER'}
+          </h3>
           <button onClick={onClose} className="text-gray-400 hover:text-red-500">✕</button>
         </div>
-        <div className="space-y-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">TUTAR</label>
-            <div className="relative">
-              <input type="number" value={offerPrice || ''} onChange={(e) => setOfferPrice(Number(e.target.value))} className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none font-black text-gray-700 text-lg" />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 font-black">{getCurrencySymbol(listing.currency)}</span>
-            </div>
-          </div>
-          <textarea value={offerNote} onChange={(e) => setOfferNote(e.target.value)} placeholder="Not ekle..." className="w-full min-h-[100px] p-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none font-bold text-gray-600 text-xs" />
+
+        {/* Tab Seçimi */}
+        <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
+          <button
+            onClick={() => setMessageType('message')}
+            className={`flex-1 py-2 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${messageType === 'message'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            Mesaj
+          </button>
+          <button
+            onClick={() => setMessageType('offer')}
+            className={`flex-1 py-2 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${messageType === 'offer'
+              ? 'bg-white text-blue-600 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+              }`}
+          >
+            Teklif
+          </button>
         </div>
-        <button onClick={onSend} className="w-full py-3.5 bg-blue-600 text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-102 transition-all">GÖNDER</button>
+
+        {/* İlan Sahibi Bilgisi */}
+        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
+          <UserAvatar name={listing.owner.name} surname={listing.owner.surname} profilePictureUrl={listing.owner.profilePictureUrl} size="md" />
+          <span className="text-xs font-bold text-gray-800">{listing.owner.name} {listing.owner.surname}</span>
+        </div>
+
+        <div className="space-y-4">
+          {/* Teklif Tutarı - Sadece teklif modunda göster */}
+          {messageType === 'offer' && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">TUTAR</label>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={offerPrice || ''}
+                  onChange={(e) => setOfferPrice(Number(e.target.value))}
+                  className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none font-black text-gray-700 text-lg"
+                  placeholder="Teklif tutarı"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 font-black">{getCurrencySymbol(listing.currency)}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Mesaj İçeriği */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+              {messageType === 'offer' ? 'NOT (OPSİYONEL)' : 'MESAJINIZ'}
+            </label>
+            <textarea
+              value={messageContent}
+              onChange={(e) => setMessageContent(e.target.value)}
+              placeholder={messageType === 'offer' ? 'Teklifinizle ilgili not ekleyin...' : 'Mesajınızı yazın...'}
+              className="w-full min-h-[120px] p-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none font-bold text-gray-600 text-xs"
+            />
+          </div>
+        </div>
+
+        <button
+          onClick={onSend}
+          className="w-full py-3.5 bg-blue-600 text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-102 transition-all"
+        >
+          {messageType === 'offer' ? 'TEKLİFİ GÖNDER' : 'MESAJI GÖNDER'}
+        </button>
       </div>
     </div>
   );
 }
 
-function MessageModal({ listing, onClose, onSend, directMessage, setDirectMessage }: any) {
+function ImageModal({ images, activeIndex, onClose, onNavigate }: any) {
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      if (e.key === 'ArrowRight') onNavigate((p: number) => (p + 1) % images.length);
+      if (e.key === 'ArrowLeft') onNavigate((p: number) => (p - 1 + images.length) % images.length);
+    };
+    window.addEventListener('keydown', handleEsc);
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', handleEsc);
+      document.body.style.overflow = 'unset';
+    };
+  }, [onClose, onNavigate, images.length]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-6 animate-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center">
-          <h3 className="font-black text-gray-800 uppercase tracking-widest text-[11px]">MESAJ GÖNDER</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-red-500">✕</button>
+    <div className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex flex-col items-center justify-center animate-in fade-in duration-300">
+      {/* Close Button */}
+      <button
+        onClick={onClose}
+        className="absolute top-6 right-6 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-2xl flex items-center justify-center text-white transition-all z-10"
+      >
+        <span className="text-2xl font-light">✕</span>
+      </button>
+
+      {/* Main Image Container */}
+      <div className="relative w-screen h-screen flex items-center justify-center bg-black/40">
+        {images.length > 1 && (
+          <>
+            <button
+              onClick={(e) => { e.stopPropagation(); onNavigate((p: number) => (p === 0 ? images.length - 1 : p - 1)); }}
+              className="absolute left-4 md:left-10 w-16 h-16 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all z-20 group border border-white/5"
+            >
+              <ChevronLeft className="w-10 h-10 group-hover:scale-110 transition-transform" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onNavigate((p: number) => (p === images.length - 1 ? 0 : p + 1)); }}
+              className="absolute right-4 md:right-10 w-16 h-16 bg-black/20 hover:bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-white transition-all z-20 group border border-white/5"
+            >
+              <ChevronRight className="w-10 h-10 group-hover:scale-110 transition-transform" />
+            </button>
+          </>
+        )}
+
+        <div className="w-full h-full flex items-center justify-center select-none" onClick={(e) => e.stopPropagation()}>
+          <img
+            src={images[activeIndex].imageUrl}
+            alt="Gallery zoom"
+            className="w-full h-full object-contain shadow-2xl animate-in zoom-in-95 duration-500"
+          />
         </div>
-        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-xl">
-          <UserAvatar name={listing.owner.name} surname={listing.owner.surname} profilePictureUrl={listing.owner.profilePictureUrl} size="md" />
-          <span className="text-xs font-bold text-gray-800">{listing.owner.name} {listing.owner.surname}</span>
+      </div>
+
+      {/* Bottom info */}
+      <div className="absolute bottom-8 text-white flex flex-col items-center gap-4">
+        <div className="px-6 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/10 text-xs font-black tracking-[0.3em]">
+          {activeIndex + 1} / {images.length}
         </div>
-        <textarea value={directMessage} onChange={(e) => setDirectMessage(e.target.value)} placeholder="Mesajını yaz..." className="w-full min-h-[150px] p-3 bg-gray-50 border-2 border-transparent focus:border-blue-500 rounded-xl outline-none font-bold text-gray-600 text-xs" />
-        <button onClick={onSend} className="w-full py-3.5 bg-blue-600 text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-102 transition-all">GÖNDER</button>
       </div>
     </div>
   );

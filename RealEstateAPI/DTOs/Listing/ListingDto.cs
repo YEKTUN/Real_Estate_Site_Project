@@ -289,6 +289,7 @@ public class ListingSearchDto
 {
     // Arama
     public string? SearchTerm { get; set; }
+    public string? ListingNumber { get; set; }
     
     // Kategori & Tip Filtreleri
     public ListingCategory? Category { get; set; }
@@ -371,6 +372,10 @@ public class ListingOwnerDto
     public string? ProfilePictureUrl { get; set; }
     public DateTime MemberSince { get; set; }
     public int TotalListings { get; set; }
+    
+    // Gizlilik Ayarları
+    public bool ShowPhone { get; set; } = false;
+    public bool ShowEmail { get; set; } = true;
 }
 
 /// <summary>

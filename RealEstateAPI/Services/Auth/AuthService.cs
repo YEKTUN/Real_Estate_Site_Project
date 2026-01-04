@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
 using RealEstateAPI.DTOs.Auth;
@@ -26,6 +27,7 @@ public class AuthService : IAuthService
     private readonly IConfiguration _configuration;
     private readonly ILogger<AuthService> _logger;
     private readonly IEmailService _emailService;
+    private readonly Repositories.Listing.IListingRepository _listingRepository;
 
     public AuthService(
         UserManager<ApplicationUser> userManager,
@@ -33,7 +35,8 @@ public class AuthService : IAuthService
         IAuthRepository authRepository,
         IConfiguration configuration,
         ILogger<AuthService> logger,
-        IEmailService emailService)
+        IEmailService emailService,
+        Repositories.Listing.IListingRepository listingRepository)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -41,6 +44,7 @@ public class AuthService : IAuthService
         _configuration = configuration;
         _logger = logger;
         _emailService = emailService;
+        _listingRepository = listingRepository;
     }
 
     /// <summary>
@@ -100,7 +104,7 @@ public class AuthService : IAuthService
                 Token = accessToken,
                 RefreshToken = refreshToken.Token,
                 ExpiresIn = GetTokenExpirationInSeconds(),
-                User = MapToUserDto(user)
+                User = MapToUserDto(user, true)
             };
         }
         catch (Exception ex)
@@ -130,6 +134,17 @@ public class AuthService : IAuthService
                 {
                     Success = false,
                     Message = "Geçersiz e-posta veya şifre"
+                };
+            }
+
+            // Hesap aktiflik kontrolü
+            if (!user.IsActive)
+            {
+                _logger.LogWarning("Pasif hesap giriş denemesi: {Email}", user.Email);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Hesabınız pasif durumdadır. Lütfen destek ile iletişime geçin."
                 };
             }
 
@@ -168,7 +183,7 @@ public class AuthService : IAuthService
                 Token = accessToken,
                 RefreshToken = refreshToken.Token,
                 ExpiresIn = GetTokenExpirationInSeconds(),
-                User = MapToUserDto(user)
+                User = MapToUserDto(user, true)
             };
         }
         catch (Exception ex)
@@ -222,6 +237,17 @@ public class AuthService : IAuthService
                 };
             }
 
+            // Kullanıcı aktiflik kontrolü
+            if (!user.IsActive)
+            {
+                _logger.LogWarning("Pasif hesap token yenileme denemesi: {Email}", user.Email);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Hesabınız pasif durumdadır. Lütfen destek ile iletişime geçin."
+                };
+            }
+
             // Eski token'ı kullanıldı olarak işaretle
             storedToken.IsUsed = true;
             storedToken.RevokedAt = DateTime.UtcNow;
@@ -244,7 +270,7 @@ public class AuthService : IAuthService
                 Token = newAccessToken,
                 RefreshToken = newRefreshToken.Token,
                 ExpiresIn = GetTokenExpirationInSeconds(),
-                User = MapToUserDto(user)
+                User = MapToUserDto(user, true)
             };
         }
         catch (Exception ex)
@@ -304,14 +330,23 @@ public class AuthService : IAuthService
     /// <summary>
     /// Kullanıcı bilgilerini getir
     /// </summary>
-    public async Task<UserDto?> GetUserByIdAsync(string userId)
+    public async Task<UserDto?> GetUserByIdAsync(string userId, string? currentUserId = null)
     {
         var user = await _authRepository.GetUserByIdAsync(userId);
 
         if (user == null)
             return null;
 
-        return MapToUserDto(user);
+        // Gizlilik ayarlarını veritabanından kesin olarak çek (Include bAzan yetmeyebiliyor)
+        // Bunun için _authRepository'ye erişimimiz var veya Context'e ihtiyacımız olabilir.
+        // AuthService içinde Context yoksa Repo üzerinden yapalım. 
+        // Ama Repository zaten Include yapıyor. Yine de ListingService'deki gibi garantiye alalım.
+        // AuthService'e context eklememişiz ama repoda var.
+        
+        // Eğer kullanıcı kendi profilini izliyorsa gizliliği yok say
+        bool ignorePrivacy = !string.IsNullOrEmpty(currentUserId) && currentUserId == userId;
+
+        return MapToUserDto(user, ignorePrivacy);
     }
 
     /// <summary>
@@ -350,7 +385,7 @@ public class AuthService : IAuthService
             {
                 Success = true,
                 Message = "Profil fotoğrafı güncellendi",
-                User = MapToUserDto(user)
+                User = MapToUserDto(user, true)
             };
         }
         catch (Exception ex)
@@ -398,6 +433,17 @@ public class AuthService : IAuthService
             {
                 // Mevcut kullanıcı - Google bilgilerini güncelle
                 user = existingUser;
+
+                // Hesap aktiflik kontrolü
+                if (!user.IsActive)
+                {
+                    _logger.LogWarning("Pasif hesap Google giriş denemesi: {Email}", user.Email);
+                    return new AuthResponseDto
+                    {
+                        Success = false,
+                        Message = "Hesabınız pasif durumdadır. Lütfen destek ile iletişime geçin."
+                    };
+                }
                 
                 // Google ID yoksa ekle (normal kayıt olmuş ama şimdi Google ile giriş yapıyor)
                 if (string.IsNullOrEmpty(user.GoogleId))
@@ -456,7 +502,7 @@ public class AuthService : IAuthService
                 Token = accessToken,
                 RefreshToken = refreshToken.Token,
                 ExpiresIn = GetTokenExpirationInSeconds(),
-                User = MapToUserDto(user)
+                User = MapToUserDto(user, true)
             };
         }
         catch (Exception ex)
@@ -477,17 +523,30 @@ public class AuthService : IAuthService
     /// <summary>
     /// ApplicationUser'ı UserDto'ya dönüştür
     /// </summary>
-    private static UserDto MapToUserDto(ApplicationUser user)
+    private static UserDto MapToUserDto(ApplicationUser user, bool ignorePrivacy = false)
     {
+        // Gizlilik ayarlarını al
+        var settings = user.Settings;
+        var showPhone = settings?.ShowPhone ?? false;
+        var showEmail = settings?.ShowEmail ?? false;
+        
+        // Eğer ignorePrivacy true ise (User kendi datasına bakıyorsa) ayarları görmezden gel
+        bool canShowPhone = ignorePrivacy || showPhone;
+        bool canShowEmail = ignorePrivacy || showEmail;
+
         return new UserDto
         {
             Id = user.Id,
             Name = user.Name,
             Surname = user.Surname,
-            Phone = user.Phone,
-            Email = user.Email ?? string.Empty,
+            // Kesin gizlilik: Eğer (Kendi datası değilse) VE (Ayarı kapalıysa) null dön
+            Phone = canShowPhone ? user.Phone : null,
+            Email = canShowEmail ? (user.Email ?? string.Empty) : null,
             ProfilePictureUrl = user.ProfilePictureUrl,
-            IsAdmin = user.IsAdmin
+            IsAdmin = user.IsAdmin,
+            IsActive = user.IsActive,
+            ShowPhone = showPhone,
+            ShowEmail = showEmail
         };
     }
 
@@ -935,6 +994,173 @@ public class AuthService : IAuthService
             {
                 Success = false,
                 Message = "Şifre değiştirme işlemi sırasında bir hata oluştu"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Hesabı pasife al ve ilanlarını pasif yap
+    /// </summary>
+    public async Task<AuthResponseDto> DeactivateAccountAsync(string userId)
+    {
+        try
+        {
+            _logger.LogInformation("Hesap silme (pasife alma) isteği alındı: UserId={UserId}", userId);
+
+            // Kullanıcıyı bul
+            var user = await _authRepository.GetUserByIdAsync(userId);
+            if (user == null)
+            {
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Kullanıcı bulunamadı"
+                };
+            }
+
+            // Hesabı pasif yap
+            user.IsActive = false;
+            user.UpdatedAt = DateTime.UtcNow;
+            
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                var errors = string.Join(", ", updateResult.Errors.Select(e => e.Description));
+                _logger.LogError("Hesap pasife alınırken hata oluştu: UserId={UserId}, Errors={Errors}", userId, errors);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Hesap kapatılırken bir hata oluştu: " + errors
+                };
+            }
+
+            // İlanlarını pasif yap
+            await _listingRepository.UpdateUserListingsStatusAsync(userId, ListingStatus.Inactive);
+
+            // Tüm refresh token'ları iptal et (otomatik logout)
+            await _authRepository.RevokeAllUserRefreshTokensAsync(userId);
+
+            _logger.LogInformation("Hesap ve ilanlar başarıyla pasife alındı: UserId={UserId}", userId);
+
+            return new AuthResponseDto
+            {
+                Success = true,
+                Message = "Hesabınız başarıyla kapatıldı ve ilanlarınız yayından kaldırıldı."
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Hesap kapatma işlemi sırasında hata oluştu: UserId={UserId}", userId);
+            return new AuthResponseDto
+            {
+                Success = false,
+                Message = "Hesap kapatma işlemi sırasında bir hata oluştu"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Admin için kullanıcıyı email veya kullanıcı adına göre ara
+    /// </summary>
+    public async Task<AuthResponseDto> GetUserBySearchAsync(string searchTerm)
+    {
+        _logger.LogInformation("GetUserBySearchAsync başlatıldı. Arama Terimi: {SearchTerm}", searchTerm);
+        try
+        {
+            var cleanEmail = searchTerm.ToLower().Trim();
+            _logger.LogInformation("Temizlenmiş e-posta aranıyor: {CleanEmail}", cleanEmail);
+            
+            var user = await _userManager.FindByEmailAsync(cleanEmail);
+            
+            if (user == null)
+            {
+                _logger.LogInformation("FindByEmailAsync ile kullanıcı bulunamadı. NormalizedEmail denenecek.");
+                var normalizedEmail = searchTerm.ToUpper().Trim();
+                user = await _userManager.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizedEmail);
+            }
+
+            if (user == null)
+            {
+                _logger.LogWarning("Kullanıcı veritabanında hiçbir şekilde bulunamadı: {SearchTerm}", searchTerm);
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Kullanıcı bulunamadı"
+                };
+            }
+
+            _logger.LogInformation("Kullanıcı başarıyla bulundu: {Email}, Id: {Id}", user.Email, user.Id);
+            return new AuthResponseDto
+            {
+                Success = true,
+                User = MapToUserDto(user, true)
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Kullanıcı arama sırasında kritik hata oluştu: SearchTerm={SearchTerm}", searchTerm);
+            return new AuthResponseDto
+            {
+                Success = false,
+                Message = $"Arama hatası: {ex.Message}"
+            };
+        }
+    }
+
+    /// <summary>
+    /// Kullanıcının aktiflik durumunu tersine çevir
+    /// </summary>
+    public async Task<AuthResponseDto> ToggleUserStatusAsync(string userId)
+    {
+        try
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Kullanıcı bulunamadı"
+                };
+            }
+
+            user.IsActive = !user.IsActive;
+            user.UpdatedAt = DateTime.UtcNow;
+            
+            var updateResult = await _userManager.UpdateAsync(user);
+            if (!updateResult.Succeeded)
+            {
+                var errors = string.Join(", ", updateResult.Errors.Select(e => e.Description));
+                return new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Kullanıcı durumu güncellenemedi: " + errors
+                };
+            }
+
+            // Eğer pasif yapılıyorsa ilanları da pasif yap ve tokenları iptal et
+            if (!user.IsActive)
+            {
+                await _listingRepository.UpdateUserListingsStatusAsync(userId, ListingStatus.Inactive);
+                await _authRepository.RevokeAllUserRefreshTokensAsync(userId);
+            }
+
+            _logger.LogInformation("Kullanıcı durumu admin tarafından güncellendi: UserId={UserId}, NewStatus={Status}", userId, user.IsActive);
+
+            return new AuthResponseDto
+            {
+                Success = true,
+                Message = $"Kullanıcı durumu {(user.IsActive ? "Aktif" : "Pasif")} olarak güncellendi",
+                User = MapToUserDto(user, true)
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Kullanıcı durumu togglenırken hata oluştu: UserId={UserId}", userId);
+            return new AuthResponseDto
+            {
+                Success = false,
+                Message = "İşlem sırasında bir hata oluştu"
             };
         }
     }

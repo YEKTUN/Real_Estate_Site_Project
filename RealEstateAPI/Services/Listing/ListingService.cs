@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore; // Add this
 using RealEstateAPI.DTOs.Listing;
 using RealEstateAPI.Models;
+using RealEstateAPI.Data; // Add this for ApplicationDbContext
 using RealEstateAPI.Repositories.Listing;
 
 namespace RealEstateAPI.Services.Listing;
@@ -17,6 +19,7 @@ public class ListingService : IListingService
     private readonly ICommentRepository _commentRepository;
     private readonly Services.Admin.IAdminModerationRuleService _adminModerationRuleService;
     private readonly IMessageService _messageService;
+    private readonly ApplicationDbContext _context; // Add this
     private readonly ILogger<ListingService> _logger;
 
     public ListingService(
@@ -25,6 +28,7 @@ public class ListingService : IListingService
         ICommentRepository commentRepository,
         Services.Admin.IAdminModerationRuleService adminModerationRuleService,
         IMessageService messageService,
+        ApplicationDbContext context, // Add this
         ILogger<ListingService> logger)
     {
         _listingRepository = listingRepository;
@@ -32,6 +36,7 @@ public class ListingService : IListingService
         _commentRepository = commentRepository;
         _adminModerationRuleService = adminModerationRuleService;
         _messageService = messageService;
+        _context = context; // Initialize this
         _logger = logger;
     }
 
@@ -322,7 +327,9 @@ public class ListingService : IListingService
                 await _listingRepository.IncrementViewCountAsync(listingId);
             }
 
-            var detailDto = MapToDetailDto(listing);
+            // Gizlilik ayarlarını garantiye al
+            var ownerSettings = await _context.UserSettings.FirstOrDefaultAsync(s => s.UserId == listing.UserId);
+            var detailDto = MapToDetailDto(listing, userId, ownerSettings);
             
             // Kullanıcı favorisi mi kontrol et
             if (!string.IsNullOrEmpty(userId))
@@ -365,6 +372,7 @@ public class ListingService : IListingService
                 };
             }
 
+            // GetByIdAsync zaten ayarları yükleyecek şekilde güncellendi
             return await GetByIdAsync(listing.Id, userId);
         }
         catch (Exception ex)
@@ -889,8 +897,18 @@ public class ListingService : IListingService
         };
     }
 
-    private static ListingDetailDto MapToDetailDto(Models.Listing listing)
+    private static ListingDetailDto MapToDetailDto(Models.Listing listing, string? currentUserId = null, UserSettings? ownerSettings = null)
     {
+        // Gizlilik ayarlarını al (Parametre olarak gelmişse onu kullan, yoksa nesne içindekini dene)
+        var settings = ownerSettings ?? listing.User?.Settings;
+        var showPhone = settings?.ShowPhone ?? false;
+        var showEmail = settings?.ShowEmail ?? false; 
+        
+        // Detaylı Debug log
+        Console.WriteLine($"🔍 [ListingService] Mapping Listing: {listing.Id}, OwnerId: {listing.UserId}");
+        Console.WriteLine($"🔍 [ListingService] Settings Source: {(ownerSettings != null ? "Explicit Param" : "Listing Object")}");
+        Console.WriteLine($"🔍 [ListingService] Resolved Settings - ShowPhone: {showPhone}, ShowEmail: {showEmail}");
+        
         return new ListingDetailDto
         {
             Id = listing.Id,
@@ -933,10 +951,14 @@ public class ListingService : IListingService
                 Id = listing.User?.Id ?? string.Empty,
                 Name = listing.User?.Name ?? string.Empty,
                 Surname = listing.User?.Surname ?? string.Empty,
-                Phone = listing.User?.Phone,
-                Email = listing.User?.Email,
+                // Sadece gizlilik ayarlarına göre bilgileri göster (kendisi baksa bile gizle)
+                Phone = showPhone ? listing.User?.Phone : null,
+                Email = showEmail ? listing.User?.Email : null,
                 ProfilePictureUrl = listing.User?.ProfilePictureUrl,
-                MemberSince = listing.User?.CreatedAt ?? DateTime.MinValue
+                MemberSince = listing.User?.CreatedAt ?? DateTime.MinValue,
+                TotalListings = 0, // TODO: Hesaplanabilir ama performans için 0 bırakıldı
+                ShowPhone = showPhone,
+                ShowEmail = showEmail
             },
             OwnerType = listing.OwnerType,
             Status = listing.Status,

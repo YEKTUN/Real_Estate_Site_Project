@@ -42,6 +42,11 @@ public class ApplicationDbContext : IdentityUserContext<ApplicationUser>
     /// </summary>
     public DbSet<RefreshToken> RefreshTokens { get; set; }
 
+    /// <summary>
+    /// Kullanıcı Ayarları
+    /// </summary>
+    public DbSet<UserSettings> UserSettings { get; set; }
+
     // ============================================================================
     // İLAN TABLOLARI
     // ============================================================================
@@ -123,6 +128,20 @@ public class ApplicationDbContext : IdentityUserContext<ApplicationUser>
             entity.HasOne(e => e.User)
                 .WithMany()
                 .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserSettings yapılandırması
+        builder.Entity<UserSettings>(entity =>
+        {
+            entity.ToTable("UserSettings");
+            entity.HasKey(e => e.Id);
+            
+            entity.HasIndex(e => e.UserId).IsUnique(); // Bir kullanıcının sadece bir ayar kaydı olabilir
+
+            entity.HasOne(e => e.User)
+                .WithOne() // One-to-One
+                .HasForeignKey<UserSettings>(e => e.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 

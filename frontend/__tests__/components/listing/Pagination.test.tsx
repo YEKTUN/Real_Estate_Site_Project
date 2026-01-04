@@ -59,8 +59,8 @@ describe('Pagination', () => {
         <Pagination pagination={mockPagination} currentPage={1} onPageChange={mockOnPageChange} />
       );
 
-      expect(screen.getByRole('button', { name: /önceki/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /sonraki/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Go to previous page/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Go to next page/i })).toBeInTheDocument();
     });
 
     test('should render page numbers', () => {
@@ -87,7 +87,7 @@ describe('Pagination', () => {
         <Pagination pagination={mockPagination} currentPage={1} onPageChange={mockOnPageChange} />
       );
 
-      const prevButton = screen.getByRole('button', { name: /önceki/i });
+      const prevButton = screen.getByRole('button', { name: /Go to previous page/i });
       expect(prevButton).toBeDisabled();
     });
 
@@ -103,7 +103,7 @@ describe('Pagination', () => {
         <Pagination pagination={lastPagePagination} currentPage={5} onPageChange={mockOnPageChange} />
       );
 
-      const nextButton = screen.getByRole('button', { name: /sonraki/i });
+      const nextButton = screen.getByRole('button', { name: /Go to next page/i });
       expect(nextButton).toBeDisabled();
     });
 
@@ -117,7 +117,7 @@ describe('Pagination', () => {
         <Pagination pagination={largePagination} currentPage={1} onPageChange={mockOnPageChange} />
       );
 
-      expect(screen.getByText('...')).toBeInTheDocument();
+      expect(screen.getByText('More pages')).toBeInTheDocument();
       expect(screen.getByText('10')).toBeInTheDocument();
     });
   });
@@ -145,7 +145,7 @@ describe('Pagination', () => {
         <Pagination pagination={paginationWithPrevious} currentPage={2} onPageChange={mockOnPageChange} />
       );
 
-      const prevButton = screen.getByRole('button', { name: /önceki/i });
+      const prevButton = screen.getByRole('button', { name: /Go to previous page/i });
       fireEvent.click(prevButton);
 
       expect(mockOnPageChange).toHaveBeenCalledWith(1);
@@ -156,7 +156,7 @@ describe('Pagination', () => {
         <Pagination pagination={mockPagination} currentPage={1} onPageChange={mockOnPageChange} />
       );
 
-      const nextButton = screen.getByRole('button', { name: /sonraki/i });
+      const nextButton = screen.getByRole('button', { name: /Go to next page/i });
       fireEvent.click(nextButton);
 
       expect(mockOnPageChange).toHaveBeenCalledWith(2);

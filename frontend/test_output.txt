@@ -1,0 +1,1209 @@
+
+> frontend@0.1.0 test
+> jest frontend/__tests__/integration/ListingDetailPage.test.tsx --verbose
+
+  console.warn
+    Selector unknown returned a different result when called with the same parameters. This can lead to unnecessary rerenders.
+    Selectors that return a new reference (such as an object or an array) should be memoized: https://redux.js.org/usage/deriving-data-selectors#optimizing-selectors-with-memoization {
+      state: {
+        auth: {
+          user: null,
+          token: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null
+        },
+        listing: {
+          currentListing: [Object],
+          currentListingImages: [Array],
+          isLoadingDetail: false,
+          error: null,
+          listings: [],
+          featuredListings: [],
+          latestListings: [],
+          similarListings: [],
+          myListings: [],
+          pagination: null,
+          searchParams: null,
+          isLoading: false,
+          isCreating: false,
+          isUpdating: false,
+          isDeleting: false
+        },
+        comment: {
+          commentsByListing: {},
+          isLoading: false,
+          isCreating: false,
+          isDeleting: false,
+          error: null
+        },
+        favorite: {
+          favorites: [],
+          favoriteIds: [],
+          pagination: null,
+          isLoading: false,
+          isToggling: false,
+          error: null
+        },
+        cloudinary: {
+          isUploading: false,
+          isUploadingFile: false,
+          isUploadingMultiple: false,
+          isDeleting: false,
+          lastUploadedImage: null,
+          lastUploadedFile: null,
+          lastUploadedImages: [],
+          error: null,
+          isUploadingListingImage: false,
+          lastListingImageUpload: null
+        },
+        message: {
+          threads: [],
+          messagesByThread: {},
+          isLoading: false,
+          isSending: false,
+          error: null
+        }
+      },
+      selected: [],
+      selected2: [],
+      stack: 'Error: \n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-redux/src/hooks/useSelector.ts:194:25\n' +
+        '    at memoizedSelector (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:46:30)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:70:22\n' +
+        '    at mountSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:8125:24)\n' +
+        '    at Object.useSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:26269:16)\n' +
+        '    at process.env.NODE_ENV.exports.useSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:1270:34)\n' +
+        '    at process.env.NODE_ENV.exports.useSyncExternalStoreWithSelector (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:81:19)\n' +
+        '    at useSelector2 (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-redux/src/hooks/useSelector.ts:243:27)\n' +
+        '    at ListingDetailPage (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/src/body/listing/ListingDetailPage.tsx:71:34)\n' +
+        '    at Object.react_stack_bottom_frame (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:25904:20)\n' +
+        '    at renderWithHooks (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:7662:22)\n' +
+        '    at updateFunctionComponent (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:10166:19)\n' +
+        '    at beginWork (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:11778:18)\n' +
+        '    at runWithFiberInDEV (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)\n' +
+        '    at performUnitOfWork (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17641:22)\n' +
+        '    at workLoopSync (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)\n' +
+        '    at renderRootSync (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)\n' +
+        '    at performWorkOnRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)\n' +
+        '    at performWorkOnRootViaSchedulerTask (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)\n' +
+        '    at flushActQueue (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:590:34)\n' +
+        '    at process.env.NODE_ENV.exports.act (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:884:10)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25\n' +
+        '    at renderRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:190:26)\n' +
+        '    at render (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:292:10)\n' +
+        '    at renderWithProviders (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/utils/test-utils.tsx:96:14)\n' +
+        '    at Object.<anonymous> (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/integration/ListingDetailPage.test.tsx:149:19)\n' +
+        '    at Promise.finally.completed (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)\n' +
+        '    at new Promise (<anonymous>)\n' +
+        '    at callAsyncCircusFn (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)\n' +
+        '    at _callCircusTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)\n' +
+        '    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+        '    at _runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:947:3)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:849:7\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:862:11)\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:857:11)\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:857:11)\n' +
+        '    at run (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:761:3)\n' +
+        '    at runAndTransformResultsToJestFormat (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)\n' +
+        '    at jestAdapter (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/runner.js:101:19)\n' +
+        '    at runTestInternal (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-runner/build/index.js:275:16)\n' +
+        '    at runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-runner/build/index.js:343:7)'
+    }
+
+      69 |   const isToggling = useAppSelector(selectFavoriteToggling);
+      70 |   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+    > 71 |   const comments = useAppSelector(selectCommentsByListing(listingId || 0));
+         |                                  ^
+      72 |
+      73 |   const [activeImageIndex, setActiveImageIndex] = useState(0);
+      74 |   const [showImageModal, setShowImageModal] = useState(false);
+
+      at node_modules/react-redux/src/hooks/useSelector.ts:199:25
+      at memoizedSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:46:30)
+      at node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:70:22
+      at mountSyncExternalStore (node_modules/react-dom/cjs/react-dom-client.development.js:8125:24)
+      at Object.useSyncExternalStore (node_modules/react-dom/cjs/react-dom-client.development.js:26269:16)
+      at process.env.NODE_ENV.exports.useSyncExternalStore (node_modules/react/cjs/react.development.js:1270:34)
+      at process.env.NODE_ENV.exports.useSyncExternalStoreWithSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:81:19)
+      at useSelector2 (node_modules/react-redux/src/hooks/useSelector.ts:243:27)
+      at ListingDetailPage (src/body/listing/ListingDetailPage.tsx:71:34)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:25904:20)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom-client.development.js:7662:22)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom-client.development.js:10166:19)
+      at beginWork (node_modules/react-dom/cjs/react-dom-client.development.js:11778:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:17641:22)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at process.env.NODE_ENV.exports.act (node_modules/react/cjs/react.development.js:884:10)
+      at node_modules/@testing-library/react/dist/act-compat.js:47:25
+      at renderRoot (node_modules/@testing-library/react/dist/pure.js:190:26)
+      at render (node_modules/@testing-library/react/dist/pure.js:292:10)
+      at renderWithProviders (__tests__/utils/test-utils.tsx:96:14)
+      at Object.<anonymous> (__tests__/integration/ListingDetailPage.test.tsx:149:19)
+
+  console.warn
+    Selector unknown returned a different result when called with the same parameters. This can lead to unnecessary rerenders.
+    Selectors that return a new reference (such as an object or an array) should be memoized: https://redux.js.org/usage/deriving-data-selectors#optimizing-selectors-with-memoization {
+      state: {
+        auth: {
+          user: null,
+          token: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null
+        },
+        listing: {
+          currentListing: [Object],
+          currentListingImages: [Array],
+          isLoadingDetail: false,
+          error: null,
+          listings: [],
+          featuredListings: [],
+          latestListings: [],
+          similarListings: [],
+          myListings: [],
+          pagination: null,
+          searchParams: null,
+          isLoading: false,
+          isCreating: false,
+          isUpdating: false,
+          isDeleting: false
+        },
+        comment: {
+          commentsByListing: {},
+          isLoading: false,
+          isCreating: false,
+          isDeleting: false,
+          error: null
+        },
+        favorite: {
+          favorites: [],
+          favoriteIds: [],
+          pagination: null,
+          isLoading: false,
+          isToggling: false,
+          error: null
+        },
+        cloudinary: {
+          isUploading: false,
+          isUploadingFile: false,
+          isUploadingMultiple: false,
+          isDeleting: false,
+          lastUploadedImage: null,
+          lastUploadedFile: null,
+          lastUploadedImages: [],
+          error: null,
+          isUploadingListingImage: false,
+          lastListingImageUpload: null
+        },
+        message: {
+          threads: [],
+          messagesByThread: {},
+          isLoading: false,
+          isSending: false,
+          error: null
+        }
+      },
+      selected: [],
+      selected2: [],
+      stack: 'Error: \n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-redux/src/hooks/useSelector.ts:194:25\n' +
+        '    at memoizedSelector (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:46:30)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:70:22\n' +
+        '    at mountSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:8125:24)\n' +
+        '    at Object.useSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:26269:16)\n' +
+        '    at process.env.NODE_ENV.exports.useSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:1270:34)\n' +
+        '    at process.env.NODE_ENV.exports.useSyncExternalStoreWithSelector (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:81:19)\n' +
+        '    at useSelector2 (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-redux/src/hooks/useSelector.ts:243:27)\n' +
+        '    at ListingDetailPage (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/src/body/listing/ListingDetailPage.tsx:71:34)\n' +
+        '    at Object.react_stack_bottom_frame (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:25904:20)\n' +
+        '    at renderWithHooks (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:7662:22)\n' +
+        '    at updateFunctionComponent (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:10166:19)\n' +
+        '    at beginWork (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:11778:18)\n' +
+        '    at runWithFiberInDEV (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)\n' +
+        '    at performUnitOfWork (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17641:22)\n' +
+        '    at workLoopSync (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)\n' +
+        '    at renderRootSync (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)\n' +
+        '    at performWorkOnRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)\n' +
+        '    at performWorkOnRootViaSchedulerTask (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)\n' +
+        '    at flushActQueue (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:590:34)\n' +
+        '    at process.env.NODE_ENV.exports.act (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:884:10)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25\n' +
+        '    at renderRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:190:26)\n' +
+        '    at render (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:292:10)\n' +
+        '    at renderWithProviders (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/utils/test-utils.tsx:96:14)\n' +
+        '    at Object.<anonymous> (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/integration/ListingDetailPage.test.tsx:158:19)\n' +
+        '    at Promise.finally.completed (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)\n' +
+        '    at new Promise (<anonymous>)\n' +
+        '    at callAsyncCircusFn (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)\n' +
+        '    at _callCircusTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)\n' +
+        '    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+        '    at _runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:947:3)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:849:7\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:862:11)\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:857:11)\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:857:11)\n' +
+        '    at run (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:761:3)\n' +
+        '    at runAndTransformResultsToJestFormat (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)\n' +
+        '    at jestAdapter (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/runner.js:101:19)\n' +
+        '    at runTestInternal (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-runner/build/index.js:275:16)\n' +
+        '    at runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-runner/build/index.js:343:7)'
+    }
+
+      69 |   const isToggling = useAppSelector(selectFavoriteToggling);
+      70 |   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+    > 71 |   const comments = useAppSelector(selectCommentsByListing(listingId || 0));
+         |                                  ^
+      72 |
+      73 |   const [activeImageIndex, setActiveImageIndex] = useState(0);
+      74 |   const [showImageModal, setShowImageModal] = useState(false);
+
+      at node_modules/react-redux/src/hooks/useSelector.ts:199:25
+      at memoizedSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:46:30)
+      at node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:70:22
+      at mountSyncExternalStore (node_modules/react-dom/cjs/react-dom-client.development.js:8125:24)
+      at Object.useSyncExternalStore (node_modules/react-dom/cjs/react-dom-client.development.js:26269:16)
+      at process.env.NODE_ENV.exports.useSyncExternalStore (node_modules/react/cjs/react.development.js:1270:34)
+      at process.env.NODE_ENV.exports.useSyncExternalStoreWithSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:81:19)
+      at useSelector2 (node_modules/react-redux/src/hooks/useSelector.ts:243:27)
+      at ListingDetailPage (src/body/listing/ListingDetailPage.tsx:71:34)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:25904:20)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom-client.development.js:7662:22)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom-client.development.js:10166:19)
+      at beginWork (node_modules/react-dom/cjs/react-dom-client.development.js:11778:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:17641:22)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at process.env.NODE_ENV.exports.act (node_modules/react/cjs/react.development.js:884:10)
+      at node_modules/@testing-library/react/dist/act-compat.js:47:25
+      at renderRoot (node_modules/@testing-library/react/dist/pure.js:190:26)
+      at render (node_modules/@testing-library/react/dist/pure.js:292:10)
+      at renderWithProviders (__tests__/utils/test-utils.tsx:96:14)
+      at Object.<anonymous> (__tests__/integration/ListingDetailPage.test.tsx:158:19)
+
+  console.warn
+    Selector unknown returned a different result when called with the same parameters. This can lead to unnecessary rerenders.
+    Selectors that return a new reference (such as an object or an array) should be memoized: https://redux.js.org/usage/deriving-data-selectors#optimizing-selectors-with-memoization {
+      state: {
+        auth: {
+          user: [Object],
+          token: 'mock-jwt-token',
+          refreshToken: 'mock-refresh-token',
+          isAuthenticated: true,
+          isLoading: false,
+          error: null
+        },
+        listing: {
+          currentListing: [Object],
+          currentListingImages: [Array],
+          isLoadingDetail: false,
+          error: null,
+          listings: [],
+          featuredListings: [],
+          latestListings: [],
+          similarListings: [],
+          myListings: [],
+          pagination: null,
+          searchParams: null,
+          isLoading: false,
+          isCreating: false,
+          isUpdating: false,
+          isDeleting: false
+        },
+        comment: {
+          commentsByListing: {},
+          isLoading: false,
+          isCreating: false,
+          isDeleting: false,
+          error: null
+        },
+        favorite: {
+          favorites: [],
+          favoriteIds: [],
+          pagination: null,
+          isLoading: false,
+          isToggling: false,
+          error: null
+        },
+        cloudinary: {
+          isUploading: false,
+          isUploadingFile: false,
+          isUploadingMultiple: false,
+          isDeleting: false,
+          lastUploadedImage: null,
+          lastUploadedFile: null,
+          lastUploadedImages: [],
+          error: null,
+          isUploadingListingImage: false,
+          lastListingImageUpload: null
+        },
+        message: {
+          threads: [],
+          messagesByThread: {},
+          isLoading: false,
+          isSending: false,
+          error: null
+        }
+      },
+      selected: [],
+      selected2: [],
+      stack: 'Error: \n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-redux/src/hooks/useSelector.ts:194:25\n' +
+        '    at memoizedSelector (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:46:30)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:70:22\n' +
+        '    at mountSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:8125:24)\n' +
+        '    at Object.useSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:26269:16)\n' +
+        '    at process.env.NODE_ENV.exports.useSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:1270:34)\n' +
+        '    at process.env.NODE_ENV.exports.useSyncExternalStoreWithSelector (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:81:19)\n' +
+        '    at useSelector2 (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-redux/src/hooks/useSelector.ts:243:27)\n' +
+        '    at ListingDetailPage (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/src/body/listing/ListingDetailPage.tsx:71:34)\n' +
+        '    at Object.react_stack_bottom_frame (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:25904:20)\n' +
+        '    at renderWithHooks (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:7662:22)\n' +
+        '    at updateFunctionComponent (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:10166:19)\n' +
+        '    at beginWork (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:11778:18)\n' +
+        '    at runWithFiberInDEV (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)\n' +
+        '    at performUnitOfWork (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17641:22)\n' +
+        '    at workLoopSync (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)\n' +
+        '    at renderRootSync (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)\n' +
+        '    at performWorkOnRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)\n' +
+        '    at performWorkOnRootViaSchedulerTask (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)\n' +
+        '    at flushActQueue (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:590:34)\n' +
+        '    at process.env.NODE_ENV.exports.act (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:884:10)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25\n' +
+        '    at renderRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:190:26)\n' +
+        '    at render (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:292:10)\n' +
+        '    at renderWithProviders (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/utils/test-utils.tsx:96:14)\n' +
+        '    at Object.<anonymous> (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/integration/ListingDetailPage.test.tsx:172:19)\n' +
+        '    at Promise.finally.completed (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)\n' +
+        '    at new Promise (<anonymous>)\n' +
+        '    at callAsyncCircusFn (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)\n' +
+        '    at _callCircusTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)\n' +
+        '    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+        '    at _runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:947:3)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:849:7\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:862:11)\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:857:11)\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:857:11)\n' +
+        '    at run (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:761:3)\n' +
+        '    at runAndTransformResultsToJestFormat (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)\n' +
+        '    at jestAdapter (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/runner.js:101:19)\n' +
+        '    at runTestInternal (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-runner/build/index.js:275:16)\n' +
+        '    at runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-runner/build/index.js:343:7)'
+    }
+
+      69 |   const isToggling = useAppSelector(selectFavoriteToggling);
+      70 |   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+    > 71 |   const comments = useAppSelector(selectCommentsByListing(listingId || 0));
+         |                                  ^
+      72 |
+      73 |   const [activeImageIndex, setActiveImageIndex] = useState(0);
+      74 |   const [showImageModal, setShowImageModal] = useState(false);
+
+      at node_modules/react-redux/src/hooks/useSelector.ts:199:25
+      at memoizedSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:46:30)
+      at node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:70:22
+      at mountSyncExternalStore (node_modules/react-dom/cjs/react-dom-client.development.js:8125:24)
+      at Object.useSyncExternalStore (node_modules/react-dom/cjs/react-dom-client.development.js:26269:16)
+      at process.env.NODE_ENV.exports.useSyncExternalStore (node_modules/react/cjs/react.development.js:1270:34)
+      at process.env.NODE_ENV.exports.useSyncExternalStoreWithSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:81:19)
+      at useSelector2 (node_modules/react-redux/src/hooks/useSelector.ts:243:27)
+      at ListingDetailPage (src/body/listing/ListingDetailPage.tsx:71:34)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:25904:20)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom-client.development.js:7662:22)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom-client.development.js:10166:19)
+      at beginWork (node_modules/react-dom/cjs/react-dom-client.development.js:11778:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:17641:22)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at process.env.NODE_ENV.exports.act (node_modules/react/cjs/react.development.js:884:10)
+      at node_modules/@testing-library/react/dist/act-compat.js:47:25
+      at renderRoot (node_modules/@testing-library/react/dist/pure.js:190:26)
+      at render (node_modules/@testing-library/react/dist/pure.js:292:10)
+      at renderWithProviders (__tests__/utils/test-utils.tsx:96:14)
+      at Object.<anonymous> (__tests__/integration/ListingDetailPage.test.tsx:172:19)
+
+  console.warn
+    Selector unknown returned a different result when called with the same parameters. This can lead to unnecessary rerenders.
+    Selectors that return a new reference (such as an object or an array) should be memoized: https://redux.js.org/usage/deriving-data-selectors#optimizing-selectors-with-memoization {
+      state: {
+        auth: {
+          user: [Object],
+          token: 'mock-jwt-token',
+          refreshToken: 'mock-refresh-token',
+          isAuthenticated: true,
+          isLoading: false,
+          error: null
+        },
+        listing: {
+          currentListing: [Object],
+          currentListingImages: [Array],
+          isLoadingDetail: false,
+          error: null,
+          listings: [],
+          featuredListings: [],
+          latestListings: [],
+          similarListings: [],
+          myListings: [],
+          pagination: null,
+          searchParams: null,
+          isLoading: false,
+          isCreating: false,
+          isUpdating: false,
+          isDeleting: false
+        },
+        comment: {
+          commentsByListing: {},
+          isLoading: false,
+          isCreating: false,
+          isDeleting: false,
+          error: null
+        },
+        favorite: {
+          favorites: [],
+          favoriteIds: [],
+          pagination: null,
+          isLoading: false,
+          isToggling: false,
+          error: null
+        },
+        cloudinary: {
+          isUploading: false,
+          isUploadingFile: false,
+          isUploadingMultiple: false,
+          isDeleting: false,
+          lastUploadedImage: null,
+          lastUploadedFile: null,
+          lastUploadedImages: [],
+          error: null,
+          isUploadingListingImage: false,
+          lastListingImageUpload: null
+        },
+        message: {
+          threads: [],
+          messagesByThread: {},
+          isLoading: false,
+          isSending: false,
+          error: null
+        }
+      },
+      selected: [],
+      selected2: [],
+      stack: 'Error: \n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-redux/src/hooks/useSelector.ts:194:25\n' +
+        '    at memoizedSelector (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:46:30)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:70:22\n' +
+        '    at mountSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:8125:24)\n' +
+        '    at Object.useSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:26269:16)\n' +
+        '    at process.env.NODE_ENV.exports.useSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:1270:34)\n' +
+        '    at process.env.NODE_ENV.exports.useSyncExternalStoreWithSelector (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:81:19)\n' +
+        '    at useSelector2 (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-redux/src/hooks/useSelector.ts:243:27)\n' +
+        '    at ListingDetailPage (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/src/body/listing/ListingDetailPage.tsx:71:34)\n' +
+        '    at Object.react_stack_bottom_frame (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:25904:20)\n' +
+        '    at renderWithHooks (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:7662:22)\n' +
+        '    at updateFunctionComponent (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:10166:19)\n' +
+        '    at beginWork (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:11778:18)\n' +
+        '    at runWithFiberInDEV (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)\n' +
+        '    at performUnitOfWork (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17641:22)\n' +
+        '    at workLoopSync (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)\n' +
+        '    at renderRootSync (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)\n' +
+        '    at performWorkOnRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)\n' +
+        '    at performWorkOnRootViaSchedulerTask (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)\n' +
+        '    at flushActQueue (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:590:34)\n' +
+        '    at process.env.NODE_ENV.exports.act (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:884:10)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25\n' +
+        '    at renderRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:190:26)\n' +
+        '    at render (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:292:10)\n' +
+        '    at renderWithProviders (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/utils/test-utils.tsx:96:14)\n' +
+        '    at Object.<anonymous> (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/integration/ListingDetailPage.test.tsx:188:19)\n' +
+        '    at Promise.finally.completed (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)\n' +
+        '    at new Promise (<anonymous>)\n' +
+        '    at callAsyncCircusFn (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)\n' +
+        '    at _callCircusTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)\n' +
+        '    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+        '    at _runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:947:3)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:849:7\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:862:11)\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:857:11)\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:857:11)\n' +
+        '    at run (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:761:3)\n' +
+        '    at runAndTransformResultsToJestFormat (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)\n' +
+        '    at jestAdapter (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/runner.js:101:19)\n' +
+        '    at runTestInternal (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-runner/build/index.js:275:16)\n' +
+        '    at runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-runner/build/index.js:343:7)'
+    }
+
+      69 |   const isToggling = useAppSelector(selectFavoriteToggling);
+      70 |   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+    > 71 |   const comments = useAppSelector(selectCommentsByListing(listingId || 0));
+         |                                  ^
+      72 |
+      73 |   const [activeImageIndex, setActiveImageIndex] = useState(0);
+      74 |   const [showImageModal, setShowImageModal] = useState(false);
+
+      at node_modules/react-redux/src/hooks/useSelector.ts:199:25
+      at memoizedSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:46:30)
+      at node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:70:22
+      at mountSyncExternalStore (node_modules/react-dom/cjs/react-dom-client.development.js:8125:24)
+      at Object.useSyncExternalStore (node_modules/react-dom/cjs/react-dom-client.development.js:26269:16)
+      at process.env.NODE_ENV.exports.useSyncExternalStore (node_modules/react/cjs/react.development.js:1270:34)
+      at process.env.NODE_ENV.exports.useSyncExternalStoreWithSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:81:19)
+      at useSelector2 (node_modules/react-redux/src/hooks/useSelector.ts:243:27)
+      at ListingDetailPage (src/body/listing/ListingDetailPage.tsx:71:34)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:25904:20)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom-client.development.js:7662:22)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom-client.development.js:10166:19)
+      at beginWork (node_modules/react-dom/cjs/react-dom-client.development.js:11778:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:17641:22)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at process.env.NODE_ENV.exports.act (node_modules/react/cjs/react.development.js:884:10)
+      at node_modules/@testing-library/react/dist/act-compat.js:47:25
+      at renderRoot (node_modules/@testing-library/react/dist/pure.js:190:26)
+      at render (node_modules/@testing-library/react/dist/pure.js:292:10)
+      at renderWithProviders (__tests__/utils/test-utils.tsx:96:14)
+      at Object.<anonymous> (__tests__/integration/ListingDetailPage.test.tsx:188:19)
+
+  console.warn
+    Selector unknown returned a different result when called with the same parameters. This can lead to unnecessary rerenders.
+    Selectors that return a new reference (such as an object or an array) should be memoized: https://redux.js.org/usage/deriving-data-selectors#optimizing-selectors-with-memoization {
+      state: {
+        auth: {
+          user: null,
+          token: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null
+        },
+        listing: {
+          currentListing: [Object],
+          currentListingImages: [Array],
+          isLoadingDetail: false,
+          error: null,
+          listings: [],
+          featuredListings: [],
+          latestListings: [],
+          similarListings: [],
+          myListings: [],
+          pagination: null,
+          searchParams: null,
+          isLoading: false,
+          isCreating: false,
+          isUpdating: false,
+          isDeleting: false
+        },
+        comment: {
+          commentsByListing: {},
+          isLoading: false,
+          isCreating: false,
+          isDeleting: false,
+          error: null
+        },
+        favorite: {
+          favorites: [],
+          favoriteIds: [],
+          pagination: null,
+          isLoading: false,
+          isToggling: false,
+          error: null
+        },
+        cloudinary: {
+          isUploading: false,
+          isUploadingFile: false,
+          isUploadingMultiple: false,
+          isDeleting: false,
+          lastUploadedImage: null,
+          lastUploadedFile: null,
+          lastUploadedImages: [],
+          error: null,
+          isUploadingListingImage: false,
+          lastListingImageUpload: null
+        },
+        message: {
+          threads: [],
+          messagesByThread: {},
+          isLoading: false,
+          isSending: false,
+          error: null
+        }
+      },
+      selected: [],
+      selected2: [],
+      stack: 'Error: \n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-redux/src/hooks/useSelector.ts:194:25\n' +
+        '    at memoizedSelector (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:46:30)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:70:22\n' +
+        '    at mountSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:8125:24)\n' +
+        '    at Object.useSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:26269:16)\n' +
+        '    at process.env.NODE_ENV.exports.useSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:1270:34)\n' +
+        '    at process.env.NODE_ENV.exports.useSyncExternalStoreWithSelector (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:81:19)\n' +
+        '    at useSelector2 (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-redux/src/hooks/useSelector.ts:243:27)\n' +
+        '    at ListingDetailPage (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/src/body/listing/ListingDetailPage.tsx:71:34)\n' +
+        '    at Object.react_stack_bottom_frame (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:25904:20)\n' +
+        '    at renderWithHooks (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:7662:22)\n' +
+        '    at updateFunctionComponent (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:10166:19)\n' +
+        '    at beginWork (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:11778:18)\n' +
+        '    at runWithFiberInDEV (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)\n' +
+        '    at performUnitOfWork (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17641:22)\n' +
+        '    at workLoopSync (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)\n' +
+        '    at renderRootSync (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)\n' +
+        '    at performWorkOnRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)\n' +
+        '    at performWorkOnRootViaSchedulerTask (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)\n' +
+        '    at flushActQueue (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:590:34)\n' +
+        '    at process.env.NODE_ENV.exports.act (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:884:10)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25\n' +
+        '    at renderRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:190:26)\n' +
+        '    at render (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:292:10)\n' +
+        '    at renderWithProviders (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/utils/test-utils.tsx:96:14)\n' +
+        '    at Object.<anonymous> (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/integration/ListingDetailPage.test.tsx:200:19)\n' +
+        '    at Promise.finally.completed (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)\n' +
+        '    at new Promise (<anonymous>)\n' +
+        '    at callAsyncCircusFn (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)\n' +
+        '    at _callCircusTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)\n' +
+        '    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+        '    at _runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:947:3)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:849:7\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:862:11)\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:857:11)\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:857:11)\n' +
+        '    at run (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:761:3)\n' +
+        '    at runAndTransformResultsToJestFormat (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)\n' +
+        '    at jestAdapter (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/runner.js:101:19)\n' +
+        '    at runTestInternal (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-runner/build/index.js:275:16)\n' +
+        '    at runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-runner/build/index.js:343:7)'
+    }
+
+      69 |   const isToggling = useAppSelector(selectFavoriteToggling);
+      70 |   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+    > 71 |   const comments = useAppSelector(selectCommentsByListing(listingId || 0));
+         |                                  ^
+      72 |
+      73 |   const [activeImageIndex, setActiveImageIndex] = useState(0);
+      74 |   const [showImageModal, setShowImageModal] = useState(false);
+
+      at node_modules/react-redux/src/hooks/useSelector.ts:199:25
+      at memoizedSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:46:30)
+      at node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:70:22
+      at mountSyncExternalStore (node_modules/react-dom/cjs/react-dom-client.development.js:8125:24)
+      at Object.useSyncExternalStore (node_modules/react-dom/cjs/react-dom-client.development.js:26269:16)
+      at process.env.NODE_ENV.exports.useSyncExternalStore (node_modules/react/cjs/react.development.js:1270:34)
+      at process.env.NODE_ENV.exports.useSyncExternalStoreWithSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:81:19)
+      at useSelector2 (node_modules/react-redux/src/hooks/useSelector.ts:243:27)
+      at ListingDetailPage (src/body/listing/ListingDetailPage.tsx:71:34)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:25904:20)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom-client.development.js:7662:22)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom-client.development.js:10166:19)
+      at beginWork (node_modules/react-dom/cjs/react-dom-client.development.js:11778:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:17641:22)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at process.env.NODE_ENV.exports.act (node_modules/react/cjs/react.development.js:884:10)
+      at node_modules/@testing-library/react/dist/act-compat.js:47:25
+      at renderRoot (node_modules/@testing-library/react/dist/pure.js:190:26)
+      at render (node_modules/@testing-library/react/dist/pure.js:292:10)
+      at renderWithProviders (__tests__/utils/test-utils.tsx:96:14)
+      at Object.<anonymous> (__tests__/integration/ListingDetailPage.test.tsx:200:19)
+
+  console.warn
+    Selector unknown returned a different result when called with the same parameters. This can lead to unnecessary rerenders.
+    Selectors that return a new reference (such as an object or an array) should be memoized: https://redux.js.org/usage/deriving-data-selectors#optimizing-selectors-with-memoization {
+      state: {
+        auth: {
+          user: null,
+          token: null,
+          refreshToken: null,
+          isAuthenticated: false,
+          isLoading: false,
+          error: null
+        },
+        listing: {
+          currentListing: [Object],
+          currentListingImages: [Array],
+          isLoadingDetail: false,
+          error: null,
+          listings: [],
+          featuredListings: [],
+          latestListings: [],
+          similarListings: [],
+          myListings: [],
+          pagination: null,
+          searchParams: null,
+          isLoading: false,
+          isCreating: false,
+          isUpdating: false,
+          isDeleting: false
+        },
+        comment: {
+          commentsByListing: {},
+          isLoading: false,
+          isCreating: false,
+          isDeleting: false,
+          error: null
+        },
+        favorite: {
+          favorites: [],
+          favoriteIds: [],
+          pagination: null,
+          isLoading: false,
+          isToggling: false,
+          error: null
+        },
+        cloudinary: {
+          isUploading: false,
+          isUploadingFile: false,
+          isUploadingMultiple: false,
+          isDeleting: false,
+          lastUploadedImage: null,
+          lastUploadedFile: null,
+          lastUploadedImages: [],
+          error: null,
+          isUploadingListingImage: false,
+          lastListingImageUpload: null
+        },
+        message: {
+          threads: [],
+          messagesByThread: {},
+          isLoading: false,
+          isSending: false,
+          error: null
+        }
+      },
+      selected: [],
+      selected2: [],
+      stack: 'Error: \n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-redux/src/hooks/useSelector.ts:194:25\n' +
+        '    at memoizedSelector (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:46:30)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:70:22\n' +
+        '    at mountSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:8125:24)\n' +
+        '    at Object.useSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:26269:16)\n' +
+        '    at process.env.NODE_ENV.exports.useSyncExternalStore (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:1270:34)\n' +
+        '    at process.env.NODE_ENV.exports.useSyncExternalStoreWithSelector (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:81:19)\n' +
+        '    at useSelector2 (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-redux/src/hooks/useSelector.ts:243:27)\n' +
+        '    at ListingDetailPage (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/src/body/listing/ListingDetailPage.tsx:71:34)\n' +
+        '    at Object.react_stack_bottom_frame (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:25904:20)\n' +
+        '    at renderWithHooks (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:7662:22)\n' +
+        '    at updateFunctionComponent (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:10166:19)\n' +
+        '    at beginWork (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:11778:18)\n' +
+        '    at runWithFiberInDEV (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)\n' +
+        '    at performUnitOfWork (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17641:22)\n' +
+        '    at workLoopSync (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)\n' +
+        '    at renderRootSync (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)\n' +
+        '    at performWorkOnRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)\n' +
+        '    at performWorkOnRootViaSchedulerTask (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)\n' +
+        '    at flushActQueue (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:590:34)\n' +
+        '    at process.env.NODE_ENV.exports.act (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:884:10)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25\n' +
+        '    at renderRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:190:26)\n' +
+        '    at render (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:292:10)\n' +
+        '    at renderWithProviders (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/utils/test-utils.tsx:96:14)\n' +
+        '    at Object.<anonymous> (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/integration/ListingDetailPage.test.tsx:215:19)\n' +
+        '    at Promise.finally.completed (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)\n' +
+        '    at new Promise (<anonymous>)\n' +
+        '    at callAsyncCircusFn (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)\n' +
+        '    at _callCircusTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)\n' +
+        '    at processTicksAndRejections (node:internal/process/task_queues:95:5)\n' +
+        '    at _runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:947:3)\n' +
+        '    at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:849:7\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:862:11)\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:857:11)\n' +
+        '    at _runTestsForDescribeBlock (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:857:11)\n' +
+        '    at run (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:761:3)\n' +
+        '    at runAndTransformResultsToJestFormat (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1918:21)\n' +
+        '    at jestAdapter (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/runner.js:101:19)\n' +
+        '    at runTestInternal (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-runner/build/index.js:275:16)\n' +
+        '    at runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-runner/build/index.js:343:7)'
+    }
+
+      69 |   const isToggling = useAppSelector(selectFavoriteToggling);
+      70 |   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+    > 71 |   const comments = useAppSelector(selectCommentsByListing(listingId || 0));
+         |                                  ^
+      72 |
+      73 |   const [activeImageIndex, setActiveImageIndex] = useState(0);
+      74 |   const [showImageModal, setShowImageModal] = useState(false);
+
+      at node_modules/react-redux/src/hooks/useSelector.ts:199:25
+      at memoizedSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:46:30)
+      at node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:70:22
+      at mountSyncExternalStore (node_modules/react-dom/cjs/react-dom-client.development.js:8125:24)
+      at Object.useSyncExternalStore (node_modules/react-dom/cjs/react-dom-client.development.js:26269:16)
+      at process.env.NODE_ENV.exports.useSyncExternalStore (node_modules/react/cjs/react.development.js:1270:34)
+      at process.env.NODE_ENV.exports.useSyncExternalStoreWithSelector (node_modules/use-sync-external-store/cjs/use-sync-external-store-with-selector.development.js:81:19)
+      at useSelector2 (node_modules/react-redux/src/hooks/useSelector.ts:243:27)
+      at ListingDetailPage (src/body/listing/ListingDetailPage.tsx:71:34)
+      at Object.react_stack_bottom_frame (node_modules/react-dom/cjs/react-dom-client.development.js:25904:20)
+      at renderWithHooks (node_modules/react-dom/cjs/react-dom-client.development.js:7662:22)
+      at updateFunctionComponent (node_modules/react-dom/cjs/react-dom-client.development.js:10166:19)
+      at beginWork (node_modules/react-dom/cjs/react-dom-client.development.js:11778:18)
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at performUnitOfWork (node_modules/react-dom/cjs/react-dom-client.development.js:17641:22)
+      at workLoopSync (node_modules/react-dom/cjs/react-dom-client.development.js:17469:41)
+      at renderRootSync (node_modules/react-dom/cjs/react-dom-client.development.js:17450:11)
+      at performWorkOnRoot (node_modules/react-dom/cjs/react-dom-client.development.js:16504:11)
+      at performWorkOnRootViaSchedulerTask (node_modules/react-dom/cjs/react-dom-client.development.js:18957:7)
+      at flushActQueue (node_modules/react/cjs/react.development.js:590:34)
+      at process.env.NODE_ENV.exports.act (node_modules/react/cjs/react.development.js:884:10)
+      at node_modules/@testing-library/react/dist/act-compat.js:47:25
+      at renderRoot (node_modules/@testing-library/react/dist/pure.js:190:26)
+      at render (node_modules/@testing-library/react/dist/pure.js:292:10)
+      at renderWithProviders (__tests__/utils/test-utils.tsx:96:14)
+      at Object.<anonymous> (__tests__/integration/ListingDetailPage.test.tsx:215:19)
+
+FAIL __tests__/integration/ListingDetailPage.test.tsx
+  ListingDetailPage
+    Rendering
+      ✕ should render listing details correctly (473 ms)
+      ✕ should render rendering specific badges (109 ms)
+    Ownership Logic
+      ✓ should hide favorite button when user is owner (114 ms)
+      ✕ should show favorite button when user is NOT owner (225 ms)
+      ✕ should show favorite button for guest users (142 ms)
+    Interactions
+      ✕ should redirect guest to login when clicking favorite (163 ms)
+
+  ● ListingDetailPage › Rendering › should render listing details correctly
+
+    TestingLibraryElementError: Unable to find an element with the text: Test Detay İlanı. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"max-w-6xl mx-auto p-10 animate-pulse space-y-6"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"h-10 bg-gray-100 rounded-2xl w-1/4"[39m
+          [36m/>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-12 gap-6"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"col-span-8 h-[400px] bg-gray-100 rounded-3xl"[39m
+            [36m/>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"col-span-4 h-[400px] bg-gray-100 rounded-3xl"[39m
+            [36m/>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      149 |             render(<ListingDetailPage />, { preloadedState: loadedState });
+      150 |
+    > 151 |             expect(screen.getByText('Test Detay İlanı')).toBeInTheDocument();
+          |                           ^
+      152 |             expect(screen.getByText('5.000.000 ₺')).toBeInTheDocument(); // Format tahmin edildi
+      153 |             expect(screen.getByText(/Beşiktaş, İstanbul/)).toBeInTheDocument();
+      154 |             expect(screen.getByText(/Detaylı açıklama metni/)).toBeInTheDocument();
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByText (__tests__/integration/ListingDetailPage.test.tsx:151:27)
+
+  ● ListingDetailPage › Rendering › should render rendering specific badges
+
+    TestingLibraryElementError: Unable to find an element with the text: SATILIK. This could be because the text is broken up by multiple elements. In this case, you can provide a function for your text matcher to make your matcher more flexible.
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"max-w-6xl mx-auto p-10 animate-pulse space-y-6"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"h-10 bg-gray-100 rounded-2xl w-1/4"[39m
+          [36m/>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-12 gap-6"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"col-span-8 h-[400px] bg-gray-100 rounded-3xl"[39m
+            [36m/>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"col-span-4 h-[400px] bg-gray-100 rounded-3xl"[39m
+            [36m/>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      158 |             render(<ListingDetailPage />, { preloadedState: loadedState });
+      159 |
+    > 160 |             expect(screen.getByText('SATILIK')).toBeInTheDocument();
+          |                           ^
+      161 |             expect(screen.getByText('Öne Çıkan')).toBeInTheDocument();
+      162 |         });
+      163 |     });
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByText (__tests__/integration/ListingDetailPage.test.tsx:160:27)
+
+  ● ListingDetailPage › Ownership Logic › should show favorite button when user is NOT owner
+
+    TestingLibraryElementError: Unable to find an accessible element with the role "button" and name `/favorilere ekle/i`
+
+    There are no accessible roles. But there might be some inaccessible roles. If you wish to access them, then set the `hidden` option to `true`. Learn more about this here: https://testing-library.com/docs/dom-testing-library/api-queries#byrole
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"max-w-6xl mx-auto p-10 animate-pulse space-y-6"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"h-10 bg-gray-100 rounded-2xl w-1/4"[39m
+          [36m/>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-12 gap-6"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"col-span-8 h-[400px] bg-gray-100 rounded-3xl"[39m
+            [36m/>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"col-span-4 h-[400px] bg-gray-100 rounded-3xl"[39m
+            [36m/>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      188 |             render(<ListingDetailPage />, { preloadedState: visitorState });
+      189 |
+    > 190 |             const favButton = screen.getByRole('button', { name: /favorilere ekle/i });
+          |                                      ^
+      191 |             expect(favButton).toBeInTheDocument();
+      192 |         });
+      193 |
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByRole (__tests__/integration/ListingDetailPage.test.tsx:190:38)
+
+  ● ListingDetailPage › Ownership Logic › should show favorite button for guest users
+
+    TestingLibraryElementError: Unable to find an accessible element with the role "button" and name `/favorilere ekle/i`
+
+    There are no accessible roles. But there might be some inaccessible roles. If you wish to access them, then set the `hidden` option to `true`. Learn more about this here: https://testing-library.com/docs/dom-testing-library/api-queries#byrole
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"max-w-6xl mx-auto p-10 animate-pulse space-y-6"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"h-10 bg-gray-100 rounded-2xl w-1/4"[39m
+          [36m/>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-12 gap-6"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"col-span-8 h-[400px] bg-gray-100 rounded-3xl"[39m
+            [36m/>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"col-span-4 h-[400px] bg-gray-100 rounded-3xl"[39m
+            [36m/>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      200 |             render(<ListingDetailPage />, { preloadedState: guestState });
+      201 |
+    > 202 |             const favButton = screen.getByRole('button', { name: /favorilere ekle/i });
+          |                                      ^
+      203 |             expect(favButton).toBeInTheDocument();
+      204 |         });
+      205 |     });
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByRole (__tests__/integration/ListingDetailPage.test.tsx:202:38)
+
+  ● ListingDetailPage › Interactions › should redirect guest to login when clicking favorite
+
+    TestingLibraryElementError: Unable to find an accessible element with the role "button" and name `/favorilere ekle/i`
+
+    There are no accessible roles. But there might be some inaccessible roles. If you wish to access them, then set the `hidden` option to `true`. Learn more about this here: https://testing-library.com/docs/dom-testing-library/api-queries#byrole
+
+    Ignored nodes: comments, script, style
+    [36m<body>[39m
+      [36m<div>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"max-w-6xl mx-auto p-10 animate-pulse space-y-6"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"h-10 bg-gray-100 rounded-2xl w-1/4"[39m
+          [36m/>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"grid grid-cols-12 gap-6"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"col-span-8 h-[400px] bg-gray-100 rounded-3xl"[39m
+            [36m/>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"col-span-4 h-[400px] bg-gray-100 rounded-3xl"[39m
+            [36m/>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</body>[39m
+
+      215 |             render(<ListingDetailPage />, { preloadedState: guestState });
+      216 |
+    > 217 |             const favButton = screen.getByRole('button', { name: /favorilere ekle/i });
+          |                                      ^
+      218 |             await user.click(favButton);
+      219 |
+      220 |             expect(mockPush).toHaveBeenCalledWith('/login');
+
+      at Object.getElementError (node_modules/@testing-library/dom/dist/config.js:37:19)
+      at node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+      at node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+      at node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+      at Object.getByRole (__tests__/integration/ListingDetailPage.test.tsx:217:38)
+
+Test Suites: 1 failed, 1 total
+Tests:       5 failed, 1 passed, 6 total
+Snapshots:   0 total
+Time:        3.434 s
+Ran all test suites matching frontend/__tests__/integration/ListingDetailPage.test.tsx.
+/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/dist/server/node-environment-extensions/unhandled-rejection.js:479
+                throw error;
+                ^
+
+RangeError: Maximum call stack size exceeded
+    at emitInitNative (node:internal/async_hooks:192:24)
+    at emitInitScript (node:internal/async_hooks:505:3)
+    at initAsyncResource (node:internal/timers:165:5)
+    at new Immediate (node:internal/timers:635:5)
+    at setImmediate (node:timers:305:10)
+    at setImmediate (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:639:7)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+    at listener (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/next/src/server/node-environment-extensions/unhandled-rejection.tsx:635:9)
+
+Node.js v20.19.6

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
+import { Building2, Home, ChevronDown } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/body/redux/hooks';
 import { selectIsAuthenticated, selectUser, logoutAsync } from '@/body/redux/slices/auth/AuthSlice';
 
@@ -52,32 +53,26 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 bg-white shadow-md border-b border-gray-100">
+    <header className="relative z-50 bg-white shadow-md border-b border-gray-100">
       <nav className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           {/* Logo & Brand */}
-          <Link href="/" className="flex items-center space-x-2 shrink-0">
-            <div className="bg-blue-600 p-1.5 rounded-lg">
-              <Image
-                src="/real_estimate.png"
-                alt="Real Estimate Logo"
-                width={32}
-                height={32}
-                className="object-contain brightness-0 invert"
-                unoptimized
-              />
-            </div>
-            <span className="text-2xl font-extrabold tracking-tight text-gray-900">
-              Real<span className="text-blue-600">Estimate</span>
+          <Link href="/" className="flex items-center gap-2 shrink-0 group">
+            <Building2 className="w-9 h-9 text-blue-600 transition-transform group-hover:scale-110" />
+            <span className="text-2xl font-bold tracking-tight text-gray-900 bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+              RealEstimate
             </span>
           </Link>
 
           {/* Desktop Navigation - Emlak Menüsü */}
           <div className="hidden md:flex items-center space-x-1">
             <div className="relative group">
-              <button className="flex items-center gap-1.5 px-4 py-2 text-lg font-semibold text-gray-700 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
-                <span>🏠 Emlak</span>
-                <span className="text-xs opacity-50">▼</span>
+              <button className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-700 hover:text-blue-600 hover:bg-blue-50/50 rounded-xl transition-all group-hover:shadow-sm">
+                <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center transition-colors group-hover:bg-blue-100">
+                  <Home className="w-4 h-4" />
+                </div>
+                <span className="uppercase tracking-wide">Emlak</span>
+                <ChevronDown className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 transition-transform group-hover:rotate-180" />
               </button>
 
               {/* Dropdown Menu */}
@@ -111,12 +106,26 @@ export default function Navbar() {
               <div className="flex items-center gap-2">
                 <Link
                   href={user?.isAdmin ? '/admin' : '/panel'}
-                  className="flex items-center gap-2 px-3 py-2 rounded-full border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all"
+                  className="flex items-center gap-2 p-1 pr-3 rounded-full border border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all group"
                 >
-                  <span className="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md">
-                    {user?.name?.charAt(0).toUpperCase() || '?'}
-                  </span>
-                  <span className="hidden sm:inline font-semibold text-gray-700">{user?.name}</span>
+                  <div className="w-8 h-8 rounded-full overflow-hidden shadow-md flex-shrink-0 relative">
+                    {user?.profilePictureUrl ? (
+                      <Image
+                        src={user.profilePictureUrl}
+                        alt={`${user.name} ${user.surname}`}
+                        fill
+                        className="object-cover"
+                      />
+                    ) : (
+                      <Image
+                        src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+                        alt="Profil Fotoğrafı Yok"
+                        fill
+                        className="object-cover opacity-80"
+                      />
+                    )}
+                  </div>
+                  <span className="hidden sm:inline font-semibold text-gray-700 group-hover:text-blue-700">{user?.name}</span>
                 </Link>
                 <button
                   onClick={handleLogout}

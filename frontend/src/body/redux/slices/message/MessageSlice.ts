@@ -9,7 +9,14 @@ import {
   ListingMessageDto,
   ListingMessageThreadDto,
 } from './DTOs/MessageDTOs';
-import { getThreadsApi, getMessagesApi, sendMessageApi, deleteThreadApi, markMessageAsReadApi } from '../../api/messageApi';
+import {
+  getThreadsApi,
+  getMessagesApi,
+  sendMessageApi,
+  deleteThreadApi,
+  markMessageAsReadApi,
+  respondToOfferApi,
+} from '../../api/messageApi';
 
 const computeUnread = (messages: ListingMessageDto[] | undefined, currentUserId?: string | null) =>
   (messages || []).filter((m) => !m.isRead && m.senderId !== currentUserId).length;
@@ -35,7 +42,7 @@ export const fetchThreads = createAsyncThunk<ListingThreadListResponseDto>(
   }
 );
 
-export const fetchMessages = createAsyncThunk<ListingMessageListResponseDto, number>(
+export const fetchMessages = createAsyncThunk<ListingMessageListResponseDto & { threadId: number }, number>(
   'message/fetchMessages',
   async (threadId, { rejectWithValue }) => {
     try {
@@ -91,6 +98,19 @@ export const markMessageRead = createAsyncThunk<
   }
 });
 
+export const respondToOffer = createAsyncThunk<
+  ListingMessageResponseDto,
+  { messageId: number; accept: boolean }
+>('message/respondToOffer', async ({ messageId, accept }, { rejectWithValue }) => {
+  try {
+    const res = await respondToOfferApi(messageId, accept);
+    if (!res.success) return rejectWithValue(res.message);
+    return res;
+  } catch (err: any) {
+    return rejectWithValue(err?.response?.data?.message || 'Teklif yanıtlanırken hata oluştu');
+  }
+});
+
 const messageSlice = createSlice({
   name: 'message',
   initialState,
@@ -115,8 +135,30 @@ const messageSlice = createSlice({
           : t
       );
     },
+    resetMessageState: (state) => {
+      state.threads = [];
+      state.messagesByThread = {};
+      state.isLoading = false;
+      state.isSending = false;
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
+    // AuthSlice'tan gelecek logout aksiyonlarını dinle
+    builder.addCase('auth/logoutAsync/fulfilled', (state) => {
+      state.threads = [];
+      state.messagesByThread = {};
+      state.isLoading = false;
+      state.isSending = false;
+      state.error = null;
+    });
+    builder.addCase('auth/logout', (state) => {
+      state.threads = [];
+      state.messagesByThread = {};
+      state.isLoading = false;
+      state.isSending = false;
+      state.error = null;
+    });
     builder
       .addCase(fetchThreads.pending, (state) => {
         state.isLoading = true;
@@ -205,11 +247,32 @@ const messageSlice = createSlice({
           }
           return t;
         });
+      })
+      .addCase(respondToOffer.fulfilled, (state, action: PayloadAction<ListingMessageResponseDto>) => {
+        const msg = action.payload.data;
+        if (msg) {
+          const threadId = msg.threadId;
+          if (state.messagesByThread[threadId]) {
+            state.messagesByThread[threadId] = state.messagesByThread[threadId].map((m) =>
+              m.id === msg.id ? { ...m, offerStatus: msg.offerStatus } : m
+            );
+          }
+          state.threads = state.threads.map((t) =>
+            t.id === threadId
+              ? {
+                ...t,
+                messages: (t.messages || []).map((m) =>
+                  m.id === msg.id ? { ...m, offerStatus: msg.offerStatus } : m
+                ),
+              }
+              : t
+          );
+        }
       });
   },
 });
 
-export const { clearMessageError, markThreadRead } = messageSlice.actions;
+export const { clearMessageError, markThreadRead, resetMessageState } = messageSlice.actions;
 
 export const selectThreads = (state: RootState): ListingMessageThreadDto[] => state.message.threads;
 export const selectMessagesByThread = (threadId: number) => (state: RootState): ListingMessageDto[] =>
@@ -222,17 +285,28 @@ export const selectThreadUnread = (threadId: number) => (state: RootState) => {
   const localMsgs = state.message.messagesByThread[threadId];
   if (localMsgs) return computeUnread(localMsgs, currentUserId);
   const thread = state.message.threads.find((t) => t.id === threadId);
-  return computeUnread(thread?.messages, currentUserId);
+  return thread?.unreadCount ?? computeUnread(thread?.messages, currentUserId);
 };
+
 export const selectTotalUnread = (state: RootState) => {
   const currentUserId = state.auth.user?.id;
+  const threads = state.message.threads;
   const byThread = state.message.messagesByThread;
-  const fromThreads = state.message.threads.reduce((sum, t) => {
-    const unreadFromCache = computeUnread(byThread[t.id], currentUserId);
-    if (byThread[t.id]) return sum + unreadFromCache;
+
+  if (!threads || threads.length === 0) return 0;
+
+  return threads.reduce((sum, t) => {
+    // Cache'de mesajlar varsa onları baz al (en güncel)
+    if (byThread[t.id]) {
+      return sum + computeUnread(byThread[t.id], currentUserId);
+    }
+    // Backend'den gelen hazır unreadCount'u kullan
+    if (typeof t.unreadCount === 'number') {
+      return sum + t.unreadCount;
+    }
+    // Fallback: thread içindeki messages dizisine bak
     return sum + computeUnread(t.messages, currentUserId);
   }, 0);
-  return fromThreads;
 };
 
 export default messageSlice.reducer;

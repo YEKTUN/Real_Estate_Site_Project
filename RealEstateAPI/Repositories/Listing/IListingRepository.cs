@@ -151,6 +151,11 @@ public interface IListingRepository
     Task<bool> IsOwnerAsync(int listingId, string userId);
 
     /// <summary>
+    /// Kullanıcının tüm ilanlarının durumunu güncelle
+    /// </summary>
+    Task<bool> UpdateUserListingsStatusAsync(string userId, ListingStatus status);
+
+    /// <summary>
     /// İlan var mı kontrol et
     /// </summary>
     Task<bool> ExistsAsync(int listingId);

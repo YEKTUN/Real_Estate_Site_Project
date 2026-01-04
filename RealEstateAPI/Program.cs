@@ -319,6 +319,13 @@ if (!app.Environment.IsDevelopment() ||
 // CORS
 app.UseCors("AllowFrontend");
 
+// Request Logging Middleware
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"[REQUEST] {context.Request.Method} {context.Request.Path}{context.Request.QueryString}");
+    await next();
+});
+
 // Authentication & Authorization
 app.UseAuthentication();
 app.UseAuthorization();

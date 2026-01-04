@@ -7,9 +7,9 @@
 
 import { screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { 
-  render, 
-  createMockAuthState, 
+import {
+  render,
+  createMockAuthState,
   createAuthenticatedState
 } from '../utils/test-utils';
 import LoginPage from '@/body/auth/LoginPage';
@@ -48,7 +48,7 @@ jest.mock('@/body/redux/api/authApi', () => ({
 jest.mock('@react-oauth/google', () => ({
   GoogleOAuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   GoogleLogin: ({ onSuccess, onError }: { onSuccess: (response: { credential: string }) => void; onError: () => void }) => (
-    <button 
+    <button
       data-testid="google-login-button"
       onClick={() => onSuccess({ credential: 'mock-google-credential' })}
     >
@@ -105,7 +105,7 @@ describe('LoginPage', () => {
   // ========================================================================
   // RENDER TESTS
   // ========================================================================
-  
+
   describe('Rendering', () => {
     test('should render login form correctly', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
@@ -117,7 +117,7 @@ describe('LoginPage', () => {
     test('should render email input field', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
 
-      const emailInput = screen.getByLabelText(/e-posta adresi/i);
+      const emailInput = screen.getByLabelText(/e-posta veya kullanıcı adı/i);
       expect(emailInput).toBeInTheDocument();
       expect(emailInput).toHaveAttribute('type', 'email');
       expect(emailInput).toHaveAttribute('placeholder', 'ornek@email.com');
@@ -150,7 +150,7 @@ describe('LoginPage', () => {
     test('should render forgot password link', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
 
-      const forgotPasswordLink = screen.getByRole('link', { name: /şifremi unuttum/i });
+      const forgotPasswordLink = screen.getByRole('link', { name: /şifreni mi unuttun/i });
       expect(forgotPasswordLink).toBeInTheDocument();
       expect(forgotPasswordLink).toHaveAttribute('href', '/forgot-password');
     });
@@ -181,12 +181,12 @@ describe('LoginPage', () => {
   // ========================================================================
   // FORM INTERACTION TESTS
   // ========================================================================
-  
+
   describe('Form Interactions', () => {
     test('should update email input value on change', async () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
 
-      const emailInput = screen.getByLabelText(/e-posta adresi/i);
+      const emailInput = screen.getByLabelText(/e-posta veya kullanıcı adı/i);
       await user.type(emailInput, 'test@example.com');
 
       expect(emailInput).toHaveValue('test@example.com');
@@ -205,16 +205,16 @@ describe('LoginPage', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
 
       const passwordInput = screen.getByLabelText(/şifre/i);
-      
+
       // Password should be hidden initially
       expect(passwordInput).toHaveAttribute('type', 'password');
 
       // Find and click toggle button
       const toggleButtons = screen.getAllByRole('button');
-      const eyeButton = toggleButtons.find(btn => 
+      const eyeButton = toggleButtons.find(btn =>
         btn.textContent?.includes('👁️') || btn.textContent?.includes('🙈')
       );
-      
+
       if (eyeButton) {
         await user.click(eyeButton);
         expect(passwordInput).toHaveAttribute('type', 'text');
@@ -240,7 +240,7 @@ describe('LoginPage', () => {
     test('should clear inputs when typing after error', async () => {
       render(<LoginPage />, { preloadedState: errorState });
 
-      const emailInput = screen.getByLabelText(/e-posta adresi/i);
+      const emailInput = screen.getByLabelText(/e-posta veya kullanıcı adı/i);
       await user.type(emailInput, 'new@example.com');
 
       expect(emailInput).toHaveValue('new@example.com');
@@ -250,12 +250,12 @@ describe('LoginPage', () => {
   // ========================================================================
   // FORM VALIDATION TESTS
   // ========================================================================
-  
+
   describe('Form Validation', () => {
     test('email input should have required attribute', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
 
-      const emailInput = screen.getByLabelText(/e-posta adresi/i);
+      const emailInput = screen.getByLabelText(/e-posta veya kullanıcı adı/i);
       expect(emailInput).toBeRequired();
     });
 
@@ -282,7 +282,7 @@ describe('LoginPage', () => {
     test('should not submit form with empty password', async () => {
       const { store } = render(<LoginPage />, { preloadedState: defaultInitialState });
 
-      const emailInput = screen.getByLabelText(/e-posta adresi/i);
+      const emailInput = screen.getByLabelText(/e-posta veya kullanıcı adı/i);
       await user.type(emailInput, 'test@example.com');
 
       const submitButton = screen.getByRole('button', { name: /^giriş yap$/i });
@@ -295,9 +295,9 @@ describe('LoginPage', () => {
     test('should not submit form with whitespace-only values', async () => {
       const { store } = render(<LoginPage />, { preloadedState: defaultInitialState });
 
-      const emailInput = screen.getByLabelText(/e-posta adresi/i);
+      const emailInput = screen.getByLabelText(/e-posta veya kullanıcı adı/i);
       const passwordInput = screen.getByLabelText(/şifre/i);
-      
+
       // fireEvent kullan çünkü userEvent.type boşlukları farklı ele alıyor
       fireEvent.change(emailInput, { target: { value: '   ' } });
       fireEvent.change(passwordInput, { target: { value: '   ' } });
@@ -312,12 +312,12 @@ describe('LoginPage', () => {
   // ========================================================================
   // LOADING STATE TESTS
   // ========================================================================
-  
+
   describe('Loading State', () => {
     test('should disable email input when loading', () => {
       render(<LoginPage />, { preloadedState: loadingState });
 
-      const emailInput = screen.getByLabelText(/e-posta adresi/i);
+      const emailInput = screen.getByLabelText(/e-posta veya kullanıcı adı/i);
       expect(emailInput).toBeDisabled();
     });
 
@@ -367,7 +367,7 @@ describe('LoginPage', () => {
   // ========================================================================
   // ERROR STATE TESTS
   // ========================================================================
-  
+
   describe('Error State', () => {
     test('should display error message when login fails', () => {
       render(<LoginPage />, { preloadedState: errorState });
@@ -411,7 +411,7 @@ describe('LoginPage', () => {
   // ========================================================================
   // AUTHENTICATION REDIRECT TESTS
   // ========================================================================
-  
+
   describe('Authentication Redirect', () => {
     test('should redirect to panel when already authenticated', async () => {
       render(<LoginPage />, { preloadedState: authenticatedState });
@@ -431,7 +431,7 @@ describe('LoginPage', () => {
   // ========================================================================
   // STYLING TESTS
   // ========================================================================
-  
+
   describe('Styling', () => {
     test('submit button should have correct styling', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
@@ -443,14 +443,14 @@ describe('LoginPage', () => {
     test('inputs should have focus styles', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
 
-      const emailInput = screen.getByLabelText(/e-posta adresi/i);
+      const emailInput = screen.getByLabelText(/e-posta veya kullanıcı adı/i);
       expect(emailInput).toHaveClass('focus:ring-2', 'focus:ring-blue-500');
     });
 
     test('forgot password link should have blue color', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
 
-      const forgotPasswordLink = screen.getByRole('link', { name: /şifremi unuttum/i });
+      const forgotPasswordLink = screen.getByRole('link', { name: /şifreni mi unuttun/i });
       expect(forgotPasswordLink).toHaveClass('text-blue-600');
     });
 
@@ -465,12 +465,12 @@ describe('LoginPage', () => {
   // ========================================================================
   // ACCESSIBILITY TESTS
   // ========================================================================
-  
+
   describe('Accessibility', () => {
     test('inputs should have associated labels', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
 
-      const emailInput = screen.getByLabelText(/e-posta adresi/i);
+      const emailInput = screen.getByLabelText(/e-posta veya kullanıcı adı/i);
       const passwordInput = screen.getByLabelText(/şifre/i);
 
       expect(emailInput).toHaveAttribute('id', 'emailOrUsername');
@@ -496,7 +496,7 @@ describe('LoginPage', () => {
   // ========================================================================
   // GOOGLE LOGIN TESTS
   // ========================================================================
-  
+
   describe('Google Login', () => {
     test('should render Google login button', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
@@ -509,10 +509,10 @@ describe('LoginPage', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
 
       const googleButton = screen.getByTestId('google-login-button');
-      
+
       // Click should not throw error
       await user.click(googleButton);
-      
+
       // Button should still be in document after click
       expect(googleButton).toBeInTheDocument();
     });
@@ -527,10 +527,10 @@ describe('LoginPage', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
 
       const googleButton = screen.getByTestId('google-login-button');
-      
+
       // Mock'umuz click'te onSuccess'i çağırıyor
       await user.click(googleButton);
-      
+
       // Buton tıklandıktan sonra da sayfada kalmalı
       expect(googleButton).toBeInTheDocument();
     });
@@ -539,12 +539,12 @@ describe('LoginPage', () => {
   // ========================================================================
   // FORM SUBMISSION TESTS
   // ========================================================================
-  
+
   describe('Form Submission', () => {
     test('should submit form with valid credentials', async () => {
       const { store } = render(<LoginPage />, { preloadedState: defaultInitialState });
 
-      const emailInput = screen.getByLabelText(/e-posta adresi/i);
+      const emailInput = screen.getByLabelText(/e-posta veya kullanıcı adı/i);
       const passwordInput = screen.getByLabelText(/şifre/i);
       const submitButton = screen.getByRole('button', { name: /^giriş yap$/i });
 
@@ -562,7 +562,7 @@ describe('LoginPage', () => {
       render(<LoginPage />, { preloadedState: defaultInitialState });
 
       const form = document.querySelector('form');
-      
+
       // Form should have onSubmit handler that prevents default
       expect(form).toBeInTheDocument();
     });

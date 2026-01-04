@@ -171,6 +171,9 @@ export interface ListingOwnerDto {
   profilePictureUrl?: string;
   memberSince: string;
   totalListings: number;
+  // Gizlilik Ayarları
+  showPhone: boolean;
+  showEmail: boolean;
 }
 
 /**
@@ -321,6 +324,7 @@ export interface UpdateListingDto {
  */
 export interface ListingSearchDto {
   searchTerm?: string;
+  listingNumber?: string;
   category?: ListingCategory;
   type?: ListingType;
   propertyType?: PropertyType;

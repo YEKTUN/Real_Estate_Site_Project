@@ -14,6 +14,8 @@ import listingReducer from '@/body/redux/slices/listing/ListingSlice';
 import commentReducer from '@/body/redux/slices/comment/CommentSlice';
 import favoriteReducer from '@/body/redux/slices/favorite/FavoriteSlice';
 import cloudinaryReducer from '@/body/redux/slices/cloudinary/CloudinarySlice';
+import adminReducer from '@/body/redux/slices/admin/AdminListingSlice';
+
 import messageReducer from '@/body/redux/slices/message/MessageSlice';
 import type { RootState } from '@/body/redux/store';
 
@@ -44,6 +46,7 @@ export function setupStore(preloadedState?: PreloadedStateType) {
       favorite: favoriteReducer,
       cloudinary: cloudinaryReducer,
       message: messageReducer,
+      adminListing: adminReducer,
     },
     preloadedState: preloadedState as RootState | undefined,
   });
@@ -170,7 +173,7 @@ export function createMockAuthResponse(success = true, overrides = {}) {
       ...overrides,
     };
   }
-  
+
   return {
     success: false,
     message: 'İşlem başarısız',

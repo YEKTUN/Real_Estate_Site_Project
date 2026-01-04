@@ -45,7 +45,7 @@ const initialState: FavoriteState = {
  * Kullanıcının favorilerini getir
  */
 export const fetchMyFavorites = createAsyncThunk<
-  FavoriteListResponseDto, 
+  FavoriteListResponseDto,
   { page?: number; pageSize?: number } | void
 >(
   'favorite/fetchMine',
@@ -178,14 +178,14 @@ export const favoriteSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
-    
+
     // Favorileri temizle
     clearFavorites: (state) => {
       state.favorites = [];
       state.favoriteIds = [];
       state.pagination = null;
     },
-    
+
     // State'i sıfırla
     resetFavoriteState: () => initialState,
   },
@@ -216,7 +216,7 @@ export const favoriteSlice = createSlice({
       .addCase(addToFavorites.fulfilled, (state, action) => {
         state.isToggling = false;
         const { listingId } = action.payload;
-        
+
         if (!state.favoriteIds.includes(listingId)) {
           state.favoriteIds.push(listingId);
         }
@@ -235,9 +235,13 @@ export const favoriteSlice = createSlice({
       .addCase(removeFromFavorites.fulfilled, (state, action) => {
         state.isToggling = false;
         const { listingId } = action.payload;
-        
+
         state.favoriteIds = state.favoriteIds.filter(id => id !== listingId);
         state.favorites = state.favorites.filter(f => f.listingId !== listingId);
+
+        if (state.pagination && state.pagination.totalCount > 0) {
+          state.pagination.totalCount -= 1;
+        }
       })
       .addCase(removeFromFavorites.rejected, (state, action) => {
         state.isToggling = false;
@@ -253,7 +257,7 @@ export const favoriteSlice = createSlice({
       .addCase(toggleFavorite.fulfilled, (state, action) => {
         state.isToggling = false;
         const { listingId, response } = action.payload;
-        
+
         if (response.isFavorited) {
           if (!state.favoriteIds.includes(listingId)) {
             state.favoriteIds.push(listingId);
@@ -261,6 +265,10 @@ export const favoriteSlice = createSlice({
         } else {
           state.favoriteIds = state.favoriteIds.filter(id => id !== listingId);
           state.favorites = state.favorites.filter(f => f.listingId !== listingId);
+
+          if (state.pagination && state.pagination.totalCount > 0) {
+            state.pagination.totalCount -= 1;
+          }
         }
       })
       .addCase(toggleFavorite.rejected, (state, action) => {
@@ -277,7 +285,7 @@ export const favoriteSlice = createSlice({
       .addCase(updateFavoriteNote.fulfilled, (state, action) => {
         state.isLoading = false;
         const { listingId, note } = action.payload;
-        
+
         const favoriteIndex = state.favorites.findIndex(f => f.listingId === listingId);
         if (favoriteIndex !== -1) {
           state.favorites[favoriteIndex].note = note;
@@ -292,7 +300,7 @@ export const favoriteSlice = createSlice({
     builder
       .addCase(checkFavorite.fulfilled, (state, action) => {
         const { listingId, isFavorited } = action.payload;
-        
+
         if (isFavorited && !state.favoriteIds.includes(listingId)) {
           state.favoriteIds.push(listingId);
         } else if (!isFavorited) {
@@ -312,7 +320,7 @@ export const { clearError, clearFavorites, resetFavoriteState } = favoriteSlice.
 // Selectors
 export const selectFavorites = (state: RootState) => state.favorite.favorites;
 export const selectFavoriteIds = (state: RootState) => state.favorite.favoriteIds;
-export const selectIsFavorited = (listingId: number) => (state: RootState) => 
+export const selectIsFavorited = (listingId: number) => (state: RootState) =>
   state.favorite.favoriteIds.includes(listingId);
 export const selectFavoritePagination = (state: RootState) => state.favorite.pagination;
 export const selectFavoriteLoading = (state: RootState) => state.favorite.isLoading;

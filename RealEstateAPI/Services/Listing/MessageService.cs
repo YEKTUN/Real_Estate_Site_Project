@@ -181,7 +181,7 @@ public class MessageService : IMessageService
         {
             Success = true,
             Message = "Mesajlaşma kutusu getirildi",
-            Threads = threads.Select(MapThread).ToList()
+            Threads = threads.Select(t => MapThread(t, userId)).ToList()
         };
     }
 
@@ -318,6 +318,64 @@ public class MessageService : IMessageService
         }
     }
 
+    public async Task<ListingMessageResponseDto> RespondToOfferAsync(int messageId, string userId, bool accept)
+    {
+        _logger.LogInformation("RespondToOfferAsync: MessageId: {MessageId}, UserId: {UserId}, Accept: {Accept}", messageId, userId, accept);
+
+        var message = await _messageRepository.GetMessageByIdAsync(messageId);
+        if (message == null || !message.IsOffer || message.OfferStatus != 0)
+        {
+            return new ListingMessageResponseDto { Success = false, Message = "Teklif bulunamadı veya daha önce yanıtlanmış." };
+        }
+
+        var thread = message.Thread;
+        if (thread == null || thread.SellerId != userId)
+        {
+            return new ListingMessageResponseDto { Success = false, Message = "Bu teklifi yanıtlama yetkiniz yok." };
+        }
+
+        // Teklif durumunu güncelle
+        message.OfferStatus = accept ? 1 : 2;
+        await _messageRepository.SaveChangesAsync();
+
+        var currencySymbol = thread.Listing?.Currency switch
+        {
+            Currency.USD => "$",
+            Currency.EUR => "€",
+            Currency.GBP => "£",
+            _ => "₺"
+        };
+
+        // Otomatik cevap gönder
+        var responseContent = accept 
+            ? $"Teklifinizi kabul ettim ({message.OfferPrice} {currencySymbol}). Detaylar için iletişime geçebilirsiniz."
+            : $"Teklifinizi maalesef kabul edemiyorum ({message.OfferPrice} {currencySymbol})." ;
+
+        var responseMessage = new ListingMessage
+        {
+            ThreadId = thread.Id,
+            SenderId = userId,
+            Content = responseContent,
+            IsOffer = false,
+            CreatedAt = DateTime.UtcNow,
+            IsRead = false
+        };
+
+        var savedResponse = await _messageRepository.AddMessageAsync(responseMessage);
+        
+        // Thread'i güncelle
+        thread.LastMessageAt = DateTime.UtcNow;
+        thread.UpdatedAt = DateTime.UtcNow;
+        await _messageRepository.SaveChangesAsync();
+
+        return new ListingMessageResponseDto
+        {
+            Success = true,
+            Message = accept ? "Teklif kabul edildi." : "Teklif reddedildi.",
+            Data = MapMessage(message) // Güncellenmiş teklif mesajını dönüyoruz
+        };
+    }
+
     // Helpers
     private static ListingMessageDto MapMessage(ListingMessage msg)
     {
@@ -333,6 +391,7 @@ public class MessageService : IMessageService
             Content = msg.Content,
             OfferPrice = msg.OfferPrice,
             IsOffer = msg.IsOffer,
+            OfferStatus = msg.OfferStatus,
             AttachmentUrl = msg.AttachmentUrl,
             AttachmentType = msg.AttachmentType,
             AttachmentFileName = msg.AttachmentFileName,
@@ -342,13 +401,14 @@ public class MessageService : IMessageService
         };
     }
 
-    private static ListingMessageThreadDto MapThread(ListingMessageThread thread)
+    private static ListingMessageThreadDto MapThread(ListingMessageThread thread, string userId)
     {
         return new ListingMessageThreadDto
         {
             Id = thread.Id,
             ListingId = thread.ListingId,
             ListingTitle = thread.Listing?.Title ?? string.Empty,
+            ListingPrice = thread.Listing?.Price ?? 0,
             SellerId = thread.SellerId,
             SellerName = thread.Seller?.Name ?? thread.Seller?.UserName ?? string.Empty,
             SellerSurname = thread.Seller?.Surname,
@@ -358,6 +418,8 @@ public class MessageService : IMessageService
             BuyerSurname = thread.Buyer?.Surname,
             BuyerProfilePictureUrl = thread.Buyer?.ProfilePictureUrl,
             LastMessageAt = thread.LastMessageAt,
+            UnreadCount = thread.Messages?.Count(m => !m.IsRead && m.SenderId != userId) ?? 0,
+            ListingCurrency = (int)(thread.Listing?.Currency ?? Currency.TRY),
             Messages = thread.Messages?.Select(MapMessage).ToList() ?? new List<ListingMessageDto>()
         };
     }

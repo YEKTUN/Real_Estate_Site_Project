@@ -6,6 +6,7 @@ using Moq;
 using RealEstateAPI.DTOs.Auth;
 using RealEstateAPI.Models;
 using RealEstateAPI.Repositories.Auth;
+using RealEstateAPI.Repositories.Listing;
 using RealEstateAPI.Services.Auth;
 using RealEstateAPI.Services.Email;
 using RealEstateAPI.Tests.Helpers;
@@ -31,6 +32,7 @@ public class AuthServiceTests
     private readonly Mock<IConfiguration> _configurationMock;
     private readonly Mock<ILogger<AuthService>> _loggerMock;
     private readonly Mock<IEmailService> _emailServiceMock;
+    private readonly Mock<IListingRepository> _listingRepositoryMock;
     private readonly AuthService _authService;
 
     /// <summary>
@@ -56,6 +58,7 @@ public class AuthServiceTests
         _configurationMock = new Mock<IConfiguration>();
         _loggerMock = new Mock<ILogger<AuthService>>();
         _emailServiceMock = new Mock<IEmailService>();
+        _listingRepositoryMock = new Mock<IListingRepository>();
 
         // JWT Settings mock
         SetupJwtConfiguration();
@@ -67,7 +70,8 @@ public class AuthServiceTests
             _authRepositoryMock.Object,
             _configurationMock.Object,
             _loggerMock.Object,
-            _emailServiceMock.Object);
+            _emailServiceMock.Object,
+            _listingRepositoryMock.Object);
     }
 
     /// <summary>
@@ -658,5 +662,53 @@ public class AuthServiceTests
         result.Should().NotBeNull();
         result.Success.Should().BeFalse();
         result.Message.Should().Contain("hata oluştu");
+    }
+
+    // ============================================================================
+    // DEACTIVATE ACCOUNT TESTS
+    // ============================================================================
+
+    [Fact]
+    public async Task DeactivateAccountAsync_WithValidUser_ShouldReturnSuccess()
+    {
+        // Arrange
+        var user = TestDataFactory.CreateTestUser();
+        
+        _authRepositoryMock.Setup(x => x.GetUserByIdAsync(user.Id))
+            .ReturnsAsync(user);
+
+        _userManagerMock.Setup(x => x.UpdateAsync(It.IsAny<ApplicationUser>()))
+            .ReturnsAsync(IdentityResult.Success);
+
+        _listingRepositoryMock.Setup(x => x.UpdateUserListingsStatusAsync(user.Id, ListingStatus.Inactive))
+            .ReturnsAsync(true);
+
+        _authRepositoryMock.Setup(x => x.RevokeAllUserRefreshTokensAsync(user.Id))
+            .Returns(Task.CompletedTask);
+
+        // Act
+        var result = await _authService.DeactivateAccountAsync(user.Id);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Success.Should().BeTrue();
+        result.Message.Should().Contain("kapatıldı");
+        user.IsActive.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task DeactivateAccountAsync_WithNonExistentUser_ShouldReturnFailure()
+    {
+        // Arrange
+        _authRepositoryMock.Setup(x => x.GetUserByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync((ApplicationUser?)null);
+
+        // Act
+        var result = await _authService.DeactivateAccountAsync("non-existent-id");
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Success.Should().BeFalse();
+        result.Message.Should().Be("Kullanıcı bulunamadı");
     }
 }

@@ -13,5 +13,6 @@ public interface IMessageService
     /// Admin olarak ilan sahibine mesaj gönder (ilan durumu değişikliği bildirimi)
     /// </summary>
     Task<bool> SendAdminNotificationAsync(int listingId, string adminUserId, string messageContent);
+    Task<ListingMessageResponseDto> RespondToOfferAsync(int messageId, string userId, bool accept);
 }
 

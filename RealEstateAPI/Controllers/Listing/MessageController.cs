@@ -151,5 +151,21 @@ public class MessageController : ControllerBase
 
         return NoContent();
     }
+
+    /// <summary>
+    /// Teklife yanıt ver (Kabul/Red)
+    /// </summary>
+    [HttpPost("offer/{messageId:int}/respond")]
+    [ProducesResponseType(typeof(ListingMessageResponseDto), StatusCodes.Status200OK)]
+    public async Task<IActionResult> RespondToOffer(int messageId, [FromQuery] bool accept)
+    {
+        var userId = GetUserId();
+        if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+        var result = await _messageService.RespondToOfferAsync(messageId, userId, accept);
+        if (!result.Success) return BadRequest(result);
+
+        return Ok(result);
+    }
 }
 

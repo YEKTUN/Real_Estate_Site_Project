@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -27,6 +28,7 @@ public class ListingControllerTests
 
     private readonly Mock<IListingService> _listingServiceMock;
     private readonly Mock<ILogger<ListingController>> _loggerMock;
+    private readonly Mock<UserManager<ApplicationUser>> _userManagerMock;
     private readonly ListingController _controller;
 
     /// <summary>
@@ -37,7 +39,15 @@ public class ListingControllerTests
         _listingServiceMock = new Mock<IListingService>();
         _loggerMock = new Mock<ILogger<ListingController>>();
         
-        _controller = new ListingController(_listingServiceMock.Object, _loggerMock.Object);
+        // UserManager mock
+        var userStoreMock = new Mock<IUserStore<ApplicationUser>>();
+        _userManagerMock = new Mock<UserManager<ApplicationUser>>(
+            userStoreMock.Object, null!, null!, null!, null!, null!, null!, null!, null!);
+        
+        _controller = new ListingController(
+            _listingServiceMock.Object, 
+            _loggerMock.Object, 
+            _userManagerMock.Object);
         
         // HttpContext mock
         SetupHttpContext();
@@ -87,6 +97,9 @@ public class ListingControllerTests
         _listingServiceMock.Setup(x => x.CreateAsync(createDto, userId))
             .ReturnsAsync(successResponse);
 
+        _userManagerMock.Setup(x => x.FindByIdAsync(userId))
+            .ReturnsAsync(new ApplicationUser { Id = userId, PhoneVerified = true });
+
         // Act
         var result = await _controller.Create(createDto);
 
@@ -108,6 +121,9 @@ public class ListingControllerTests
         
         _listingServiceMock.Setup(x => x.CreateAsync(createDto, userId))
             .ReturnsAsync(failedResponse);
+
+        _userManagerMock.Setup(x => x.FindByIdAsync(userId))
+            .ReturnsAsync(new ApplicationUser { Id = userId, PhoneVerified = true });
 
         // Act
         var result = await _controller.Create(createDto);

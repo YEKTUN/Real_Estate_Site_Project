@@ -17,8 +17,11 @@ import {
   selectThreadUnread,
   sendMessage,
   markMessageRead,
+  respondToOffer,
+
 } from '@/body/redux/slices/message/MessageSlice';
 import { selectUser } from '@/body/redux/slices/auth/AuthSlice';
+import { Currency } from '@/body/redux/slices/listing/DTOs/ListingDTOs';
 import { format } from 'date-fns';
 import { uploadFile, selectIsUploadingFile } from '@/body/redux/slices/cloudinary/CloudinarySlice';
 import UserAvatar from '@/body/panel/components/UserAvatar';
@@ -57,6 +60,13 @@ export default function Messages() {
   // Mesaj listesinin kendi scroll container'ı - sadece bu alanı aşağı kaydıracağız
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
+  // Teklif/Mesaj modalı için state'ler
+  const [showContactModal, setShowContactModal] = useState(false);
+  const [messageType, setMessageType] = useState<'offer' | 'message'>('message');
+  const [contactOfferPrice, setContactOfferPrice] = useState<number | ''>('');
+  const [contactMessageContent, setContactMessageContent] = useState('');
+
+
   const messages = useAppSelector(
     selectedThreadId ? selectMessagesByThread(selectedThreadId) : () => []
   );
@@ -73,7 +83,7 @@ export default function Messages() {
 
   useEffect(() => {
     dispatch(fetchThreads());
-  }, [dispatch]);
+  }, [dispatch, selectedThreadId]); // Fetch whenever returning to list or switching
 
   useEffect(() => {
     if (selectedThreadId) {
@@ -81,62 +91,61 @@ export default function Messages() {
     }
   }, [dispatch, selectedThreadId]);
 
-  // Thread açıldığında ve mesajlar yüklendiğinde okunmamış mesajları otomatik okundu yap
-  const processedThreadIdRef = useRef<number | null>(null);
-  
-  useEffect(() => {
-    // Thread değiştiğinde processed flag'ini sıfırla
-    if (processedThreadIdRef.current !== selectedThreadId) {
-      processedThreadIdRef.current = null;
-    }
+  // Track messages currently being marked as read to avoid redundant dispatches
+  const markingAsReadRef = useRef<Set<number>>(new Set());
 
-    // Thread açık ve mesajlar yüklendiğinde, daha önce işlenmediyse okunmamış mesajları okundu yap
+  // Reset marking tracker when thread changes
+  useEffect(() => {
+    markingAsReadRef.current.clear();
+  }, [selectedThreadId]);
+
+  useEffect(() => {
+    // Mesajlar yüklendiyse ve okunmamış mesaj varsa işaretle
     if (
       selectedThreadId &&
+      !isLoading &&
       messages.length > 0 &&
-      currentUser?.id &&
-      processedThreadIdRef.current !== selectedThreadId
+      currentUser?.id
     ) {
-      // Sadece okunmamış ve kendimizden gelmeyen mesajları okundu yap
       const unreadMessages = messages.filter(
-        (m) => !m.isRead && m.senderId !== currentUser.id
+        (m) => !m.isRead && m.senderId !== currentUser.id && !markingAsReadRef.current.has(m.id)
       );
 
-      // Tüm okunmamış mesajları okundu yap (sadece bir kez, thread açıldığında)
       if (unreadMessages.length > 0) {
-        processedThreadIdRef.current = selectedThreadId;
-        
-        // Tüm okunmamış mesajları okundu yap
-        const markPromises = unreadMessages.map((m) =>
+        // Her mesaj için okundu işaretleme başlat
+        unreadMessages.forEach((m) => {
+          markingAsReadRef.current.add(m.id);
           dispatch(markMessageRead({ messageId: m.id, threadId: selectedThreadId }))
-        );
-        
-        // Tüm mesajlar okundu işaretlendikten sonra thread listesini yenile
-        Promise.all(markPromises).then(() => {
-          // Thread listesini yenile ki badge güncellensin
-          dispatch(fetchThreads());
-        }).catch((error) => {
-          console.error('Mesajları okundu olarak işaretlerken hata:', error);
+            .unwrap()
+            .catch(() => {
+              // Hata olursa tekrar denenebilmesi için set'ten çıkar
+              markingAsReadRef.current.delete(m.id);
+            });
         });
-      } else {
-        // Eğer okunmamış mesaj yoksa, yine de işaretle ki tekrar kontrol etmesin
-        processedThreadIdRef.current = selectedThreadId;
+
+        // Lokal durumu hemen güncelle (opsiyonel ama daha akıcı bir UI sağlar)
+        dispatch(markThreadRead(selectedThreadId));
       }
     }
-  }, [selectedThreadId, messages, currentUser?.id, dispatch]);
+  }, [selectedThreadId, messages, currentUser?.id, dispatch, isLoading]);
 
-  // Yeni mesaj geldiğinde veya thread değiştiğinde sadece iç mesaj kutusunu en alta indir
+  // Mesajları en alta kaydır
   useEffect(() => {
-    const container = messagesContainerRef.current;
-    if (!container) return;
+    if (selectedThreadId && messagesContainerRef.current) {
+      const container = messagesContainerRef.current;
 
-    try {
-      // Yalnızca bu container'ın scrollTop'unu değiştiriyoruz; sayfanın (window) scroll'una dokunmuyoruz
-      container.scrollTop = container.scrollHeight;
-    } catch (err) {
-      console.error('Messages: iç scroll ayarlanırken hata', err);
+      const scrollToBottom = () => {
+        container.scrollTop = container.scrollHeight;
+      };
+
+      // İlk denemeyi hemen yap
+      scrollToBottom();
+
+      // DOM güncellenmesi için çok kısa bir süre sonra tekrar dene (garanti olsun)
+      const timeoutId = setTimeout(scrollToBottom, 100);
+      return () => clearTimeout(timeoutId);
     }
-  }, [messages.length, selectedThreadId]);
+  }, [messages.length, selectedThreadId, isLoading]);
 
   const formattedThreads = useMemo(() => {
     const currentId = currentUser?.id;
@@ -144,20 +153,20 @@ export default function Messages() {
       // Önce messagesByThread'den mesajları kontrol et (daha güncel olabilir)
       const cachedMessages = messagesByThread[t.id] || [];
       const threadMessages = cachedMessages.length > 0 ? cachedMessages : (t.messages || []);
-      
+
       // Önce okunmamış mesajları bul (kendimizden gelmeyen)
       const unreadMessages = threadMessages.filter(
         (m) => !m.isRead && m.senderId !== currentId
       );
-      
+
       // En son okunmamış mesajı bul (eğer varsa)
       const lastUnreadMsg = unreadMessages.length > 0
         ? unreadMessages.reduce<typeof threadMessages[number] | undefined>((latest, m) => {
-            if (!latest) return m;
-            return new Date(m.createdAt) > new Date(latest.createdAt) ? m : latest;
-          }, undefined)
+          if (!latest) return m;
+          return new Date(m.createdAt) > new Date(latest.createdAt) ? m : latest;
+        }, undefined)
         : undefined;
-      
+
       // En son mesajı bul (createdAt'e göre) - genel son mesaj
       const lastMsg = threadMessages.reduce<
         typeof threadMessages[number] | undefined
@@ -165,25 +174,25 @@ export default function Messages() {
         if (!latest) return m;
         return new Date(m.createdAt) > new Date(latest.createdAt) ? m : latest;
       }, undefined);
-      
+
       const isCurrentUserSeller = currentId === t?.sellerId;
-      
+
       // Thread'den direkt seller/buyer bilgilerini kullan
-      const otherName = isCurrentUserSeller 
+      const otherName = isCurrentUserSeller
         ? (t.buyerName || 'Bilinmeyen')
         : (t.sellerName || 'Bilinmeyen');
-      const otherSurname = isCurrentUserSeller 
+      const otherSurname = isCurrentUserSeller
         ? (t.buyerSurname || '')
         : (t.sellerSurname || '');
-      const otherProfilePictureUrl = isCurrentUserSeller 
+      const otherProfilePictureUrl = isCurrentUserSeller
         ? (t.buyerProfilePictureUrl || null)
         : (t.sellerProfilePictureUrl || null);
-      
+
       // Öncelikle okunmamış mesaj varsa onu göster, yoksa son mesajı göster
       const displayMsg = lastUnreadMsg || lastMsg;
       let lastPreview = 'Yeni mesaj yok';
       let isLastPreviewUnread = false;
-      
+
       if (displayMsg) {
         isLastPreviewUnread = !!lastUnreadMsg; // Eğer gösterilen mesaj okunmamış mesajsa
         if (displayMsg.attachmentFileName) {
@@ -194,12 +203,12 @@ export default function Messages() {
           lastPreview = 'Dosya gönderildi';
         }
       }
-      
+
       // Admin mesajı kontrolü - son mesaj admin'den geldiyse belirginleştir
       const isLastMessageFromAdmin = lastMsg?.isAdminSender || false;
       // Admin thread'i kontrolü - diğer taraf admin ise (admin buyer olarak thread'de)
       const isAdminThread = isCurrentUserSeller && lastMsg?.isAdminSender;
-      
+
       return {
         ...t,
         displayName: isAdminThread ? 'Sistem' : formatSender(otherName), // Admin thread'lerinde "Sistem" göster
@@ -217,7 +226,7 @@ export default function Messages() {
         isLastPreviewUnread, // Son önizleme okunmamış mesaj mı flag'i
       };
     });
-    
+
     // En son mesaj gönderilme tarihine göre sırala (yeni mesajlar üstte)
     return formatted.sort((a, b) => {
       const dateA = a.lastAt ? new Date(a.lastAt).getTime() : 0;
@@ -240,7 +249,7 @@ export default function Messages() {
     try {
       const deletePromises = selectedIds.map((id) => dispatch(deleteThreadAsync(id)));
       await Promise.all(deletePromises);
-      
+
       // Seçim modunu kapat ve thread listesini yenile
       setSelectedThreadIds(new Set());
       setIsSelectMode(false);
@@ -276,9 +285,9 @@ export default function Messages() {
   // Görünüm: seçilmemişse sadece liste; seçilmişse sadece sohbet (tek panel)
   if (!selectedThreadId) {
     return (
-      <div className="space-y-4 h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-lg font-semibold text-gray-900">Mesajlaşmalar</h3>
+      <div className="space-y-6 h-[80vh] flex flex-col p-8">
+        <div className="flex items-center justify-between gap-4">
+          <h3 className="text-xl font-black text-gray-900 uppercase tracking-tight">Mesajlaşmalar</h3>
           <div className="flex items-center gap-2">
             {isLoading && <span className="text-xs text-gray-500">Yükleniyor...</span>}
             {formattedThreads.length > 0 && (
@@ -339,7 +348,22 @@ export default function Messages() {
             <button onClick={() => dispatch(clearMessageError())} className="text-red-500 hover:text-red-700">✕</button>
           </div>
         )}
-        <div className="flex-1 space-y-3 overflow-y-auto overflow-x-hidden overscroll-contain pr-2 -mr-2">
+        <div className="flex-1 space-y-3 overflow-y-auto overflow-x-hidden overscroll-contain pr-2 custom-scrollbar">
+          <style jsx>{`
+            .custom-scrollbar::-webkit-scrollbar {
+              width: 5px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-track {
+              background: transparent;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb {
+              background: #e2e8f0;
+              border-radius: 10px;
+            }
+            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+              background: #cbd5e1;
+            }
+          `}</style>
           {formattedThreads.length === 0 && !isLoading && (
             <div className="text-center py-12 text-gray-500">
               <div className="text-4xl mb-3">📭</div>
@@ -351,12 +375,13 @@ export default function Messages() {
             const isFromOther = t.lastMessageSenderId && t.lastMessageSenderId !== currentUser?.id;
             const shouldHighlight = hasUnread && isFromOther;
             const isOtherUserSelf = t.otherUserId && t.otherUserId === currentUser?.id;
-            
+
             const isSelected = selectedThreadIds.has(t.id);
-            
+
             return (
               <div
                 key={t.id}
+                data-testid={`thread-${t.id}`}
                 onClick={() => {
                   if (isSelectMode) {
                     handleToggleThreadSelection(t.id);
@@ -364,34 +389,33 @@ export default function Messages() {
                     setSelectedThreadId(t.id);
                   }
                 }}
-                className={`group relative w-full border rounded-2xl p-4 transition-all duration-200 cursor-pointer ${
-                  isSelected
-                    ? 'border-indigo-400 bg-indigo-50 shadow-md ring-2 ring-indigo-300'
-                    : selectedThreadId === t.id 
-                    ? 'border-indigo-400 bg-indigo-50 shadow-md' 
+                className={`group relative w-full border rounded-xl p-3 transition-all duration-200 cursor-pointer ${isSelected
+                  ? 'border-indigo-400 bg-indigo-50 shadow-md ring-2 ring-indigo-300'
+                  : selectedThreadId === t.id
+                    ? 'border-indigo-400 bg-indigo-50 shadow-md'
                     : t.isAdminThread
-                    ? 'border-purple-200 bg-purple-50/50 hover:bg-purple-100/70 hover:border-purple-300 hover:shadow-sm'
-                    : shouldHighlight
-                    ? 'border-gray-300 bg-gray-50 hover:bg-gray-100 hover:shadow-sm'
-                    : 'border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm'
-                }`}
+                      ? 'border-purple-200 bg-purple-50/50 hover:bg-purple-100/70 hover:border-purple-300 hover:shadow-sm'
+                      : shouldHighlight
+                        ? 'border-gray-300 bg-gray-50 hover:bg-gray-100 hover:shadow-sm'
+                        : 'border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 hover:shadow-sm'
+                  }`}
               >
-                <div className="flex items-start gap-4">
+                <div className="flex items-start gap-3">
                   {/* Checkbox - seçim modunda göster */}
                   {isSelectMode && (
-                    <div className="shrink-0 pt-1" onClick={(e) => e.stopPropagation()}>
+                    <div className="shrink-0 pt-0.5" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => handleToggleThreadSelection(t.id)}
                         onClick={(e) => e.stopPropagation()}
-                        className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                        className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
                       />
                     </div>
                   )}
                   {/* Avatar */}
                   {t.isAdminThread ? (
-                    <div className="shrink-0 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 w-14 h-14 flex items-center justify-center text-white text-xl shadow-lg ring-2 ring-purple-200">
+                    <div className="shrink-0 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 w-10 h-10 flex items-center justify-center text-white text-base shadow-md ring-2 ring-purple-100">
                       ⚙️
                     </div>
                   ) : t.otherUserId && !isOtherUserSelf ? (
@@ -407,7 +431,7 @@ export default function Messages() {
                         name={t.displayName}
                         surname={t.displaySurname || ''}
                         profilePictureUrl={t.displayProfilePictureUrl}
-                        size="md"
+                        size="sm"
                       />
                     </button>
                   ) : (
@@ -416,24 +440,24 @@ export default function Messages() {
                         name={t.displayName}
                         surname={t.displaySurname || ''}
                         profilePictureUrl={t.displayProfilePictureUrl}
-                        size="md"
+                        size="sm"
                       />
                     </div>
                   )}
-                  
+
                   {/* İçerik */}
                   <div className="flex-1 min-w-0">
                     {/* Üst satır: İsim, badge, zaman */}
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2 mb-0.5">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-1">
                         {t.isAdminThread ? (
-                          <span className="font-semibold text-purple-700 text-base">
+                          <span className="font-semibold text-purple-700 text-sm">
                             Sistem
                           </span>
                         ) : t.otherUserId && !isOtherUserSelf ? (
                           <button
                             type="button"
-                            className="font-semibold text-gray-900 hover:text-indigo-600 hover:underline text-base truncate"
+                            className="font-semibold text-gray-900 hover:text-indigo-600 hover:underline text-sm truncate"
                             onClick={(e) => {
                               e.stopPropagation();
                               router.push(`/profile/${t.otherUserId}`);
@@ -442,39 +466,41 @@ export default function Messages() {
                             {t.displayName} {t.displaySurname}
                           </button>
                         ) : (
-                          <span className="font-semibold text-gray-900 text-base truncate">
+                          <span className="font-semibold text-gray-900 text-sm truncate">
                             {t.displayName} {t.displaySurname}
                           </span>
                         )}
                         {t.isAdminThread && (
-                          <span className="shrink-0 px-2 py-0.5 rounded-md bg-purple-100 text-purple-700 text-[10px] font-semibold border border-purple-200">
-                            Sistem Mesajı
+                          <span className="shrink-0 px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 text-[9px] font-bold border border-purple-200">
+                            Sistem
                           </span>
                         )}
                         {t.isOtherSeller && !t.isAdminThread && (
-                          <span className="shrink-0 px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 text-[10px] font-semibold border border-amber-200">
+                          <span className="shrink-0 px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 text-[9px] font-bold border border-amber-200">
                             İlan Sahibi
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {unreadMap[t.id] > 0 && (
-                          <span className="px-2 py-1 rounded-full bg-red-500 text-white text-xs font-bold min-w-[20px] text-center">
-                            {unreadMap[t.id]}
-                          </span>
+                          <div className="relative flex h-5 min-w-[20px] items-center justify-center">
+                            <div className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></div>
+                            <div className="relative inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-bold text-white shadow-sm">
+                              {unreadMap[t.id]}
+                            </div>
+                          </div>
                         )}
-                        <span className={`text-xs whitespace-nowrap ${
-                          shouldHighlight ? 'text-gray-600 font-medium' : 'text-gray-400'
-                        }`}>
-                          {t.lastAt ? format(new Date(t.lastAt), 'dd.MM.yyyy HH:mm') : ''}
+                        <span className={`text-[10px] whitespace-nowrap ${shouldHighlight ? 'text-gray-600 font-bold' : 'text-gray-400'
+                          }`}>
+                          {t.lastAt ? format(new Date(t.lastAt), 'dd.MM HH:mm') : ''}
                         </span>
                       </div>
                     </div>
-                    
+
                     {/* İlan başlığı */}
                     <button
                       type="button"
-                      className="text-xs text-indigo-600 hover:text-indigo-700 truncate block mb-2 w-full text-left"
+                      className="text-[10px] font-medium text-indigo-600 hover:text-indigo-700 truncate block mb-1 w-full text-left"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (t.listingId) {
@@ -484,29 +510,28 @@ export default function Messages() {
                     >
                       {t.listingTitle || 'İlan'}
                     </button>
-                    
+
                     {/* Mesaj önizleme - okunmamış mesaj varsa vurgulu göster */}
-                    <div className={`line-clamp-2 ${
-                      t.isLastPreviewUnread
-                        ? 'text-base font-bold text-gray-900' // Okunmamış mesaj: büyük, kalın, koyu
-                        : shouldHighlight
-                        ? 'text-sm text-gray-900 font-medium'
-                        : 'text-sm text-gray-600'
-                    }`}>
+                    <div className={`line-clamp-1 ${t.isLastPreviewUnread
+                      ? 'text-xs font-bold text-gray-900' // Okunmamış mesaj
+                      : shouldHighlight
+                        ? 'text-xs text-gray-900 font-semibold'
+                        : 'text-xs text-gray-500'
+                      }`}>
                       {t.lastPreview}
                     </div>
                   </div>
-                  
+
                   {/* Üç nokta menü */}
-                  <div className="relative shrink-0">
+                  <div className="relative shrink-0 pt-0.5">
                     <button
-                      className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="p-1 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100 transition-colors"
                       onClick={(e) => {
                         e.stopPropagation();
                         setOpenMenuThreadId((prev) => (prev === t.id ? null : t.id));
                       }}
                     >
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
                       </svg>
                     </button>
@@ -535,7 +560,7 @@ export default function Messages() {
             );
           })}
         </div>
-      </div>
+      </div >
     );
   }
 
@@ -673,8 +698,8 @@ export default function Messages() {
         attachmentType = selectedFile.type.startsWith('image/')
           ? 'image'
           : selectedFile.type.startsWith('video/')
-          ? 'video'
-          : 'document';
+            ? 'video'
+            : 'document';
         attachmentFileName = selectedFile.name;
         attachmentFileSize = selectedFile.size;
       } catch (uploadError) {
@@ -721,13 +746,13 @@ export default function Messages() {
         errorMessage: (error as any)?.message,
         errorResponse: (error as any)?.response,
       });
-      
+
       // Backend'den gelen hata mesajını kullanıcıya göster
       const errorMessage = (error as any)?.message || 'Mesaj gönderilirken hata oluştu';
-      
+
       // Özel hata mesajları için daha anlaşılır mesajlar
-      if (errorMessage.includes('Kendi ilanınıza mesaj gönderemezsiniz') || 
-          errorMessage.includes('kendi ilanınıza')) {
+      if (errorMessage.includes('Kendi ilanınıza mesaj gönderemezsiniz') ||
+        errorMessage.includes('kendi ilanınıza')) {
         alert('Kendi ilanınıza mesaj gönderemezsiniz. Bu thread\'de sadece ilanınıza mesaj gönderen kullanıcılara cevap verebilirsiniz.');
       } else if (errorMessage.includes('İlan bulunamadı')) {
         alert('İlan bulunamadı. Lütfen sayfayı yenileyip tekrar deneyin.');
@@ -735,6 +760,68 @@ export default function Messages() {
         alert(errorMessage);
       }
     }
+  };
+
+
+  const handleRespondToOffer = (messageId: number, accept: boolean) => {
+    dispatch(respondToOffer({ messageId, accept }))
+      .unwrap()
+      .then(() => {
+        // Başarılı olursa thread mesajlarını yeniden çek
+        if (selectedThreadId) {
+          dispatch(fetchMessages(selectedThreadId));
+        }
+      })
+      .catch((err) => {
+        alert(err || 'Hata oluştu');
+      });
+  };
+
+  const handleSendContact = () => {
+    if (!selectedMeta?.listingId || !contactMessageContent.trim()) return;
+
+    // messageType'a göre isOffer değerini belirle
+    const isOffer = messageType === 'offer';
+
+    // Eğer teklif ise, fiyat kontrolü yap
+    if (isOffer) {
+      if (contactOfferPrice === '' || Number(contactOfferPrice) <= 0) {
+        alert('Lütfen geçerli bir teklif tutarı girin.');
+        return;
+      }
+
+      // Fiyat doğrulama: Listing fiyatının %50'sinden az, %150'sinden fazla teklif verilemesin
+      const basePrice = selectedMeta.listingPrice || 0;
+      if (basePrice > 0) {
+        const minOffer = basePrice * 0.5;
+        const maxOffer = basePrice * 1.5;
+        const priceVal = Number(contactOfferPrice);
+
+        if (priceVal < minOffer) {
+          alert(`Teklif çok düşük. En az ${minOffer} teklif verebilirsiniz.`);
+          return;
+        }
+        if (priceVal > maxOffer) {
+          alert(`Teklif çok yüksek. En fazla ${maxOffer} teklif verebilirsiniz.`);
+          return;
+        }
+      }
+    }
+
+    dispatch(sendMessage({
+      listingId: selectedMeta.listingId,
+      data: {
+        content: contactMessageContent.trim(),
+        offerPrice: isOffer ? Number(contactOfferPrice) : undefined,
+        isOffer
+      }
+    })).unwrap().then(() => {
+      setShowContactModal(false);
+      setContactOfferPrice('');
+      setContactMessageContent('');
+    }).catch((err) => {
+      alert(err?.message || (isOffer ? 'Teklif gönderilemedi.' : 'Mesaj gönderilemedi.'));
+    });
   };
 
   const renderAttachment = (m: any) => {
@@ -809,10 +896,9 @@ export default function Messages() {
                 </div>
               </div>
             ) : selectedMeta && selectedMeta.otherUserId && selectedMeta.otherUserId !== currentUser?.id ? (
-              <button
-                type="button"
+              <div
                 onClick={() => router.push(`/profile/${selectedMeta.otherUserId}`)}
-                className="flex items-center gap-2 group"
+                className="flex items-center gap-2 group cursor-pointer"
               >
                 <UserAvatar
                   name={selectedMeta.displayName || 'Bilinmeyen'}
@@ -846,7 +932,7 @@ export default function Messages() {
                     {selectedMeta.listingTitle || ''}
                   </button>
                 </div>
-              </button>
+              </div>
             ) : (
               <>
                 <UserAvatar
@@ -895,17 +981,17 @@ export default function Messages() {
         {messages.map((m) => {
           const isMine = m.senderId === currentUser?.id;
           const isUnread = !m.isRead && !isMine; // Sadece kendi mesajlarımız dışındaki okunmamış mesajlar
-          
+
           // Mesaj tıklandığında okundu olarak işaretle
           const handleMessageClick = () => {
             if (isUnread && selectedThreadId) {
               dispatch(markMessageRead({ messageId: m.id, threadId: selectedThreadId }));
             }
           };
-          
+
           return (
-            <div 
-              key={m.id} 
+            <div
+              key={m.id}
               className={`flex ${isMine ? 'justify-end' : 'justify-start'} gap-2 cursor-pointer transition-all`}
               onClick={handleMessageClick}
             >
@@ -928,22 +1014,20 @@ export default function Messages() {
                 </button>
               )}
               <div
-                className={`flex flex-col gap-1 max-w-[80%] rounded-2xl p-3 border transition-all ${
-                  isMine
-                    ? 'bg-indigo-600 text-white border-indigo-500 rounded-br-sm'
-                    : m.isAdminSender
+                className={`flex flex-col gap-1 max-w-[80%] rounded-2xl p-3 border transition-all ${isMine
+                  ? 'bg-indigo-600 text-white border-indigo-500 rounded-br-sm'
+                  : m.isAdminSender
                     ? isUnread
                       ? 'bg-purple-100 text-purple-900 border-purple-300 rounded-bl-sm shadow-md ring-2 ring-purple-200'
                       : 'bg-purple-50 text-purple-900 border-purple-200 rounded-bl-sm shadow-sm'
                     : isUnread
-                    ? 'bg-blue-50 text-gray-900 border-blue-300 rounded-bl-sm shadow-md ring-2 ring-blue-200'
-                    : 'bg-gray-50 text-gray-800 border-gray-100 rounded-bl-sm'
-                }`}
+                      ? 'bg-blue-50 text-gray-900 border-blue-300 rounded-bl-sm shadow-md ring-2 ring-blue-200'
+                      : 'bg-gray-50 text-gray-800 border-gray-100 rounded-bl-sm'
+                  }`}
               >
                 <div
-                  className={`flex items-center text-[11px] ${
-                    isMine ? 'justify-end text-indigo-100' : 'justify-between text-gray-500'
-                  }`}
+                  className={`flex items-center text-[11px] ${isMine ? 'justify-end text-indigo-100' : 'justify-between text-gray-500'
+                    }`}
                 >
                   {!isMine && (
                     <div className="flex items-center gap-2">
@@ -981,14 +1065,55 @@ export default function Messages() {
                   </span>
                 </div>
                 {m.isOffer && m.offerPrice !== undefined && (
-                  <div
-                    className={
-                      isMine
-                        ? 'text-yellow-200 text-sm font-semibold'
-                        : 'text-emerald-700 text-sm font-semibold'
-                    }
-                  >
-                    Teklif: {m.offerPrice}
+                  <div className="space-y-2">
+                    <div
+                      className={
+                        isMine
+                          ? 'text-yellow-200 text-sm font-semibold flex items-center gap-2'
+                          : 'text-emerald-700 text-sm font-semibold flex items-center gap-2'
+                      }
+                    >
+                      <span className="bg-white/20 px-2 py-0.5 rounded uppercase text-[10px]">Teklif</span>
+                      {m.offerPrice} {
+                        selectedMeta?.listingCurrency === Currency.USD ? '$' :
+                          selectedMeta?.listingCurrency === Currency.EUR ? '€' :
+                            selectedMeta?.listingCurrency === Currency.GBP ? '£' : '₺'
+                      }
+                    </div>
+
+                    {/* Teklif Durumu ve Butonlar */}
+                    <div className="pt-1">
+                      {m.offerStatus === 0 ? (
+                        !isMine && selectedMeta?.sellerId === currentUser?.id ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleRespondToOffer(m.id, true)}
+                              className="px-3 py-1 bg-emerald-600 text-white text-[10px] font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+                            >
+                              KABUL ET
+                            </button>
+                            <button
+                              onClick={() => handleRespondToOffer(m.id, false)}
+                              className="px-3 py-1 bg-rose-600 text-white text-[10px] font-bold rounded-lg hover:bg-rose-700 transition-colors shadow-sm"
+                            >
+                              REDDET
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 italic">Beleyen Teklif...</span>
+                        )
+                      ) : m.offerStatus === 1 ? (
+                        <div className="flex items-center gap-1.5 text-emerald-600">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span className="text-[10px] font-bold uppercase">Teklif Kabul Edildi</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-rose-600">
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span className="text-[10px] font-bold uppercase">Teklif Reddedildi</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
                 <div className={`text-sm ${isMine ? 'text-white' : 'text-gray-800'}`}>
@@ -1025,9 +1150,8 @@ export default function Messages() {
         </div>
       ) : (
         <div
-          className={`border-t border-gray-200 bg-white relative ${
-            isDragging ? 'bg-indigo-50' : ''
-          }`}
+          className={`border-t border-gray-200 bg-white relative ${isDragging ? 'bg-indigo-50' : ''
+            }`}
           onDragEnter={handleDragEnter}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -1088,6 +1212,19 @@ export default function Messages() {
 
             {/* Mesaj Gönderme Alanı */}
             <div className="flex items-end gap-3">
+              {/* Yeni Teklif Butonu (Sadece Alıcı İçin) */}
+              {selectedMeta?.buyerId === currentUser?.id && (
+                <button
+                  onClick={() => {
+                    setMessageType('offer');
+                    setShowContactModal(true);
+                  }}
+                  className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-600 hover:bg-amber-100 transition-all flex items-center justify-center group shrink-0"
+                  title="Yeni Teklif Ver"
+                >
+                  <ArrowRightLeft className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                </button>
+              )}
               {/* Dosya Ekleme Butonu */}
               <button
                 type="button"
@@ -1136,6 +1273,7 @@ export default function Messages() {
                 disabled={isSending || isUploadingFile || (!messageText.trim() && !selectedFile)}
                 className="flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg active:scale-95 disabled:active:scale-100"
                 title="Gönder (Enter)"
+                aria-label="Gönder"
               >
                 {isSending ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1152,7 +1290,109 @@ export default function Messages() {
           </div>
         </div>
       )}
+
+      {/* Teklif/Mesaj Modalı */}
+      {showContactModal && selectedMeta && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-6 animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center">
+              <h3 className="font-black text-gray-800 uppercase tracking-widest text-[11px]">
+                {messageType === 'offer' ? 'YENİ TEKLİF VER' : 'MESAJ GÖNDER'}
+              </h3>
+              <button onClick={() => {
+                setShowContactModal(false);
+                setContactOfferPrice('');
+                setContactMessageContent('');
+              }} className="text-gray-400 hover:text-red-500">✕</button>
+            </div>
+
+            {/* Tab Seçimi */}
+            <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
+              <button
+                onClick={() => setMessageType('message')}
+                className={`flex-1 py-2 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${messageType === 'message'
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+                  }`}
+              >
+                Mesaj
+              </button>
+              <button
+                onClick={() => setMessageType('offer')}
+                className={`flex-1 py-2 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${messageType === 'offer'
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+                  }`}
+              >
+                Teklif
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Teklif Tutarı - Sadece teklif modunda göster */}
+              {messageType === 'offer' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">TEKLİF TUTARI</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={contactOfferPrice || ''}
+                      onChange={(e) => setContactOfferPrice(Number(e.target.value))}
+                      className="w-full p-3 bg-gray-50 border-2 border-transparent focus:border-indigo-500 rounded-xl outline-none font-black text-gray-700 text-lg"
+                      placeholder="Teklif tutarı"
+                    />
+                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-indigo-600 font-black">
+                      {selectedMeta?.listingCurrency === Currency.USD ? '$' :
+                        selectedMeta?.listingCurrency === Currency.EUR ? '€' :
+                          selectedMeta?.listingCurrency === Currency.GBP ? '£' : '₺'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Mesaj İçeriği */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
+                  {messageType === 'offer' ? 'NOT (OPSİYONEL)' : 'MESAJINIZ'}
+                </label>
+                <textarea
+                  value={contactMessageContent}
+                  onChange={(e) => setContactMessageContent(e.target.value)}
+                  placeholder={messageType === 'offer' ? 'Teklifinizle ilgili not ekleyin...' : 'Mesajınızı yazın...'}
+                  className="w-full min-h-[100px] p-3 bg-gray-50 border-2 border-transparent focus:border-indigo-500 rounded-xl outline-none font-bold text-gray-600 text-xs"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={handleSendContact}
+              className="w-full py-3.5 bg-indigo-600 text-white font-black uppercase tracking-widest text-[10px] rounded-xl hover:scale-102 transition-all shadow-lg shadow-indigo-100"
+            >
+              {messageType === 'offer' ? 'TEKLİFİ GÖNDER' : 'MESAJI GÖNDER'}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+// Icons needed for above
+const CheckCircle2 = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const XCircle = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const ArrowRightLeft = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+  </svg>
+);
 

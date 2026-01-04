@@ -13,92 +13,84 @@ import Footer from '@/body/components/Footer';
 
 describe('Footer', () => {
   describe('Rendering', () => {
-    test('should render company name', () => {
+    test('should render brand and description', () => {
       render(<Footer />);
-
-      expect(screen.getByText('🏠 Real Estimate')).toBeInTheDocument();
+      expect(screen.getByText('RealEstimate')).toBeInTheDocument();
+      expect(screen.getByText(/Gayrimenkul dünyasında güvenin ve yeniliğin adresi/i)).toBeInTheDocument();
     });
 
-    test('should render company description', () => {
+    test('should render section headings', () => {
       render(<Footer />);
-
-      expect(screen.getByText(/hayalinizdeki evi bulmak için/i)).toBeInTheDocument();
-    });
-
-    test('should render quick links section', () => {
-      render(<Footer />);
-
-      expect(screen.getByText('Hızlı Bağlantılar')).toBeInTheDocument();
-    });
-
-    test('should render contact section', () => {
-      render(<Footer />);
-
-      // Başlık (heading) olarak iletişim bölümünü kontrol et
-      expect(
-        screen.getByRole('heading', { name: 'İletişim' })
-      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Hızlı Erişim' })).toBeInTheDocument();
+      // There are two "İletişim" headings? No, one is Hızlı Erişim links, one is Contact Info header.
+      // Actually in the new file:
+      // One header "Hızlı Erişim"
+      // One header "İletişim"
+      // One header "Bülten"
+      expect(screen.getByRole('heading', { name: 'İletişim' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Bülten' })).toBeInTheDocument();
     });
 
     test('should render copyright text', () => {
       render(<Footer />);
-
-      expect(screen.getByText(/© 2024 Real Estimate/i)).toBeInTheDocument();
-    });
-
-    test('should render all navigation links', () => {
-      render(<Footer />);
-
-      expect(screen.getByRole('link', { name: 'Tüm İlanlar' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Satılık' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Kiralık' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Konut' })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'İş Yeri' })).toBeInTheDocument();
+      const year = new Date().getFullYear();
+      expect(screen.getByText(new RegExp(`© ${year} RealEstimate Gayrimenkul`, 'i'))).toBeInTheDocument();
     });
 
     test('should render contact information', () => {
       render(<Footer />);
-
-      expect(screen.getByText(/info@realestimate.com/)).toBeInTheDocument();
-      expect(screen.getByText(/\+90 555 123 4567/)).toBeInTheDocument();
-      expect(screen.getByText(/İstanbul, Türkiye/)).toBeInTheDocument();
+      expect(screen.getByText(/Levent Mah. Büyükdere Cad/i)).toBeInTheDocument();
+      expect(screen.getByText('+90 212 555 1234')).toBeInTheDocument();
+      expect(screen.getByText('info@realestimate.com')).toBeInTheDocument();
     });
   });
 
-  describe('Links', () => {
-    test('should have correct href for Tüm İlanlar', () => {
+  describe('Navigation Links', () => {
+    test('should render quick links with correct hrefs', () => {
       render(<Footer />);
 
-      const link = screen.getByRole('link', { name: 'Tüm İlanlar' });
-      expect(link).toHaveAttribute('href', '/');
+      const homeLink = screen.getByRole('link', { name: 'Ana Sayfa' });
+      expect(homeLink).toHaveAttribute('href', '/');
+
+      const aboutLink = screen.getByRole('link', { name: 'Hakkımızda' });
+      expect(aboutLink).toHaveAttribute('href', '/about');
+
+      const listingsLink = screen.getByRole('link', { name: 'İlanlar' });
+      expect(listingsLink).toHaveAttribute('href', '/');
+
+      const contactLink = screen.getByRole('link', { name: 'İletişim' });
+      expect(contactLink).toHaveAttribute('href', '/contact');
     });
 
-    test('should have correct href for Satılık', () => {
+    test('should render social media links', () => {
       render(<Footer />);
+      // Social links don't have text, but they are links.
+      // We can check by href or we can add aria-labels in source if needed, 
+      // but for now let's just check if links with specific hrefs exist.
 
-      const link = screen.getByRole('link', { name: 'Satılık' });
-      expect(link).toHaveAttribute('href', '/?type=1');
+      // Generic check removed
+
+
+      // Check specific social links by href
+      const allLinks = screen.getAllByRole('link');
+      expect(allLinks.some(link => link.getAttribute('href') === 'https://facebook.com/realestimate')).toBe(true);
+      expect(allLinks.some(link => link.getAttribute('href') === 'https://twitter.com/realestimate')).toBe(true);
+      expect(allLinks.some(link => link.getAttribute('href') === 'https://instagram.com/realestimate')).toBe(true);
+      expect(allLinks.some(link => link.getAttribute('href') === 'https://linkedin.com/company/realestimate')).toBe(true);
     });
 
-    test('should have correct href for Kiralık', () => {
+    test('should render bottom links', () => {
       render(<Footer />);
-
-      const link = screen.getByRole('link', { name: 'Kiralık' });
-      expect(link).toHaveAttribute('href', '/?type=2');
+      expect(screen.getByRole('link', { name: 'Gizlilik Politikası' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Kullanım Şartları' })).toBeInTheDocument();
     });
+  });
 
-    test('should have correct href for Konut', () => {
+  describe('Newsletter', () => {
+    test('should render newsletter form', () => {
       render(<Footer />);
-
-      const link = screen.getByRole('link', { name: 'Konut' });
-      expect(link).toHaveAttribute('href', '/?category=1');
-    });
-
-    test('should have correct href for İş Yeri', () => {
-      render(<Footer />);
-
-      const link = screen.getByRole('link', { name: 'İş Yeri' });
-      expect(link).toHaveAttribute('href', '/?category=2');
+      expect(screen.getByPlaceholderText('E-posta adresiniz')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Abone Ol/i })).toBeInTheDocument();
     });
   });
 });

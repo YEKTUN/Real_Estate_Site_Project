@@ -16,7 +16,7 @@ import {
   X,
   Bell,
   Layers,
-  LayoutDashboard
+  Building2
 } from 'lucide-react';
 import { useAppSelector, useAppDispatch } from '@/body/redux/hooks';
 import { selectUser, selectIsAuthenticated, selectIsLoading, logoutAsync } from '@/body/redux/slices/auth/AuthSlice';
@@ -27,6 +27,9 @@ import FavoriteListings from '@/body/panel/components/FavoriteListings';
 import Settings from '@/body/panel/components/Settings';
 import Messages from '@/body/panel/components/Messages';
 import { selectTotalUnread, fetchThreads } from '@/body/redux/slices/message/MessageSlice';
+import { selectMyListings, fetchMyListings } from '@/body/redux/slices/listing/ListingSlice';
+import { selectFavorites, fetchMyFavorites } from '@/body/redux/slices/favorite/FavoriteSlice';
+import { ListingStatus } from '@/body/redux/slices/listing/DTOs/ListingDTOs';
 import UserAvatar from '@/body/panel/components/UserAvatar';
 
 interface MenuItem {
@@ -43,9 +46,15 @@ export default function Panel() {
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const isLoading = useAppSelector(selectIsLoading);
   const totalUnread = useAppSelector(selectTotalUnread);
+  const myListings = useAppSelector(selectMyListings);
+  const favorites = useAppSelector(selectFavorites);
 
   const [activeMenu, setActiveMenu] = useState<string>('profile');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Aktif ilanları say (status === ListingStatus.Active)
+  const activeListingsCount = myListings.filter(listing => listing.status === ListingStatus.Active).length;
+  const favoritesCount = favorites.length;
 
   const menuItems: MenuItem[] = [
     { id: 'profile', label: 'Profilim', icon: <User className="w-5 h-5" />, description: 'Kişisel bilgilerinizi yönetin' },
@@ -56,13 +65,35 @@ export default function Panel() {
     { id: 'settings', label: 'Ayarlar', icon: <SettingsIcon className="w-5 h-5" />, description: 'Hesap ve bildirim ayarları' },
   ];
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) router.push('/login');
-  }, [isAuthenticated, isLoading, router]);
 
   useEffect(() => {
-    if (isAuthenticated && user) dispatch(fetchThreads());
-  }, [isAuthenticated, user, dispatch]);
+    if (isAuthenticated && user) {
+      // İlk yükleme - mesajları, ilanları ve favorileri çek
+      dispatch(fetchThreads());
+      dispatch(fetchMyListings());
+      dispatch(fetchMyFavorites({ page: 1, pageSize: 100 }));
+
+      // Periyodik kontrol (20 saniyede bir - sadece mesajlar için)
+      const interval = setInterval(() => {
+        dispatch(fetchThreads());
+      }, 20000);
+
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, user?.id, dispatch]);
+
+  // Custom event listener - child component'lerden sekme değiştirme
+  useEffect(() => {
+    const handleSwitchTab = (event: CustomEvent) => {
+      const { tab } = event.detail;
+      if (tab && menuItems.some(item => item.id === tab)) {
+        setActiveMenu(tab);
+      }
+    };
+
+    window.addEventListener('switchPanelTab', handleSwitchTab as EventListener);
+    return () => window.removeEventListener('switchPanelTab', handleSwitchTab as EventListener);
+  }, []);
 
   const handleLogout = async () => {
     await dispatch(logoutAsync()).unwrap();
@@ -81,7 +112,9 @@ export default function Panel() {
     }
   };
 
-  if (isLoading || !user) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div></div>;
+  if (!isAuthenticated || !user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex font-sans overflow-hidden">
@@ -100,12 +133,12 @@ export default function Panel() {
         <div className="h-full flex flex-col p-4">
           {/* Logo Area */}
           <div className="flex items-center gap-3 px-2 mb-8 h-12">
-            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-200 shrink-0">
-              <LayoutDashboard className="w-6 h-6 text-white" />
-            </div>
+            <Link href="/" className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-200 shrink-0 hover:scale-110 transition-transform">
+              <Building2 className="w-6 h-6 text-white" />
+            </Link>
             {isSidebarOpen && (
               <div className="animate-in fade-in slide-in-from-left-2 duration-500">
-                <h1 className="text-lg font-black text-gray-900 tracking-tight leading-none uppercase">YEKTUN</h1>
+                <h1 className="text-lg font-black text-gray-900 tracking-tight leading-none uppercase">RealEstimate</h1>
                 <p className="text-[9px] font-black text-blue-500 tracking-[0.2em] mt-1 uppercase">KULLANICI PANELİ</p>
               </div>
             )}
@@ -131,9 +164,13 @@ export default function Panel() {
                   </div>
                 )}
                 {item.id === 'messages' && totalUnread > 0 && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="w-2 h-2 bg-red-500 rounded-full animate-ping absolute" />
-                    <div className="w-2 h-2 bg-red-500 rounded-full relative" />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                    <div className="relative flex h-5 min-w-[20px] items-center justify-center">
+                      <div className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></div>
+                      <div className="relative inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1.5 text-[10px] font-black text-white shadow-lg shadow-red-200">
+                        {totalUnread}
+                      </div>
+                    </div>
                   </div>
                 )}
                 {activeMenu === item.id && isSidebarOpen && <ChevronRight className="w-4 h-4 opacity-50" />}
@@ -164,9 +201,9 @@ export default function Panel() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Top Navbar (Content Only) */}
-        <header className="h-20 bg-white/70 backdrop-blur-md border-b border-gray-100 flex items-center justify-between px-8 shrink-0">
+      <main className="flex-1 overflow-y-auto scroll-smooth bg-[#F8FAFC]">
+        {/* Top Navbar (Flowing with content) */}
+        <header className="h-20 bg-white border-b border-gray-100 flex items-center justify-between px-8">
           <div className="flex items-center gap-4">
             <button onClick={() => setIsSidebarOpen(true)} className="lg:hidden p-2 hover:bg-gray-100 rounded-lg">
               <Menu className="w-5 h-5 text-gray-600" />
@@ -182,10 +219,6 @@ export default function Panel() {
           </div>
 
           <div className="flex items-center gap-3">
-            <button className="relative w-10 h-10 rounded-xl hover:bg-gray-50 flex items-center justify-center transition-colors group">
-              <Bell className="w-5 h-5 text-gray-400 group-hover:text-blue-600" />
-              <div className="absolute top-2.5 right-2.5 w-2 h-2 bg-blue-600 rounded-full border-2 border-white" />
-            </button>
             <div className="w-px h-6 bg-gray-100 mx-2" />
             <Link
               href="/"
@@ -197,7 +230,7 @@ export default function Panel() {
         </header>
 
         {/* Content Body */}
-        <div className="flex-1 overflow-y-auto p-8 scroll-smooth grow">
+        <div className="p-8">
           <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Summary Widget (Example) */}
             {activeMenu === 'profile' && (
@@ -207,7 +240,7 @@ export default function Panel() {
                     <Home className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-2xl font-black text-gray-900">0</p>
+                    <p className="text-2xl font-black text-gray-900">{activeListingsCount}</p>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">AKTİF İLANLAR</p>
                   </div>
                 </div>
@@ -216,7 +249,7 @@ export default function Panel() {
                     <Heart className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-2xl font-black text-gray-900">0</p>
+                    <p className="text-2xl font-black text-gray-900">{favoritesCount}</p>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">FAVORİLER</p>
                   </div>
                 </div>

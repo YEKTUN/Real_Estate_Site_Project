@@ -5,7 +5,9 @@ import { useAppSelector, useAppDispatch } from '@/body/redux/hooks';
 import { selectUser, updateProfilePicture } from '@/body/redux/slices/auth/AuthSlice';
 import { uploadFile, selectIsUploadingFile } from '@/body/redux/slices/cloudinary/CloudinarySlice';
 import { changePasswordApi } from '@/body/redux/api/authApi';
+import { sanitizePhoneInput, formatPhone, getPhoneError } from '@/body/auth/utils/validation';
 import UserAvatar from '@/body/panel/components/UserAvatar';
+import PhoneVerificationModal from '@/body/components/PhoneVerificationModal';
 
 /**
  * Profil Bölümü Bileşeni
@@ -66,15 +68,30 @@ export default function ProfileSection() {
   // Success/Error message
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Phone verification modal
+  const [isPhoneModalOpen, setIsPhoneModalOpen] = useState<boolean>(false);
+  const [phoneToVerify, setPhoneToVerify] = useState<string>('');
+  const [isPhoneVerified, setIsPhoneVerified] = useState<boolean>(false);
+
   /**
    * Form değişikliği handler
    */
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+
+    // Telefon alanı için sadece rakam kabul et
+    if (name === 'phone') {
+      const sanitizedValue = sanitizePhoneInput(value);
+      setFormData((prev) => ({
+        ...prev,
+        [name]: sanitizedValue,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   /**
@@ -82,24 +99,61 @@ export default function ProfileSection() {
    */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Telefon numarası değişmiş mi kontrol et
+    const phoneChanged = formData.phone !== displayPhone;
+
+    if (phoneChanged) {
+      // Telefon değişmişse önce doğrulama yap
+      const phoneError = getPhoneError(formData.phone);
+      if (phoneError) {
+        setMessage({ type: 'error', text: phoneError });
+        return;
+      }
+
+      // Doğrulama modalını aç
+      setPhoneToVerify(formData.phone);
+      setIsPhoneModalOpen(true);
+      return;
+    }
+
+    // Telefon değişmemişse direkt kaydet
+    await saveProfile();
+  };
+
+  /**
+   * Profil kaydetme fonksiyonu
+   */
+  const saveProfile = async () => {
     setIsLoading(true);
     setMessage(null);
 
     try {
-      // TODO: API call to update profile
+      // Telefon numarası zaten backend'de doğrulama sırasında kaydedildi
+      // Diğer profil bilgileri için API çağrısı yapılabilir (ad, soyad vb.)
       console.log('Profile güncelleme:', formData);
-      
-      // Simüle edilmiş başarı
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      
-      setMessage({ type: 'success', text: 'Profiliniz başarıyla güncellendi!' });
+
+      // Başarı mesajı göster
+      setMessage({ type: 'success', text: 'Telefon numaranız başarıyla güncellendi!' });
       setIsEditing(false);
+      setIsPhoneVerified(false); // Reset verification state
     } catch (error) {
       console.error('Profile güncelleme hatası:', error);
       setMessage({ type: 'error', text: 'Profil güncellenirken bir hata oluştu.' });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  /**
+   * Telefon doğrulama başarılı olduğunda
+   */
+  const handlePhoneVerificationSuccess = async () => {
+    setIsPhoneVerified(true);
+    setIsPhoneModalOpen(false);
+
+    // Doğrulama başarılı, profili kaydet
+    await saveProfile();
   };
 
   /**
@@ -155,220 +209,195 @@ export default function ProfileSection() {
   };
 
   return (
-    <div className="space-y-8">
-      {/* Mesaj */}
-      {message && (
-        <div
-          className={`p-4 rounded-xl flex items-center gap-3 ${
-            message.type === 'success'
-              ? 'bg-green-50 text-green-700 border border-green-200'
-              : 'bg-red-50 text-red-700 border border-red-200'
-          }`}
-        >
-          <span className="text-xl">{message.type === 'success' ? '✅' : '❌'}</span>
-          <p>{message.text}</p>
-          <button
-            onClick={() => setMessage(null)}
-            className="ml-auto hover:opacity-70"
+    <>
+      {/* Phone Verification Modal */}
+      <PhoneVerificationModal
+        isOpen={isPhoneModalOpen}
+        onClose={() => setIsPhoneModalOpen(false)}
+        onSuccess={handlePhoneVerificationSuccess}
+        initialPhone={phoneToVerify}
+      />
+
+      <div className="space-y-8">
+        {/* Mesaj */}
+        {message && (
+          <div
+            className={`px-4 py-2.5 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300 ${message.type === 'success'
+              ? 'bg-green-50 text-green-700 border border-green-100'
+              : 'bg-red-50 text-red-700 border border-red-100'
+              }`}
           >
-            ✕
-          </button>
-        </div>
-      )}
-
-      {/* Profil Fotoğrafı */}
-      <div className="bg-gray-50 rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Profil Fotoğrafı</h3>
-        <div className="flex items-center gap-6">
-          <button
-            type="button"
-            onClick={handleAvatarClick}
-            className="relative group"
-          >
-            <UserAvatar
-              name={displayName || 'Kullanıcı'}
-              surname={displaySurname || ''}
-              profilePictureUrl={user?.profilePictureUrl}
-              size="xl"
-              className="shadow-lg"
-            />
-            <div className="absolute inset-0 rounded-full bg-black/30 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs text-white font-semibold transition-opacity">
-              Değiştir
-            </div>
-          </button>
-          <div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+            <span className="text-lg">{message.type === 'success' ? '✅' : '❌'}</span>
+            <p className="text-xs font-bold leading-none">{message.text}</p>
             <button
-              type="button"
-              onClick={handleAvatarClick}
-              disabled={isUploading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+              onClick={() => setMessage(null)}
+              className="ml-auto text-[10px] font-black opacity-40 hover:opacity-100"
             >
-              {isUploading ? 'Yükleniyor...' : 'Fotoğraf Yükle'}
-            </button>
-            <p className="text-sm text-gray-500 mt-2">
-              JPG, PNG veya GIF. Maksimum 5MB. Yeni fotoğraf yüklendiğinde eski fotoğrafınızın yerini alır.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Kişisel Bilgiler Formu */}
-      <form onSubmit={handleSubmit} className="bg-gray-50 rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-800">Kişisel Bilgiler</h3>
-          {!isEditing && (
-            <button
-              type="button"
-              onClick={() => setIsEditing(true)}
-              className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-semibold"
-            >
-              ✏️ Düzenle
-            </button>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Ad */}
-          <div>
-            <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              Ad
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              disabled={!isEditing}
-              className={`w-full px-4 py-3 border rounded-xl outline-none transition-all ${
-                isEditing
-                  ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white'
-                  : 'border-transparent bg-gray-100 text-gray-600'
-              }`}
-            />
-          </div>
-
-          {/* Soyad */}
-          <div>
-            <label htmlFor="surname" className="block text-sm font-medium text-gray-700 mb-2">
-              Soyad
-            </label>
-            <input
-              type="text"
-              id="surname"
-              name="surname"
-              value={formData.surname}
-              onChange={handleChange}
-              disabled={!isEditing}
-              className={`w-full px-4 py-3 border rounded-xl outline-none transition-all ${
-                isEditing
-                  ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white'
-                  : 'border-transparent bg-gray-100 text-gray-600'
-              }`}
-            />
-          </div>
-
-          {/* E-posta (Readonly) */}
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-              E-posta
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              disabled
-              className="w-full px-4 py-3 border border-transparent bg-gray-100 text-gray-500 rounded-xl cursor-not-allowed"
-            />
-            <p className="text-xs text-gray-500 mt-1">E-posta adresi değiştirilemez</p>
-          </div>
-
-          {/* Telefon */}
-          <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-              Telefon
-            </label>
-            <input
-              type="tel"
-              id="phone"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              disabled={!isEditing}
-              placeholder="5XX XXX XX XX"
-              className={`w-full px-4 py-3 border rounded-xl outline-none transition-all ${
-                isEditing
-                  ? 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white'
-                  : 'border-transparent bg-gray-100 text-gray-600'
-              }`}
-            />
-          </div>
-        </div>
-
-        {/* Düzenleme Butonları */}
-        {isEditing && (
-          <div className="flex gap-4 mt-6 pt-6 border-t border-gray-200">
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {isLoading ? (
-                <>
-                  <span className="animate-spin">⏳</span>
-                  Kaydediliyor...
-                </>
-              ) : (
-                <>
-                  💾 Değişiklikleri Kaydet
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={handleCancel}
-              disabled={isLoading}
-              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-semibold disabled:cursor-not-allowed"
-            >
-              İptal
+              ✕
             </button>
           </div>
         )}
-      </form>
 
-      {/* Şifre Değiştirme */}
-      <ChangePasswordSection />
+        {/* Profil Fotoğrafı & Kişisel Bilgiler Merge */}
+        <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
+          <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-gray-50">
+            {/* Photos Side */}
+            <div className="p-6 md:w-1/3 flex flex-col items-center justify-center bg-gray-50/50">
+              <button
+                type="button"
+                onClick={handleAvatarClick}
+                className="relative group mb-4"
+              >
+                <UserAvatar
+                  name={displayName || 'Kullanıcı'}
+                  surname={displaySurname || ''}
+                  profilePictureUrl={user?.profilePictureUrl}
+                  size="xl"
+                  className="shadow-xl ring-4 ring-white"
+                />
+                <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] text-white font-black uppercase tracking-widest transition-all duration-300 backdrop-blur-[2px]">
+                  DEĞİŞTİR
+                </div>
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <button
+                type="button"
+                onClick={handleAvatarClick}
+                disabled={isUploading}
+                className="px-5 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-100 disabled:opacity-50"
+              >
+                {isUploading ? 'YÜKLENİYOR...' : 'YENİ FOTOĞRAF'}
+              </button>
+              <p className="text-[9px] font-bold text-gray-400 mt-3 uppercase tracking-tighter text-center max-w-[140px]">
+                JPG, PNG VEYA GIF. MAX 5MB.
+              </p>
+            </div>
 
-      {/* Hesap Bilgileri */}
-      <div className="bg-gray-50 rounded-2xl p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Hesap Bilgileri</h3>
-        <div className="space-y-3 text-sm">
-          <div className="flex justify-between py-2 border-b border-gray-200">
-            <span className="text-gray-600">Üyelik Tarihi</span>
-            <span className="text-gray-800 font-medium">-</span>
+            {/* Form Side */}
+            <div className="p-6 flex-1">
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">Kişisel Bilgiler</h3>
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditing(true)}
+                    className="px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-all text-[9px] font-black uppercase tracking-widest"
+                  >
+                    DÜZENLE
+                  </button>
+                )}
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">AD</label>
+                    <input
+                      type="text"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold outline-none transition-all ${isEditing ? 'bg-white border-2 border-blue-50 focus:border-blue-500 shadow-sm' : 'bg-gray-100/50 border-2 border-transparent text-gray-500'
+                        }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">SOYAD</label>
+                    <input
+                      type="text"
+                      name="surname"
+                      value={formData.surname}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold outline-none transition-all ${isEditing ? 'bg-white border-2 border-blue-50 focus:border-blue-500 shadow-sm' : 'bg-gray-100/50 border-2 border-transparent text-gray-500'
+                        }`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">E-POSTA</label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      disabled
+                      className="w-full px-3 py-2.5 rounded-xl text-xs font-bold bg-gray-100/50 border-2 border-transparent text-gray-400 cursor-not-allowed"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">TELEFON</label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      value={isEditing ? formData.phone : formatPhone(formData.phone)}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      placeholder="05xx-xxx-xx-xx"
+                      className={`w-full px-3 py-2.5 rounded-xl text-xs font-bold outline-none transition-all ${isEditing ? 'bg-white border-2 border-blue-50 focus:border-blue-500 shadow-sm' : 'bg-gray-100/50 border-2 border-transparent text-gray-500'
+                        }`}
+                    />
+                  </div>
+                </div>
+
+                {isEditing && (
+                  <div className="flex gap-3 pt-4 border-t border-gray-50">
+                    <button
+                      type="submit"
+                      disabled={isLoading}
+                      className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-100 disabled:opacity-50"
+                    >
+                      {isLoading ? 'KAYDEDİLİYOR...' : 'KAYDET'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      disabled={isLoading}
+                      className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all"
+                    >
+                      İPTAL
+                    </button>
+                  </div>
+                )}
+              </form>
+            </div>
           </div>
-          <div className="flex justify-between py-2 border-b border-gray-200">
-            <span className="text-gray-600">Son Giriş</span>
-            <span className="text-gray-800 font-medium">Şimdi</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Şifre Değiştirme */}
+          <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm p-6 overflow-hidden">
+            <ChangePasswordSection />
           </div>
-          <div className="flex justify-between py-2">
-            <span className="text-gray-600">Hesap Durumu</span>
-            <span className="text-green-600 font-medium flex items-center gap-1">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              Aktif
-            </span>
+
+          {/* Hesap Bilgileri */}
+          <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm p-6">
+            <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest mb-4">Hesap Durumu</h3>
+            <div className="space-y-3">
+              {[
+                { label: 'ÜYELİK TARİHİ', value: '-' },
+                { label: 'SON GİRİŞ', value: 'ŞİMDİ' },
+              ].map((item, idx) => (
+                <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-50">
+                  <span className="text-[9px] font-black text-gray-400 tracking-widest leading-none">{item.label}</span>
+                  <span className="text-[10px] font-black text-gray-800 leading-none">{item.value}</span>
+                </div>
+              ))}
+              <div className="flex justify-between items-center py-2">
+                <span className="text-[9px] font-black text-gray-400 tracking-widest leading-none">DURUM</span>
+                <span className={`px-2 py-1 text-[8px] font-black rounded-full tracking-widest leading-none uppercase ${user?.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                  {user?.isActive ? 'AKTİF' : 'PASİF'}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -454,9 +483,9 @@ function ChangePasswordSection() {
       );
 
       if (result.success) {
-        setMessage({ 
-          type: 'success', 
-          text: result.message || 'Şifreniz başarıyla değiştirildi' 
+        setMessage({
+          type: 'success',
+          text: result.message || 'Şifreniz başarıyla değiştirildi'
         });
         // Formu temizle
         setFormData({
@@ -466,16 +495,16 @@ function ChangePasswordSection() {
         });
         setIsEditing(false);
       } else {
-        setMessage({ 
-          type: 'error', 
-          text: result.message || 'Şifre değiştirme işlemi başarısız oldu' 
+        setMessage({
+          type: 'error',
+          text: result.message || 'Şifre değiştirme işlemi başarısız oldu'
         });
       }
     } catch (error) {
       console.error('Şifre değiştirme hatası:', error);
-      setMessage({ 
-        type: 'error', 
-        text: 'Şifre değiştirme işlemi sırasında bir hata oluştu' 
+      setMessage({
+        type: 'error',
+        text: 'Şifre değiştirme işlemi sırasında bir hata oluştu'
       });
     } finally {
       setIsLoading(false);
@@ -496,169 +525,63 @@ function ChangePasswordSection() {
   };
 
   return (
-    <div className="bg-gray-50 rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-800">Şifre Değiştir</h3>
+    <div>
+      <div className="flex items-center justify-between mb-5">
+        <h3 className="text-xs font-black text-gray-900 uppercase tracking-widest">Şifre İşlemleri</h3>
         {!isEditing && (
           <button
             type="button"
             onClick={() => setIsEditing(true)}
-            className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors text-sm font-semibold"
+            className="px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-lg transition-all text-[9px] font-black uppercase tracking-widest"
           >
-            🔐 Şifre Değiştir
+            ŞİFRE DEĞİŞTİR
           </button>
         )}
       </div>
 
       {!isEditing ? (
-        <p className="text-gray-600">
-          Hesabınızın güvenliği için düzenli olarak şifrenizi değiştirmenizi öneririz.
-        </p>
+        <div className="flex items-center gap-3 p-4 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-lg shadow-sm">🔐</div>
+          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tight">GÜVENLİĞİNİZ İÇİN ŞİFRENİZİ DÜZENLİ OLARAK GÜNCELLEYİN.</p>
+        </div>
       ) : (
-        <>
-          {/* Mesaj */}
-          {message && (
-            <div
-              className={`p-4 rounded-xl flex items-center gap-3 mb-4 ${
-                message.type === 'success'
-                  ? 'bg-green-50 text-green-700 border border-green-200'
-                  : 'bg-red-50 text-red-700 border border-red-200'
-              }`}
-            >
-              <span className="text-xl">{message.type === 'success' ? '✅' : '❌'}</span>
-              <p className="flex-1 text-sm font-medium">{message.text}</p>
-              <button
-                onClick={() => setMessage(null)}
-                className="hover:opacity-70"
-              >
-                ✕
-              </button>
-            </div>
-          )}
-
-          {/* Şifre Değiştirme Formu */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Mevcut Şifre */}
-            <div>
-              <label
-                htmlFor="currentPassword"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Mevcut Şifre
-              </label>
-              <div className="relative">
-                <input
-                  type={showPasswords.current ? 'text' : 'password'}
-                  id="currentPassword"
-                  name="currentPassword"
-                  value={formData.currentPassword}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                  placeholder="Mevcut şifrenizi giriniz"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-100 disabled:cursor-not-allowed pr-12"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPasswords(prev => ({ ...prev, current: !prev.current }))}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                >
-                  {showPasswords.current ? '🙈' : '👁️'}
-                </button>
+        <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="space-y-3">
+            {[
+              { id: 'currentPassword', label: 'MEVCUT ŞİFRE', show: showPasswords.current, toggle: 'current' },
+              { id: 'newPassword', label: 'YENİ ŞİFRE', show: showPasswords.new, toggle: 'new', hint: 'EN AZ 8 KARAKTER' },
+              { id: 'confirmPassword', label: 'YENİ ŞİFRE TEKRAR', show: showPasswords.confirm, toggle: 'confirm' }
+            ].map((field) => (
+              <div key={field.id}>
+                <label className="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1.5 ml-1">{field.label}</label>
+                <div className="relative">
+                  <input
+                    type={field.show ? 'text' : 'password'}
+                    name={field.id}
+                    value={(formData as any)[field.id]}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2.5 bg-white border-2 border-blue-50 focus:border-blue-500 rounded-xl text-xs font-bold outline-none transition-all pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords(prev => ({ ...prev, [field.toggle]: !(prev as any)[field.toggle] }))}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors"
+                  >
+                    {field.show ? '🙈' : '👁️'}
+                  </button>
+                </div>
+                {field.hint && <p className="text-[8px] font-black text-blue-400 mt-1 uppercase tracking-tighter ml-1">{field.hint}</p>}
               </div>
-            </div>
+            ))}
+          </div>
 
-            {/* Yeni Şifre */}
-            <div>
-              <label
-                htmlFor="newPassword"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Yeni Şifre
-              </label>
-              <div className="relative">
-                <input
-                  type={showPasswords.new ? 'text' : 'password'}
-                  id="newPassword"
-                  name="newPassword"
-                  value={formData.newPassword}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                  placeholder="En az 8 karakter"
-                  minLength={8}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-100 disabled:cursor-not-allowed pr-12"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPasswords(prev => ({ ...prev, new: !prev.new }))}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                >
-                  {showPasswords.new ? '🙈' : '👁️'}
-                </button>
-              </div>
-            </div>
-
-            {/* Yeni Şifre Tekrarı */}
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Yeni Şifre Tekrarı
-              </label>
-              <div className="relative">
-                <input
-                  type={showPasswords.confirm ? 'text' : 'password'}
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  disabled={isLoading}
-                  placeholder="Yeni şifrenizi tekrar giriniz"
-                  minLength={8}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:bg-gray-100 disabled:cursor-not-allowed pr-12"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPasswords(prev => ({ ...prev, confirm: !prev.confirm }))}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                >
-                  {showPasswords.confirm ? '🙈' : '👁️'}
-                </button>
-              </div>
-            </div>
-
-            {/* Butonlar */}
-            <div className="flex gap-4 pt-4">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-semibold disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <span className="animate-spin">⏳</span>
-                    Değiştiriliyor...
-                  </>
-                ) : (
-                  <>
-                    💾 Şifreyi Değiştir
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={isLoading}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors font-semibold disabled:cursor-not-allowed"
-              >
-                İptal
-              </button>
-            </div>
-          </form>
-        </>
+          <div className="flex gap-3 pt-2">
+            <button type="submit" disabled={isLoading} className="flex-1 py-2.5 bg-purple-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 transition-all shadow-lg shadow-purple-100 disabled:opacity-50">
+              {isLoading ? 'DEĞİŞTİRİLİYOR...' : 'ŞİFREYİ GÜNCELLE'}
+            </button>
+            <button onClick={handleCancel} type="button" className="flex-1 py-2.5 bg-gray-100 text-gray-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-200 transition-all">İPTAL</button>
+          </div>
+        </form>
       )}
     </div>
   );

@@ -40,6 +40,7 @@ public class AuthRepository : IAuthRepository
     {
         return await _context.Users
             .OfType<ApplicationUser>()
+            .Include(u => u.Settings) // Gizlilik ayarlarını yükle
             .FirstOrDefaultAsync(u => u.Id == userId);
     }
 

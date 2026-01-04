@@ -1,20 +1,17 @@
-'use client';
-
 import Panel from '@/body/panel/Panel';
+import { validateAuthServer } from '@/lib/auth-server';
+
+export const dynamic = 'force-dynamic';
 
 /**
- * Panel Sayfası
+ * Panel Sayfası (Server Component)
  * 
- * Kullanıcı paneli ana sayfası.
  * URL: /panel
- * 
- * İçerik:
- * - Profil düzenleme
- * - İlanlarım yönetimi
- * - Yeni ilan verme
- * - Favori ilanlar
- * - Hesap ayarları
+ * validateAuthServer sayesinde yetkisiz kullanıcılar sayfayı görmeden login'e yönlendirilir.
  */
-export default function PanelPage() {
+export default async function PanelPage() {
+  // Sunucu tarafında oturum kontrolü
+  await validateAuthServer();
+
   return <Panel />;
 }

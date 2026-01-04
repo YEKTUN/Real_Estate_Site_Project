@@ -199,8 +199,8 @@ describe('MyListings', () => {
 
       // Durum filtre butonları: Tümü, Aktif, Beklemede, Pasif
       expect(screen.getByRole('button', { name: /tümü/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /aktif/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /beklemede/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /yayında/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /onay bekliyor/i })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /pasif/i })).toBeInTheDocument();
     });
   });

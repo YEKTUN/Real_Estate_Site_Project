@@ -61,9 +61,14 @@ export interface UserDto {
   name: string;
   surname: string;
   phone?: string;
+  phoneVerified?: boolean;
   email: string;
   profilePictureUrl?: string;
   isAdmin: boolean;
+  isActive: boolean;
+  // Gizlilik Ayarları
+  showPhone?: boolean;
+  showEmail?: boolean;
 }
 
 /**

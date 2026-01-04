@@ -3,13 +3,14 @@
 import { useEffect, useCallback } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/body/redux/hooks';
-import { 
-  logoutAsync, 
+import {
+  logoutAsync,
   initializeAuth,
-  selectIsAuthenticated, 
+  selectIsAuthenticated,
   selectToken,
-  selectIsLoading 
+  selectIsLoading
 } from '@/body/redux/slices/auth/AuthSlice';
+import { fetchMyFavorites } from '@/body/redux/slices/favorite/FavoriteSlice';
 import { isTokenValid } from '@/body/redux/api/axiosInstance';
 
 /**
@@ -30,7 +31,7 @@ export default function AuthGuard({ children }: AuthGuardProps) {
   const pathname = usePathname();
   const router = useRouter();
   const dispatch = useAppDispatch();
-  
+
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const token = useAppSelector(selectToken);
   const isLoading = useAppSelector(selectIsLoading);
@@ -109,6 +110,16 @@ export default function AuthGuard({ children }: AuthGuardProps) {
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [isAuthenticated, dispatch, router]);
+
+  /**
+   * Giriş yapıldığında favorileri çek
+   */
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      console.log('AuthGuard: Favoriler çekiliyor...');
+      dispatch(fetchMyFavorites({ page: 1, pageSize: 1000 }));
+    }
+  }, [isAuthenticated, token, dispatch]);
 
   return <>{children}</>;
 }

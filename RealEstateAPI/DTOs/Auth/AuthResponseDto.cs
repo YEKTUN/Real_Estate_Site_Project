@@ -79,6 +79,21 @@ public class UserDto
     /// Kullanıcının admin yetkisi var mı?
     /// </summary>
     public bool IsAdmin { get; set; }
+
+    /// <summary>
+    /// Kullanıcının hesabı aktif mi?
+    /// </summary>
+    public bool IsActive { get; set; }
+    
+    /// <summary>
+    /// Telefon numarası gösterilsin mi?
+    /// </summary>
+    public bool ShowPhone { get; set; } = false;
+    
+    /// <summary>
+    /// E-posta adresi gösterilsin mi?
+    /// </summary>
+    public bool ShowEmail { get; set; } = true;
 }
 
 /**

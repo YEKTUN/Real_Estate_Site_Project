@@ -28,6 +28,9 @@ public class ListingMessage
     /// <summary>Mesaj teklif içeriyor mu</summary>
     public bool IsOffer { get; set; }
 
+    /// <summary>Teklif durumu (0: Beklemede, 1: Kabul Edildi, 2: Reddedildi)</summary>
+    public int OfferStatus { get; set; } = 0;
+
     /// <summary>Opsiyonel ek dosya URL'i (Cloudinary vb.)</summary>
     [StringLength(500)]
     public string? AttachmentUrl { get; set; }

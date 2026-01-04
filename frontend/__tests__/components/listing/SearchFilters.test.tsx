@@ -4,7 +4,7 @@
  * Arama ve filtreleme bileşeninin testleri.
  */
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import SearchFilters from '@/body/listing/components/SearchFilters';
 import { ListingSearchDto, ListingCategory, ListingType, ListingSortBy } from '@/body/redux/slices/listing/DTOs/ListingDTOs';
 
@@ -53,7 +53,7 @@ describe('SearchFilters', () => {
         />
       );
 
-      const searchInput = screen.getByPlaceholderText(/ilan başlığı, konum/i);
+      const searchInput = screen.getByPlaceholderText(/kelime veya cümle/i);
       expect(searchInput).toBeInTheDocument();
     });
 
@@ -70,7 +70,7 @@ describe('SearchFilters', () => {
         />
       );
 
-      expect(screen.getByRole('button', { name: /ara/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /ilanları filtrele/i })).toBeInTheDocument();
     });
 
     test('should render all filter dropdowns', () => {
@@ -88,7 +88,7 @@ describe('SearchFilters', () => {
 
       expect(screen.getByLabelText(/kategori/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/ilan tipi/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/il/i)).toBeInTheDocument();
+      expect(screen.getByText(/^İl$/)).toBeInTheDocument();
       expect(screen.getByLabelText(/oda sayısı/i)).toBeInTheDocument();
     });
 
@@ -105,8 +105,9 @@ describe('SearchFilters', () => {
         />
       );
 
-      expect(screen.getByLabelText(/min fiyat/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/max fiyat/i)).toBeInTheDocument();
+      const priceContainer = screen.getByText(/fiyat aralığı/i).closest('.space-y-1') as HTMLElement;
+      expect(within(priceContainer).getByPlaceholderText('Min')).toBeInTheDocument();
+      expect(within(priceContainer).getByPlaceholderText('Max')).toBeInTheDocument();
     });
 
     test('should render clear filters button', () => {
@@ -122,7 +123,7 @@ describe('SearchFilters', () => {
         />
       );
 
-      expect(screen.getByRole('button', { name: /temizle/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /filtreleri sıfırla/i })).toBeInTheDocument();
     });
 
     test('should render sort dropdown', () => {
@@ -157,7 +158,7 @@ describe('SearchFilters', () => {
         />
       );
 
-      const searchInput = screen.getByPlaceholderText(/ilan başlığı, konum/i);
+      const searchInput = screen.getByPlaceholderText(/kelime veya cümle/i);
       fireEvent.change(searchInput, { target: { value: 'test' } });
 
       expect(mockOnSearchTermChange).toHaveBeenCalledWith('test');
@@ -176,7 +177,7 @@ describe('SearchFilters', () => {
         />
       );
 
-      const searchButton = screen.getByRole('button', { name: /ara/i });
+      const searchButton = screen.getByRole('button', { name: /ilanları filtrele/i });
       fireEvent.click(searchButton);
 
       expect(mockOnSearch).toHaveBeenCalled();
@@ -195,8 +196,8 @@ describe('SearchFilters', () => {
         />
       );
 
-      const searchInput = screen.getByRole('textbox');
-      fireEvent.keyPress(searchInput, { key: 'Enter', code: 'Enter' });
+      const searchInput = screen.getByPlaceholderText(/kelime veya cümle/i);
+      fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
 
       expect(mockOnSearch).toHaveBeenCalled();
     });
@@ -214,9 +215,8 @@ describe('SearchFilters', () => {
         />
       );
 
-      const categoryLabel = screen.getByText(/kategori/i);
-      const categorySelect = categoryLabel.parentElement?.querySelector('select') as HTMLSelectElement;
-      fireEvent.change(categorySelect, { target: { value: String(ListingCategory.Residential) } });
+      const konutBtn = screen.getByRole('button', { name: /konut/i });
+      fireEvent.click(konutBtn);
 
       expect(mockOnFilterChange).toHaveBeenCalledWith('category', ListingCategory.Residential);
     });
@@ -234,9 +234,8 @@ describe('SearchFilters', () => {
         />
       );
 
-      const typeLabel = screen.getByText(/ilan tipi/i);
-      const typeSelect = typeLabel.parentElement?.querySelector('select') as HTMLSelectElement;
-      fireEvent.change(typeSelect, { target: { value: String(ListingType.ForSale) } });
+      const satilikBtn = screen.getByRole('button', { name: /satılık/i });
+      fireEvent.click(satilikBtn);
 
       expect(mockOnFilterChange).toHaveBeenCalledWith('type', ListingType.ForSale);
     });
@@ -255,7 +254,7 @@ describe('SearchFilters', () => {
       );
 
       // City select'i label üzerinden bulmak yerine, label'in yanındaki select'i al
-      const cityLabel = screen.getByText(/il/i);
+      const cityLabel = screen.getByText(/^İl$/);
       const citySelect = cityLabel.parentElement?.querySelector('select') as HTMLSelectElement;
       fireEvent.change(citySelect, { target: { value: 'İstanbul' } });
 
@@ -275,8 +274,8 @@ describe('SearchFilters', () => {
         />
       );
 
-      const minPriceLabel = screen.getByText(/min fiyat/i);
-      const minPriceInput = minPriceLabel.parentElement?.querySelector('input') as HTMLInputElement;
+      const priceContainer = screen.getByText(/fiyat aralığı/i).closest('.space-y-1') as HTMLElement;
+      const minPriceInput = within(priceContainer).getByPlaceholderText('Min');
       fireEvent.change(minPriceInput, { target: { value: '100000' } });
 
       expect(mockOnFilterChange).toHaveBeenCalledWith('minPrice', 100000);
@@ -295,7 +294,7 @@ describe('SearchFilters', () => {
         />
       );
 
-      const clearButton = screen.getByRole('button', { name: /temizle/i });
+      const clearButton = screen.getByRole('button', { name: /filtreleri sıfırla/i });
       fireEvent.click(clearButton);
 
       expect(mockOnClearFilters).toHaveBeenCalled();
@@ -345,8 +344,8 @@ describe('SearchFilters', () => {
         />
       );
 
-      expect(screen.getByDisplayValue('Konut')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('Satılık')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /konut/i })).toHaveClass('bg-blue-50');
+      expect(screen.getByRole('button', { name: /satılık/i })).toHaveClass('bg-white');
       expect(screen.getByDisplayValue('İstanbul')).toBeInTheDocument();
       expect(screen.getByDisplayValue('100000')).toBeInTheDocument();
       expect(screen.getByDisplayValue('500000')).toBeInTheDocument();

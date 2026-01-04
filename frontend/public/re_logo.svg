@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Roof -->
+  <path d="M256 32L32 208h48v272h352V208h48L256 32z" fill="none" stroke="currentColor" stroke-width="0"/>
+  
+  <!-- Stylized RE House Icon -->
+  <path fill="currentColor" d="M256 64L64 224h48v224h288V224h48L256 64zm-24 336h-80V176h72c26.5 0 48 21.5 48 48s-21.5 48-48 48h-24v128zm144 0h-80v-48h64v-32h-64v-40h64v-32h-70V352h86v48z"/>
+  
+  <!-- Refined R shape -->
+  <path fill="currentColor" d="M192 208v96h32c8.8 0 16-7.2 16-16s-7.2-16-16-16h-8v-64h-24zm24 128l24 48h30l-26-52c14-6 24-20 24-36 0-22-18-40-40-40h-52v128h40z" style="display:none;"/>
+  
+  <!-- Custom Modern RE Monogram Path -->
+  <!-- A house shape with RE inside -->
+  <path fill="currentColor" d="M256,48 L448,192 L416,192 L416,464 L96,464 L96,192 L64,192 L256,48 X M256,108 L144,192 V416 H368 V192 L256,108 Z" />
+  <path fill="currentColor" d="M190 240 h 40 c 20 0 30 10 30 30 c 0 15 -5 25 -20 28 l 22 42 h -24 l -20 -40 h -8 v 40 h -20 V 240 Z M 210 285 h 15 c 10 0 15 -5 15 -12 c 0 -8 -5 -13 -15 -13 h -15 V 285 Z" />
+  <path fill="currentColor" d="M 280 240 h 60 v 18 h -40 v 24 h 35 v 18 h -35 v 24 h 40 v 18 h -60 V 240 Z" />
+</svg>

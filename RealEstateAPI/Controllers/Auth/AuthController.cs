@@ -93,7 +93,7 @@ public class AuthController : ControllerBase
 
         if (!result.Success)
         {
-            return Unauthorized(result);
+            return BadRequest(result);
         }
 
         return Ok(result);
@@ -191,7 +191,7 @@ public class AuthController : ControllerBase
 
         if (!result.Success)
         {
-            return Unauthorized(result);
+            return BadRequest(result);
         }
 
         return Ok(result);
@@ -219,7 +219,7 @@ public class AuthController : ControllerBase
             });
         }
 
-        var user = await _authService.GetUserByIdAsync(userId);
+        var user = await _authService.GetUserByIdAsync(userId, userId);
 
         if (user == null)
         {
@@ -262,7 +262,8 @@ public class AuthController : ControllerBase
             });
         }
 
-        var user = await _authService.GetUserByIdAsync(id);
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var user = await _authService.GetUserByIdAsync(id, currentUserId);
         if (user == null)
         {
             return NotFound(new AuthResponseDto
@@ -433,6 +434,40 @@ public class AuthController : ControllerBase
         _logger.LogInformation("Şifre değiştirme isteği alındı: UserId={UserId}", userId);
 
         var result = await _authService.ChangePasswordAsync(userId, changePasswordDto);
+
+        if (!result.Success)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Hesabı pasife al ve ilanlarını pasif yap (Hesap Silme)
+    /// </summary>
+    /// <returns>İşlem sonucu</returns>
+    [HttpPost("deactivate")]
+    [Authorize]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> DeactivateAccount()
+    {
+        // JWT token'dan kullanıcı ID'sini al
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized(new AuthResponseDto
+            {
+                Success = false,
+                Message = "Kullanıcı kimliği doğrulanamadı"
+            });
+        }
+
+        _logger.LogInformation("Hesap kapatma isteği alındı: UserId={UserId}", userId);
+
+        var result = await _authService.DeactivateAccountAsync(userId);
 
         if (!result.Success)
         {

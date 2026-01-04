@@ -96,13 +96,26 @@ export const createListing = createAsyncThunk<ListingResponseDto, CreateListingD
   'listing/create',
   async (data, { rejectWithValue }) => {
     try {
+      console.log('🚀 [Redux] İlan oluşturma isteği başlatıldı');
       const response = await createListingApi(data);
+
       if (!response.success) {
-        return rejectWithValue(response.message);
+        console.error('❌ [Redux] İlan oluşturma başarısız:', response.message);
+        return rejectWithValue(response.message || 'İlan oluşturulamadı');
       }
+
+      console.log('✅ [Redux] İlan başarıyla oluşturuldu:', response);
       return response;
-    } catch {
-      return rejectWithValue('İlan oluşturulurken bir hata oluştu');
+    } catch (error: any) {
+      console.error('❌ [Redux] İlan oluşturma hatası:', error);
+
+      // Axios hatası - backend'den gelen hata mesajı
+      if (error?.response?.data?.message) {
+        return rejectWithValue(error.response.data.message);
+      }
+
+      // Genel hata mesajı
+      return rejectWithValue(error?.message || 'İlan oluşturulurken bir hata oluştu');
     }
   }
 );

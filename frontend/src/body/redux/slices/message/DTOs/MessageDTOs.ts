@@ -9,10 +9,11 @@ export interface ListingMessageDto {
   content: string;
   offerPrice?: number | null;
   isOffer: boolean;
-   attachmentUrl?: string | null;
-   attachmentType?: string | null;
-   attachmentFileName?: string | null;
-   attachmentFileSize?: number | null;
+  offerStatus: number;
+  attachmentUrl?: string | null;
+  attachmentType?: string | null;
+  attachmentFileName?: string | null;
+  attachmentFileSize?: number | null;
   isRead: boolean;
   createdAt: string;
 }
@@ -21,6 +22,7 @@ export interface ListingMessageThreadDto {
   id: number;
   listingId: number;
   listingTitle: string;
+  listingPrice: number;
   sellerId: string;
   sellerName: string;
   sellerSurname?: string | null;
@@ -31,6 +33,7 @@ export interface ListingMessageThreadDto {
   buyerProfilePictureUrl?: string | null;
   lastMessageAt?: string | null;
   unreadCount?: number;
+  listingCurrency?: number;
   messages: ListingMessageDto[];
 }
 

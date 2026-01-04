@@ -1,4 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { getCookie, setCookie, deleteCookie, hasCookie } from 'cookies-next';
 
 /**
  * Axios Instance
@@ -15,17 +16,15 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5202/a
  */
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 30000, // 30 saniye (email gönderme işlemleri için yeterli süre)
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
-  // .NET'in dizi parametrelerini doğru algılaması için (statuses=0&statuses=5 gibi)
   paramsSerializer: {
     serialize: (params) => {
       const parts: string[] = [];
       Object.entries(params).forEach(([key, value]) => {
         if (value === null || value === undefined) return;
-
         if (Array.isArray(value)) {
           value.forEach(v => {
             parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(v)}`);
@@ -39,17 +38,12 @@ const axiosInstance = axios.create({
   }
 });
 
-// Token yenileme işlemi devam ediyor mu?
 let isRefreshing = false;
-// Bekleyen istekler kuyruğu
 let failedQueue: Array<{
   resolve: (value: unknown) => void;
   reject: (reason?: unknown) => void;
 }> = [];
 
-/**
- * Bekleyen istekleri işle
- */
 const processQueue = (error: Error | null, token: string | null = null) => {
   failedQueue.forEach(prom => {
     if (error) {
@@ -62,84 +56,50 @@ const processQueue = (error: Error | null, token: string | null = null) => {
 };
 
 // ============================================================================
-// TOKEN MANAGEMENT
+// TOKEN MANAGEMENT (Updated to use Cookies)
 // ============================================================================
 
-/**
- * Access Token'ı localStorage'dan al
- */
 export const getToken = (): string | null => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
-  }
-  return null;
+  return (getCookie('token') as string) || null;
 };
 
-/**
- * Access Token'ı localStorage'a kaydet
- */
 export const setToken = (token: string): void => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('token', token);
-  }
+  setCookie('token', token, {
+    maxAge: 60 * 60 * 24 * 7, // 7 gün
+    path: '/',
+    // production'da: secure: true
+  });
 };
 
-/**
- * Access Token'ı localStorage'dan sil
- */
 export const removeToken = (): void => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('token');
-  }
+  deleteCookie('token', { path: '/' });
 };
 
-/**
- * Refresh Token'ı localStorage'dan al
- */
 export const getRefreshToken = (): string | null => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('refreshToken');
-  }
-  return null;
+  return (getCookie('refreshToken') as string) || null;
 };
 
-/**
- * Refresh Token'ı localStorage'a kaydet
- */
 export const setRefreshToken = (token: string): void => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('refreshToken', token);
-  }
+  setCookie('refreshToken', token, {
+    maxAge: 60 * 60 * 24 * 30, // 30 gün
+    path: '/',
+  });
 };
 
-/**
- * Refresh Token'ı localStorage'dan sil
- */
 export const removeRefreshToken = (): void => {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem('refreshToken');
-  }
+  deleteCookie('refreshToken', { path: '/' });
 };
 
-/**
- * Tüm token'ları sil
- */
 export const clearTokens = (): void => {
   removeToken();
   removeRefreshToken();
 };
 
-/**
- * Tüm token'ları kaydet
- */
 export const saveTokens = (accessToken: string, refreshToken: string): void => {
   setToken(accessToken);
   setRefreshToken(refreshToken);
 };
 
-/**
- * Access Token'ın geçerli olup olmadığını kontrol et
- */
 export const isTokenValid = (): boolean => {
   const token = getToken();
   if (!token) return false;
@@ -147,7 +107,6 @@ export const isTokenValid = (): boolean => {
   try {
     const payload = JSON.parse(atob(token.split('.')[1]));
     const expirationTime = payload.exp * 1000;
-    // 30 saniye buffer ekle
     return Date.now() < (expirationTime - 30000);
   } catch {
     return false;
@@ -253,10 +212,17 @@ axiosInstance.interceptors.response.use(
 
     // 401 Unauthorized ve henüz retry yapılmamışsa
     if (error.response?.status === 401 && !originalRequest._retry) {
+
+      // Giriş yapma veya kayıt olma isteklerinde refresh token deneme
+      if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/register')) {
+        return Promise.reject(error);
+      }
+
       // Refresh token endpoint'i için retry yapma
       if (originalRequest.url?.includes('/auth/refresh')) {
         clearTokens();
-        if (typeof window !== 'undefined') {
+        // Zaten login sayfasındaysak tekrar yönlendirme (sayfa yenilemesi) yapma
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
         return Promise.reject(error);
@@ -291,7 +257,7 @@ axiosInstance.interceptors.response.use(
         } else {
           processQueue(new Error('Token yenilenemedi'), null);
           clearTokens();
-          if (typeof window !== 'undefined') {
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
             window.location.href = '/login';
           }
           return Promise.reject(error);
@@ -299,7 +265,7 @@ axiosInstance.interceptors.response.use(
       } catch (refreshError) {
         processQueue(refreshError as Error, null);
         clearTokens();
-        if (typeof window !== 'undefined') {
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
           window.location.href = '/login';
         }
         return Promise.reject(refreshError);

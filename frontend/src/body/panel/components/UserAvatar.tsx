@@ -38,7 +38,7 @@ export default function UserAvatar({
 }: UserAvatarProps) {
   // Baş harfleri oluştur
   const initials = `${name?.charAt(0)?.toUpperCase() || ''}${surname?.charAt(0)?.toUpperCase() || ''}`;
-  
+
   // Resim yükleme hatası durumunu takip et
   const [imageError, setImageError] = useState(false);
 
@@ -58,14 +58,14 @@ export default function UserAvatar({
     );
   }
 
-  // Profil resmi yoksa veya hata varsa baş harf avatarı göster
+  // Profil resmi yoksa veya hata varsa baş harf avatarı yerine placeholder görsel göster
   return (
-    <div
-      className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold shadow-sm ${className}`}
+    <img
+      src="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png"
+      alt={`${name} ${surname}`}
+      className={`${sizeClasses[size]} rounded-full object-cover opacity-80 shadow-sm ${className}`}
       title={`${name} ${surname}`}
-    >
-      {initials || '?'}
-    </div>
+    />
   );
 }
 

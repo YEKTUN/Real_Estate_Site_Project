@@ -137,3 +137,22 @@ export const getAdminListingByNumberApi = async (listingNumber: string): Promise
   }
 };
 
+/**
+ * Admin: Kullanıcı ara (Sadece Email)
+ */
+export const findUserByEmailApi = async (email: string): Promise<any> => {
+  console.log('🔍 [API] Kullanıcı arama isteği (Email):', email);
+  const response = await axiosInstance.get('/admin/users/find-user-by-email', {
+    params: { email }
+  });
+  return response.data;
+};
+
+/**
+ * Admin: Kullanıcı durumunu değiştir (Toggle IsActive)
+ */
+export const toggleAdminUserStatusApi = async (userId: string): Promise<any> => {
+  const response = await axiosInstance.patch(`/admin/users/${userId}/toggle-status`);
+  return response.data;
+};
+

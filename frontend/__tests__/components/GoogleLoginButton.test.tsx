@@ -257,7 +257,7 @@ describe('GoogleLoginButton Component', () => {
       if (mockGoogleLoginOnSuccess) {
         // Credential olmadan çağır
         const originalOnSuccess = mockGoogleLoginOnSuccess;
-        // @ts-expect-error - testing edge case
+      
         originalOnSuccess({ credential: '' });
       }
       

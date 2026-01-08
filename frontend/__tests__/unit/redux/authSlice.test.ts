@@ -71,13 +71,15 @@ const mockUser: UserDto = {
   surname: 'User',
   email: 'test@example.com',
   phone: '5551234567',
+  isAdmin: false,
+  isActive: true,
 };
 
 /**
  * Mock authenticated state
  */
 const authenticatedState: AuthState = {
-  user: { ...mockUser, isAdmin: false },
+  user: mockUser,
   token: 'test-jwt-token',
   refreshToken: 'test-refresh-token',
   isAuthenticated: true,
@@ -166,7 +168,7 @@ describe('AuthSlice', () => {
 
         const result = authReducer(stateWithError, clearError());
 
-        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
+        expect(result.user).toEqual(mockUser);
         expect(result.token).toBe('test-jwt-token');
         expect(result.isAuthenticated).toBe(true);
       });
@@ -175,7 +177,7 @@ describe('AuthSlice', () => {
     describe('setUser', () => {
       test('should update user in state', () => {
         const result = authReducer(initialState, setUser(mockUser));
-        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
+        expect(result.user).toEqual(mockUser);
       });
 
       test('should allow setting user to null', () => {
@@ -286,7 +288,7 @@ describe('AuthSlice', () => {
 
         expect(result.isLoading).toBe(false);
         expect(result.isAuthenticated).toBe(true);
-        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
+        expect(result.user).toEqual(mockUser);
         expect(result.token).toBe('new-jwt-token');
         expect(result.refreshToken).toBe('new-refresh-token');
         expect(result.error).toBeNull();
@@ -372,7 +374,7 @@ describe('AuthSlice', () => {
 
         expect(result.isLoading).toBe(false);
         expect(result.isAuthenticated).toBe(true);
-        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
+        expect(result.user).toEqual(mockUser);
         expect(result.token).toBe('new-jwt-token');
         expect(result.refreshToken).toBe('new-refresh-token');
       });
@@ -432,7 +434,7 @@ describe('AuthSlice', () => {
 
         expect(result.isLoading).toBe(false);
         expect(result.isAuthenticated).toBe(true);
-        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
+        expect(result.user).toEqual(mockUser);
         expect(result.token).toBe('new-jwt-token');
         expect(result.refreshToken).toBe('new-refresh-token');
         expect(result.error).toBeNull();
@@ -537,7 +539,7 @@ describe('AuthSlice', () => {
           refreshToken.fulfilled(responseWithoutUser, '', undefined)
         );
 
-        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
+        expect(result.user).toEqual(mockUser);
       });
     });
 
@@ -585,7 +587,8 @@ describe('AuthSlice', () => {
         );
 
         expect(result.isLoading).toBe(false);
-        expect(result.user).toEqual({ ...newUser, isAdmin: false });
+        const expectedUser = { ...newUser, isAdmin: false, isActive: true };
+        expect(result.user).toEqual(expectedUser);
       });
     });
 
@@ -639,7 +642,7 @@ describe('AuthSlice', () => {
         );
 
         expect(result.isLoading).toBe(false);
-        expect(result.user).toEqual({ ...mockUser, isAdmin: false });
+        expect(result.user).toEqual(mockUser);
         expect(result.token).toBe('stored-token');
         expect(result.refreshToken).toBe('stored-refresh-token');
         expect(result.isAuthenticated).toBe(true);
@@ -705,7 +708,7 @@ describe('AuthSlice', () => {
     };
 
     test('selectUser should return user from state', () => {
-      expect(selectUser(mockRootState)).toEqual({ ...mockUser, isAdmin: false });
+      expect(selectUser(mockRootState)).toEqual(mockUser);
     });
 
     test('selectToken should return token from state', () => {

@@ -143,6 +143,26 @@ public static class TestDataFactory
         };
     }
 
+    /// <summary>
+    /// Test için UserDto oluşturur
+    /// </summary>
+    public static UserDto CreateUserDto(
+        string? id = null,
+        string? name = null,
+        string? surname = null,
+        string? email = null,
+        string? phone = null)
+    {
+        return new UserDto
+        {
+            Id = id ?? Guid.NewGuid().ToString(),
+            Name = name ?? "Test",
+            Surname = surname ?? "User",
+            Email = email ?? "test@example.com",
+            Phone = phone ?? "5551234567"
+        };
+    }
+
     // ============================================================================
     // REFRESH TOKEN DATA
     // ============================================================================

@@ -12,19 +12,25 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  ArrowRightLeft,
+  MessageSquare,
+  Home,
+  Droplets,
+  Wind,
+  ShieldCheck,
+  CreditCard,
+  Maximize2,
+  Hash,
+  ChevronLeft,
   ChevronRight,
+  ArrowRightLeft,
   RefreshCw,
   Plus,
   Trash2,
-  Eye,
-  Settings as SettingsIcon,
-  Tag,
   MapPin,
   User as UserIcon,
-  Calendar,
+  Eye,
   AlertTriangle,
-  MessageSquare,
+  Calendar,
 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/body/components/ui/accordion';
 import {
@@ -52,7 +58,19 @@ import {
   setFilters,
   updateListingStatus,
 } from '@/body/redux/slices/admin/AdminListingSlice';
-import { ListingListDto, ListingStatus, ListingCategory, ListingType, PropertyType } from '@/body/redux/slices/listing/DTOs/ListingDTOs';
+import {
+  ListingListDto,
+  ListingStatus,
+  ListingCategory,
+  ListingType,
+  PropertyType,
+  HeatingType,
+  BuildingStatus,
+  UsageStatus,
+  DeedStatus,
+  FacingDirection,
+  Currency
+} from '@/body/redux/slices/listing/DTOs/ListingDTOs';
 import {
   AdminListingFilter,
   AdminModerationRuleDto,
@@ -117,6 +135,61 @@ const propertyTypeLabels: Record<PropertyType, string> = {
   [PropertyType.Cooperative]: 'Kooperatif',
   [PropertyType.Prefabricated]: 'Prefabrik',
   [PropertyType.Detached]: 'Müstakil Ev',
+};
+
+const heatingTypeLabels: Record<HeatingType, string> = {
+  [HeatingType.Individual]: 'Kombi',
+  [HeatingType.Central]: 'Merkezi',
+  [HeatingType.FloorHeating]: 'Yerden Isıtma',
+  [HeatingType.AirConditioning]: 'Klima',
+  [HeatingType.FuelOil]: 'Fuel-Oil',
+  [HeatingType.Coal]: 'Kömür',
+  [HeatingType.NaturalGas]: 'Doğalgaz',
+  [HeatingType.Electric]: 'Elektrik',
+  [HeatingType.Solar]: 'Güneş Enerjisi',
+  [HeatingType.Geothermal]: 'Jeotermal',
+  [HeatingType.Fireplace]: 'Şömine',
+  [HeatingType.None]: 'Isıtma Yok',
+};
+
+const buildingStatusLabels: Record<BuildingStatus, string> = {
+  [BuildingStatus.Zero]: 'Sıfır',
+  [BuildingStatus.SecondHand]: '2. El',
+  [BuildingStatus.UnderConstruction]: 'İnşaat',
+  [BuildingStatus.Renovated]: 'Yenilenmiş',
+};
+
+const usageStatusLabels: Record<UsageStatus, string> = {
+  [UsageStatus.Empty]: 'Boş',
+  [UsageStatus.TenantOccupied]: 'Kiracılı',
+  [UsageStatus.OwnerOccupied]: 'Mülk Sahibi',
+};
+
+const deedStatusLabels: Record<DeedStatus, string> = {
+  [DeedStatus.Title]: 'Kat Mülkiyetli',
+  [DeedStatus.SharedTitle]: 'Kat İrtifaklı',
+  [DeedStatus.Cooperative]: 'Hisseli',
+  [DeedStatus.Construction]: 'İrtifaklı',
+  [DeedStatus.RightOfResidence]: 'İskanlı',
+  [DeedStatus.Other]: 'Diğer',
+};
+
+const facingDirectionLabels: Record<FacingDirection, string> = {
+  [FacingDirection.North]: 'Kuzey',
+  [FacingDirection.South]: 'Güney',
+  [FacingDirection.East]: 'Doğu',
+  [FacingDirection.West]: 'Batı',
+  [FacingDirection.NorthEast]: 'Kuzeydoğu',
+  [FacingDirection.NorthWest]: 'Kuzeybatı',
+  [FacingDirection.SouthEast]: 'Güneydoğu',
+  [FacingDirection.SouthWest]: 'Güneybatı',
+};
+
+const getCurrencySymbol = (val: Currency) => {
+  if (val === Currency.TRY) return '₺';
+  if (val === Currency.USD) return '$';
+  if (val === Currency.EUR) return '€';
+  return '₺';
 };
 
 export default function AdminPanel() {
@@ -857,42 +930,134 @@ export default function AdminPanel() {
             {selectedListing && selectedListing.listing && (
               <div className="animate-in fade-in slide-in-from-top-2 duration-300">
                 <Accordion type="single" className="w-full" defaultValue="listing-detail">
-                  <AccordionItem value="listing-detail" className="bg-slate-900 rounded-3xl border-none shadow-xl overflow-hidden p-1">
-                    <AccordionTrigger className="px-6 py-4 hover:no-underline text-white group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-                          <Eye className="w-4 h-4" />
+                  <AccordionItem value="listing-detail" className="bg-slate-900 rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden p-2">
+                    <AccordionTrigger className="px-8 py-5 hover:no-underline text-white group focus:ring-0 focus:outline-none hover:bg-white/5 bg-transparent rounded-[2rem] transition-all">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                          <Eye className="w-6 h-6 text-white" />
                         </div>
                         <div className="text-left">
-                          <p className="text-[8px] font-black text-blue-400 tracking-widest uppercase opacity-80">DETAY</p>
-                          <h4 className="text-sm font-black uppercase">#{selectedListing.listing.listingNumber} - {selectedListing.listing.title}</h4>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-blue-400 tracking-[0.2em] uppercase">MÜLK DETAYLARI</span>
+                            <div className="h-px w-8 bg-blue-400/20" />
+                            <span className="text-[10px] font-black text-white/40 tracking-widest uppercase">#{selectedListing.listing.listingNumber}</span>
+                          </div>
+                          <h4 className="text-xl font-black uppercase tracking-tight mt-0.5">{selectedListing.listing.title}</h4>
                         </div>
                       </div>
                     </AccordionTrigger>
-                    <AccordionContent className="p-0 px-6 pb-6 text-white/90">
-                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-white/5 rounded-2xl p-4 border border-white/5">
-                        <div className="space-y-4">
-                          <p className="text-xs font-bold leading-relaxed text-white/70 uppercase">{selectedListing.listing.description}</p>
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="p-3 rounded-xl bg-white/5">
-                              <p className="text-[8px] font-black text-white/40 mb-1">FİYAT</p>
-                              <p className="text-sm font-black text-blue-400">{selectedListing.listing.price.toLocaleString('tr-TR')} ₺</p>
+                    <AccordionContent className="p-0 px-8 pb-8 text-white/90">
+                      <div className="space-y-6">
+                        {/* Upper Section: Stats & Specs */}
+                        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                          {/* Financials Column */}
+                          <div className="xl:col-span-1 space-y-4">
+                            <div className="p-6 rounded-[2rem] bg-white/5 border border-white/10 space-y-4">
+                              <div>
+                                <p className="text-[10px] font-black text-white/40 tracking-widest uppercase mb-1">FİYAT</p>
+                                <p className="text-3xl font-black text-blue-400 tracking-tighter">
+                                  {selectedListing.listing.price.toLocaleString('tr-TR')} {getCurrencySymbol(selectedListing.listing.currency)}
+                                </p>
+                              </div>
+                              <div className="space-y-2 border-t border-white/10 pt-4">
+                                {selectedListing.listing.monthlyDues && (
+                                  <div className="flex justify-between items-center text-[10px] font-black text-white/40 uppercase tracking-widest">
+                                    <span>AİDAT</span>
+                                    <span className="text-white/80">{selectedListing.listing.monthlyDues.toLocaleString('tr-TR')} {getCurrencySymbol(selectedListing.listing.currency)}</span>
+                                  </div>
+                                )}
+                                {selectedListing.listing.deposit && (
+                                  <div className="flex justify-between items-center text-[10px] font-black text-white/40 uppercase tracking-widest">
+                                    <span>DEPOZİTO</span>
+                                    <span className="text-white/80">{selectedListing.listing.deposit.toLocaleString('tr-TR')} {getCurrencySymbol(selectedListing.listing.currency)}</span>
+                                  </div>
+                                )}
+                                <div className="flex justify-between items-center text-[10px] font-black text-white/40 uppercase tracking-widest">
+                                  <span>KONUM</span>
+                                  <span className="text-white/80">{selectedListing.listing.city} / {selectedListing.listing.district}</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="p-3 rounded-xl bg-white/5">
-                              <p className="text-[8px] font-black text-white/40 mb-1">KONUM</p>
-                              <p className="text-[10px] font-black uppercase truncate">{selectedListing.listing.city} / {selectedListing.listing.district}</p>
+
+                            <div className="p-6 rounded-[2rem] bg-white/5 border border-white/10 space-y-4">
+                              <p className="text-[10px] font-black text-white/40 tracking-widest uppercase mb-1">MÜLK ÖZELLİKLERİ</p>
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="flex flex-col">
+                                  <span className="text-[9px] font-bold text-white/30 uppercase">TAPU</span>
+                                  <span className="text-[10px] font-black uppercase text-white/90">{deedStatusLabels[selectedListing.listing.deedStatus || DeedStatus.Other]}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[9px] font-bold text-white/30 uppercase">KULLANIM</span>
+                                  <span className="text-[10px] font-black uppercase text-white/90">{usageStatusLabels[selectedListing.listing.usageStatus || UsageStatus.Empty]}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[9px] font-bold text-white/30 uppercase">KREDİYE UYGUN</span>
+                                  <span className={`text-[10px] font-black uppercase ${selectedListing.listing.isSuitableForCredit ? 'text-emerald-400' : 'text-rose-400'}`}>{selectedListing.listing.isSuitableForCredit ? 'EVET' : 'HAYIR'}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[9px] font-bold text-white/30 uppercase">TAKASA UYGUN</span>
+                                  <span className={`text-[10px] font-black uppercase ${selectedListing.listing.isSuitableForTrade ? 'text-emerald-400' : 'text-rose-400'}`}>{selectedListing.listing.isSuitableForTrade ? 'EVET' : 'HAYIR'}</span>
+                                </div>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-3 gap-2 max-h-32 overflow-y-auto pr-1">
-                            {selectedListing.listing.images?.map((img, idx) => (
-                              <img key={idx} src={img.imageUrl} className="w-full h-16 object-cover rounded-xl border border-white/5" />
-                            ))}
+
+                          {/* Specifications Grid Column */}
+                          <div className="xl:col-span-2 space-y-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                              {[
+                                { label: 'Oda Sayısı', value: selectedListing.listing.roomCount || '-', icon: <Home className="w-4 h-4" /> },
+                                { label: 'Net Alan', value: `${selectedListing.listing.netSquareMeters || '-'} m²`, icon: <Maximize2 className="w-4 h-4" /> },
+                                { label: 'Brüt Alan', value: `${selectedListing.listing.grossSquareMeters || '-'} m²`, icon: <Maximize2 className="w-4 h-4" /> },
+                                { label: 'Banyo', value: selectedListing.listing.bathroomCount || '-', icon: <Droplets className="w-4 h-4" /> },
+                                { label: 'Bina Yaşı', value: selectedListing.listing.buildingAge || '0', icon: <Calendar className="w-4 h-4" /> },
+                                { label: 'Kat / Toplam Kat', value: `${selectedListing.listing.floorNumber || '-'}/${selectedListing.listing.totalFloors || '-'}`, icon: <Hash className="w-4 h-4" /> },
+                                { label: 'Isıtma', value: heatingTypeLabels[selectedListing.listing.heatingType || HeatingType.None], icon: <Wind className="w-4 h-4" /> },
+                                { label: 'Cephe', value: facingDirectionLabels[selectedListing.listing.facingDirection || FacingDirection.North], icon: <ArrowRightLeft className="w-4 h-4" /> },
+                                { label: 'Yapı Durumu', value: buildingStatusLabels[selectedListing.listing.buildingStatus || BuildingStatus.SecondHand], icon: <ShieldCheck className="w-4 h-4" /> },
+                                { label: 'Pazarlık', value: selectedListing.listing.isNegotiable ? 'VAR' : 'YOK', icon: <ArrowRightLeft className="w-4 h-4" /> }
+                              ].map((spec, i) => (
+                                <div key={i} className="bg-white/5 p-4 rounded-2xl border border-white/10 flex flex-col items-center justify-center text-center group hover:bg-white/10 transition-all border-b-2 border-b-white/5">
+                                  <div className="text-blue-400 mb-2">{spec.icon}</div>
+                                  <p className="text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">{spec.label}</p>
+                                  <span className="text-[11px] font-black text-white uppercase">{spec.value}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            <div className="p-6 rounded-[2rem] bg-white/5 border border-white/10">
+                              <p className="text-[10px] font-black text-white/40 tracking-widest uppercase mb-3">AÇIKLAMA</p>
+                              <div className="max-h-48 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-white/10">
+                                <p className="text-xs font-medium leading-relaxed text-white/70 whitespace-pre-line">{selectedListing.listing.description}</p>
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => { handleApprove(selectedListing.listing!.id, selectedListing.listing!.title); setSelectedListing(null); }} className="flex-1 h-10 rounded-xl bg-emerald-600 text-white text-[9px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all">ONAYLA</button>
-                            <button onClick={() => { handleReject(selectedListing.listing!.id, selectedListing.listing!.title); setSelectedListing(null); }} className="flex-1 h-10 rounded-xl bg-rose-600 text-white text-[9px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all">REDDET</button>
+
+                          {/* Images Column */}
+                          <div className="xl:col-span-1 space-y-4 flex flex-col">
+                            <div className="flex-1 bg-white/5 rounded-[2rem] border border-white/10 p-5 flex flex-col">
+                              <p className="text-[10px] font-black text-white/40 tracking-widest uppercase mb-4">GÖRSELLER ({selectedListing.listing.images.length})</p>
+                              <div className="grid grid-cols-2 gap-3 overflow-y-auto max-h-[400px] pr-2 scrollbar-thin scrollbar-thumb-white/10">
+                                {selectedListing.listing.images?.map((img, idx) => (
+                                  <img key={idx} src={img.imageUrl} className="w-full aspect-square object-cover rounded-2xl border border-white/10 hover:scale-105 transition-transform cursor-pointer" />
+                                ))}
+                              </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                              <button
+                                onClick={() => { handleApprove(selectedListing.listing!.id, selectedListing.listing!.title); setSelectedListing(null); }}
+                                className="flex-1 h-14 rounded-2xl bg-emerald-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-900/40 active:scale-95"
+                              >
+                                ONAYLA
+                              </button>
+                              <button
+                                onClick={() => { handleReject(selectedListing.listing!.id, selectedListing.listing!.title); setSelectedListing(null); }}
+                                className="flex-1 h-14 rounded-2xl bg-rose-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-rose-700 transition-all shadow-lg shadow-rose-900/40 active:scale-95"
+                              >
+                                REDDET
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>

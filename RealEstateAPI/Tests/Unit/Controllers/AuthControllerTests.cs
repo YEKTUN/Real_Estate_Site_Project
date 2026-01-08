@@ -178,7 +178,7 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public async Task Login_WithInvalidCredentials_ShouldReturnUnauthorized()
+    public async Task Login_WithInvalidCredentials_ShouldReturnBadRequest()
     {
         // Arrange
         var loginDto = TestDataFactory.CreateLoginDto();
@@ -191,8 +191,8 @@ public class AuthControllerTests
         var result = await _controller.Login(loginDto);
 
         // Assert
-        var unauthorizedResult = result.Should().BeOfType<UnauthorizedObjectResult>().Subject;
-        var response = unauthorizedResult.Value.Should().BeOfType<AuthResponseDto>().Subject;
+        var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        var response = badRequestResult.Value.Should().BeOfType<AuthResponseDto>().Subject;
         response.Success.Should().BeFalse();
     }
 
@@ -374,7 +374,7 @@ public class AuthControllerTests
             Email = "test@example.com"
         };
         
-        _authServiceMock.Setup(x => x.GetUserByIdAsync(userId))
+        _authServiceMock.Setup(x => x.GetUserByIdAsync(userId, It.IsAny<string?>()))
             .ReturnsAsync(userDto);
 
         // Act
@@ -395,7 +395,7 @@ public class AuthControllerTests
         var userId = Guid.NewGuid().ToString();
         SetupAuthenticatedUser(userId);
         
-        _authServiceMock.Setup(x => x.GetUserByIdAsync(userId))
+        _authServiceMock.Setup(x => x.GetUserByIdAsync(userId, It.IsAny<string?>()))
             .ReturnsAsync((UserDto?)null);
 
         // Act
@@ -495,7 +495,7 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public async Task GoogleLogin_WithInvalidToken_ShouldReturnUnauthorized()
+    public async Task GoogleLogin_WithInvalidToken_ShouldReturnBadRequest()
     {
         // Arrange
         var googleLoginDto = TestDataFactory.CreateGoogleLoginDto();
@@ -508,8 +508,8 @@ public class AuthControllerTests
         var result = await _controller.GoogleLogin(googleLoginDto);
 
         // Assert
-        var unauthorizedResult = result.Should().BeOfType<UnauthorizedObjectResult>().Subject;
-        var response = unauthorizedResult.Value.Should().BeOfType<AuthResponseDto>().Subject;
+        var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        var response = badRequestResult.Value.Should().BeOfType<AuthResponseDto>().Subject;
         response.Success.Should().BeFalse();
     }
 
@@ -590,7 +590,7 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public async Task GoogleLogin_Failure_ShouldReturn401()
+    public async Task GoogleLogin_Failure_ShouldReturn400()
     {
         // Arrange
         var googleLoginDto = TestDataFactory.CreateGoogleLoginDto();
@@ -603,9 +603,9 @@ public class AuthControllerTests
         var result = await _controller.GoogleLogin(googleLoginDto);
 
         // Assert
-        var unauthorizedResult = result as UnauthorizedObjectResult;
-        unauthorizedResult.Should().NotBeNull();
-        unauthorizedResult!.StatusCode.Should().Be(401);
+        var badRequestResult = result as BadRequestObjectResult;
+        badRequestResult.Should().NotBeNull();
+        badRequestResult!.StatusCode.Should().Be(400);
     }
 
     // ============================================================================
@@ -632,7 +632,7 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public async Task Login_Failure_ShouldReturn401()
+    public async Task Login_Failure_ShouldReturn400()
     {
         // Arrange
         var loginDto = TestDataFactory.CreateLoginDto();
@@ -645,9 +645,9 @@ public class AuthControllerTests
         var result = await _controller.Login(loginDto);
 
         // Assert
-        var unauthorizedResult = result as UnauthorizedObjectResult;
-        unauthorizedResult.Should().NotBeNull();
-        unauthorizedResult!.StatusCode.Should().Be(401);
+        var badRequestResult = result as BadRequestObjectResult;
+        badRequestResult.Should().NotBeNull();
+        badRequestResult!.StatusCode.Should().Be(400);
     }
 
     [Fact]
@@ -657,7 +657,7 @@ public class AuthControllerTests
         var userId = Guid.NewGuid().ToString();
         SetupAuthenticatedUser(userId);
         
-        _authServiceMock.Setup(x => x.GetUserByIdAsync(userId))
+        _authServiceMock.Setup(x => x.GetUserByIdAsync(userId, It.IsAny<string?>()))
             .ReturnsAsync((UserDto?)null);
 
         // Act

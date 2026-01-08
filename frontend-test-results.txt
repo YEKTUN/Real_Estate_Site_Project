@@ -1,0 +1,500 @@
+
+> frontend@0.1.0 test
+> jest --runInBand --no-coverage --passWithNoTests
+
+PASS __tests__/unit/redux/authSlice.test.ts
+  AuthSlice
+    Initial State
+      ✓ should return initial state when passed an empty action (6 ms)
+      ✓ initial state should have correct default values (2 ms)
+    Sync Reducers
+      logout
+        ✓ should reset auth state to initial values (3 ms)
+        ✓ should clear error when logging out (1 ms)
+      clearError
+        ✓ should set error to null (7 ms)
+        ✓ should not affect other state properties (2 ms)
+      setUser
+        ✓ should update user in state (2 ms)
+        ✓ should allow setting user to null (1 ms)
+        ✓ should update user with partial data (1 ms)
+      setTokens
+        ✓ should update both tokens in state (1 ms)
+        ✓ should overwrite existing tokens (1 ms)
+      resetAuth
+        ✓ should return initial state (1 ms)
+        ✓ should reset all properties including loading and error (2 ms)
+    Async Thunks - Login
+      login.pending
+        ✓ should set isLoading to true (1 ms)
+        ✓ should clear previous error (1 ms)
+      login.fulfilled
+        ✓ should set user and tokens on successful login (3 ms)
+        ✓ should handle response without user (1 ms)
+      login.rejected
+        ✓ should set error message on failed login (2 ms)
+        ✓ should not set user or tokens on failure (1 ms)
+    Async Thunks - Register
+      register.pending
+        ✓ should set isLoading to true (1 ms)
+        ✓ should clear previous error (2 ms)
+      register.fulfilled
+        ✓ should set user and tokens on successful registration (2 ms)
+      register.rejected
+        ✓ should set error message on failed registration (1 ms)
+    Async Thunks - Google Login
+      googleLogin.pending
+        ✓ should set isLoading to true (1 ms)
+        ✓ should clear previous error (1 ms)
+      googleLogin.fulfilled
+        ✓ should set user and tokens on successful Google login (1 ms)
+        ✓ should handle response without user (1 ms)
+        ✓ should set authentication to true
+      googleLogin.rejected
+        ✓ should set error message on failed Google login
+        ✓ should not set user or tokens on failure
+        ✓ should set isLoading to false on rejection (1 ms)
+    Async Thunks - Refresh Token
+      refreshToken.pending
+        ✓ should set isLoading to true (1 ms)
+      refreshToken.fulfilled
+        ✓ should update tokens on successful refresh (1 ms)
+        ✓ should preserve existing user if not provided in response (1 ms)
+      refreshToken.rejected
+        ✓ should clear auth state on failed refresh (1 ms)
+    Async Thunks - Get Current User
+      getCurrentUser.pending
+        ✓ should set isLoading to true (1 ms)
+      getCurrentUser.fulfilled
+        ✓ should update user on success (1 ms)
+      getCurrentUser.rejected
+        ✓ should set error on failure
+        ✓ should not clear authentication on failure (3 ms)
+    Async Thunks - Initialize Auth
+      initializeAuth.pending
+        ✓ should set isLoading to true
+      initializeAuth.fulfilled
+        ✓ should set auth state when authenticated (1 ms)
+        ✓ should keep initial state when not authenticated (1 ms)
+      initializeAuth.rejected
+        ✓ should set isAuthenticated to false on failure (1 ms)
+    Async Thunks - Logout Async
+      logoutAsync.fulfilled
+        ✓ should clear all auth state (1 ms)
+    Selectors
+      ✓ selectUser should return user from state
+      ✓ selectToken should return token from state (1 ms)
+      ✓ selectRefreshToken should return refresh token from state
+      ✓ selectIsAuthenticated should return authentication status (1 ms)
+      ✓ selectIsLoading should return loading status
+      ✓ selectError should return error from state (1 ms)
+      ✓ selectAuth should return entire auth state
+      ✓ selectors should handle null values (1 ms)
+
+  console.log
+    Google Login başarılı, credential alındı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:36:13)
+
+  console.log
+    Google Login thunk çalışıyor...
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:103:15)
+
+  console.log
+    Google Login başarılı: {
+      success: true,
+      message: 'Google ile giriş başarılı',
+      token: 'mock-jwt-token',
+      refreshToken: 'mock-refresh-token',
+      user: {
+        id: '1',
+        name: 'Google',
+        surname: 'User',
+        email: 'google@example.com'
+      }
+    }
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:111:15)
+
+  console.log
+    Google ile giriş başarılı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:51:17)
+
+  console.log
+    Google Login başarılı, credential alındı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:36:13)
+
+  console.log
+    Google Login thunk çalışıyor...
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:103:15)
+
+  console.log
+    Google Login başarılı: {
+      success: true,
+      message: 'Google ile giriş başarılı',
+      token: 'mock-jwt-token',
+      refreshToken: 'mock-refresh-token',
+      user: {
+        id: '1',
+        name: 'Google',
+        surname: 'User',
+        email: 'google@example.com'
+      }
+    }
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:111:15)
+
+  console.log
+    Google ile giriş başarılı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:51:17)
+
+  console.log
+    Google Login başarılı, credential alındı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:36:13)
+
+  console.log
+    Google Login thunk çalışıyor...
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:103:15)
+
+  console.log
+    Google Login başarılı: {
+      success: true,
+      message: 'Google ile giriş başarılı',
+      token: 'mock-jwt-token',
+      refreshToken: 'mock-refresh-token',
+      user: {
+        id: '1',
+        name: 'Google',
+        surname: 'User',
+        email: 'google@example.com'
+      }
+    }
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:111:15)
+
+  console.log
+    Google ile giriş başarılı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:51:17)
+
+  console.log
+    Google Login başarılı, credential alındı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:36:13)
+
+  console.error
+    Google credential bulunamadı
+
+      184 |       return;
+      185 |     }
+    > 186 |     originalError.call(console, ...args);
+          |                   ^
+      187 |   };
+      188 | });
+      189 |
+
+      at console.call [as error] (jest.setup.js:186:19)
+      at error (src/body/auth/components/GoogleLoginButton.tsx:39:15)
+      at Object.originalOnSuccess (__tests__/components/GoogleLoginButton.test.tsx:261:9)
+
+  console.error
+    Google Login hatası
+
+      184 |       return;
+      185 |     }
+    > 186 |     originalError.call(console, ...args);
+          |                   ^
+      187 |   };
+      188 | });
+      189 |
+
+      at console.call [as error] (jest.setup.js:186:19)
+      at error (src/body/auth/components/GoogleLoginButton.tsx:67:13)
+      at Object.mockGoogleLoginOnError (__tests__/components/GoogleLoginButton.test.tsx:276:9)
+
+  console.log
+    Google Login başarılı, credential alındı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:36:13)
+
+  console.log
+    Google Login thunk çalışıyor...
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:103:15)
+
+  console.log
+    Google Login başarılı: {
+      success: true,
+      message: 'Google ile giriş başarılı',
+      token: 'mock-jwt-token',
+      refreshToken: 'mock-refresh-token',
+      user: {
+        id: '1',
+        name: 'Google',
+        surname: 'User',
+        email: 'google@example.com'
+      }
+    }
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:111:15)
+
+  console.log
+    Google ile giriş başarılı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:51:17)
+
+  console.log
+    Google Login başarılı, credential alındı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:36:13)
+
+  console.log
+    Google Login thunk çalışıyor...
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:103:15)
+
+  console.log
+    Google Login başarılı: {
+      success: true,
+      message: 'Google ile giriş başarılı',
+      token: 'mock-jwt-token',
+      refreshToken: 'mock-refresh-token',
+      user: {
+        id: '1',
+        name: 'Google',
+        surname: 'User',
+        email: 'google@example.com'
+      }
+    }
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:111:15)
+
+  console.log
+    Google ile giriş başarılı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:51:17)
+
+  console.log
+    Google Login başarılı, credential alındı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:36:13)
+
+  console.log
+    Google Login thunk çalışıyor...
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:103:15)
+
+  console.log
+    Google Login başarılı: {
+      success: true,
+      message: 'Google ile giriş başarılı',
+      token: 'mock-jwt-token',
+      refreshToken: 'mock-refresh-token',
+      user: {
+        id: '1',
+        name: 'Google',
+        surname: 'User',
+        email: 'google@example.com'
+      }
+    }
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:111:15)
+
+  console.log
+    Google ile giriş başarılı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:51:17)
+
+  console.log
+    Google Login başarılı, credential alındı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:36:13)
+
+  console.log
+    Google Login thunk çalışıyor...
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:103:15)
+
+  console.log
+    Google Login başarılı: {
+      success: true,
+      message: 'Google ile giriş başarılı',
+      token: 'mock-jwt-token',
+      refreshToken: 'mock-refresh-token',
+      user: {
+        id: '1',
+        name: 'Google',
+        surname: 'User',
+        email: 'google@example.com'
+      }
+    }
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:111:15)
+
+  console.log
+    Google ile giriş başarılı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:51:17)
+
+  console.log
+    Google Login başarılı, credential alındı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:36:13)
+
+  console.log
+    Google Login thunk çalışıyor...
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:103:15)
+
+  console.log
+    Google Login başarılı: {
+      success: true,
+      message: 'Google ile giriş başarılı',
+      token: 'mock-jwt-token',
+      refreshToken: 'mock-refresh-token',
+      user: {
+        id: '1',
+        name: 'Google',
+        surname: 'User',
+        email: 'google@example.com'
+      }
+    }
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:111:15)
+
+  console.log
+    Google ile giriş başarılı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:51:17)
+
+  console.log
+    Google Login başarılı, credential alındı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:36:13)
+
+  console.log
+    Google Login thunk çalışıyor...
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:103:15)
+
+  console.log
+    Google Login başarılı: {
+      success: true,
+      message: 'Google ile giriş başarılı',
+      token: 'mock-jwt-token',
+      refreshToken: 'mock-refresh-token',
+      user: {
+        id: '1',
+        name: 'Google',
+        surname: 'User',
+        email: 'google@example.com'
+      }
+    }
+
+      at log (src/body/redux/slices/auth/AuthSlice.ts:111:15)
+
+  console.log
+    Google ile giriş başarılı
+
+      at log (src/body/auth/components/GoogleLoginButton.tsx:51:17)
+
+PASS __tests__/components/GoogleLoginButton.test.tsx
+  GoogleLoginButton Component
+    Rendering
+      ✓ should render Google login button (41 ms)
+      ✓ should render with "signin_with" text by default (10 ms)
+      ✓ should render with "signup_with" text when specified (7 ms)
+      ✓ should render with correct text attribute (5 ms)
+      ✓ should be wrapped in a flex container (6 ms)
+    Loading State
+      ✓ should have disabled styles when loading (5 ms)
+      ✓ should not have disabled styles when not loading (4 ms)
+    Success Callback
+      ✓ should call onSuccess callback when login succeeds (205 ms)
+      ✓ should dispatch googleLogin action on click (51 ms)
+      ✓ should handle credential response (23 ms)
+    Error Callback
+      ✓ should call onError callback when credential is missing (27 ms)
+      ✓ should call onError when Google login fails (12 ms)
+    Props
+      ✓ should accept text prop (4 ms)
+      ✓ should accept onSuccess callback prop (3 ms)
+      ✓ should accept onError callback prop (4 ms)
+      ✓ should work without callback props (5 ms)
+    Click Behavior
+      ✓ should be clickable when not loading (27 ms)
+      ✓ button should remain in document after click (34 ms)
+    Styling
+      ✓ should have full width container (4 ms)
+      ✓ should center content (5 ms)
+    Accessibility
+      ✓ should be focusable (6 ms)
+      ✓ should have button role (25 ms)
+    Edge Cases
+      ✓ should handle rapid clicks gracefully (61 ms)
+      ✓ should handle undefined callbacks gracefully (26 ms)
+
+  console.log
+    AuthGuard: Auth state initialize ediliyor...
+
+      at log (src/body/auth/components/AuthGuard.tsx:57:13)
+
+  console.log
+    AuthGuard: Sayfa değişti - /test-page
+
+      at log (src/body/auth/components/AuthGuard.tsx:65:13)
+
+  console.log
+    AuthGuard: Favoriler çekiliyor...
+
+      at log (src/body/auth/components/AuthGuard.tsx:119:15)
+
+  console.log
+    Favoriler isteği: { page: 1, pageSize: 1000 }
+
+      at log (src/body/redux/api/favoriteApi.ts:28:13)
+
+  console.error
+    Favoriler hatası: TypeError: _axiosInstance.default.get is not a function
+        at get (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/src/body/redux/api/favoriteApi.ts:29:42)
+        at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/src/body/redux/slices/favorite/FavoriteSlice.ts:56:47
+        at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@reduxjs/toolkit/src/createAsyncThunk.ts:361:79
+        at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@reduxjs/toolkit/src/createAsyncThunk.ts:400:9
+        at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/redux-thunk/dist/cjs/redux-thunk.cjs:30:14
+        at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@reduxjs/toolkit/src/immutableStateInvariantMiddleware.ts:183:34
+        at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@reduxjs/toolkit/src/actionCreatorInvariantMiddleware.ts:29:12
+        at dispatch (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/src/body/auth/components/AuthGuard.tsx:120:7)
+        at Object.react_stack_bottom_frame (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:25989:20)
+        at runWithFiberInDEV (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+        at commitHookEffectListMount (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:13249:29)
+        at commitHookPassiveMountEffects (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:13336:11)
+        at commitPassiveMountOnFiber (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15484:13)
+        at recursivelyTraversePassiveMountEffects (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+        at commitPassiveMountOnFiber (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15718:11)
+        at recursivelyTraversePassiveMountEffects (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+        at commitPassiveMountOnFiber (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15476:11)
+        at recursivelyTraversePassiveMountEffects (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+        at commitPassiveMountOnFiber (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15476:11)
+        at recursivelyTraversePassiveMountEffects (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15439:11)
+        at commitPassiveMountOnFiber (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:15519:11)
+        at flushPassiveEffects (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:18432:9)
+        at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react-dom/cjs/react-dom-client.development.js:17923:15
+        at flushActQueue (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:590:34)
+        at process.env.NODE_ENV.exports.act (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/react/cjs/react.development.js:884:10)
+        at /home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/act-compat.js:47:25
+        at renderRoot (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:190:26)
+        at render (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/@testing-library/react/dist/pure.js:292:10)
+        at renderWithProviders (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/utils/test-utils.tsx:99:14)
+        at Object.<anonymous> (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/__tests__/components/AuthGuard.test.tsx:100:13)
+        at Promise.finally.completed (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1557:28)
+        at new Promise (<anonymous>)
+        at callAsyncCircusFn (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1497:10)
+        at _callCircusTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:1007:40)
+        at _runTest (/home/ali/Masaüstü/benim/bilgisayara/Dersler/SWE/Real_Estate_Site_Project/frontend/node_modules/jest-circus/build/jestAdapterInit.js:947:3)

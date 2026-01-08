@@ -73,6 +73,8 @@ export default function ListingDetailPage() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
   const [commentText, setCommentText] = useState('');
+  const [replyingTo, setReplyingTo] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState('');
   const [showContactModal, setShowContactModal] = useState(false);
   const [messageType, setMessageType] = useState<'offer' | 'message'>('message');
   const [offerPrice, setOfferPrice] = useState<number | ''>('');
@@ -394,6 +396,103 @@ export default function ListingDetailPage() {
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            {/* Comments Section */}
+            <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 space-y-6">
+              <h2 className="text-sm font-black text-gray-900 tracking-widest uppercase flex items-center gap-2">
+                <span className="w-6 h-6 rounded-md bg-purple-600 text-white flex items-center justify-center text-[10px]">💬</span>
+                Yorumlar ({comments.length})
+              </h2>
+
+              {/* Comment Form - Only for authenticated users */}
+              {isAuthenticated ? (
+                <div className="space-y-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                  <div className="flex items-start gap-3">
+                    <UserAvatar
+                      name={currentUser?.name || ''}
+                      surname={currentUser?.surname || ''}
+                      profilePictureUrl={currentUser?.profilePictureUrl}
+                      size="sm"
+                    />
+                    <div className="flex-1 space-y-2">
+                      <textarea
+                        value={commentText}
+                        onChange={(e) => setCommentText(e.target.value)}
+                        placeholder="Yorumunuzu yazın..."
+                        className="w-full min-h-[80px] p-3 bg-white border-2 border-gray-200 focus:border-blue-500 rounded-xl outline-none text-sm text-gray-700 resize-none transition-all"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => setCommentText('')}
+                          className="px-4 py-2 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-gray-700 transition-all"
+                        >
+                          İptal
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!commentText.trim() || !listingId) return;
+                            try {
+                              await dispatch(createComment({
+                                listingId,
+                                data: {
+                                  content: commentText.trim()
+                                }
+                              })).unwrap();
+                              setCommentText('');
+                              setFeedback({ type: 'success', message: 'Yorumunuz başarıyla eklendi!' });
+                            } catch (err) {
+                              setFeedback({ type: 'error', message: 'Yorum eklenirken bir hata oluştu.' });
+                            }
+                          }}
+                          disabled={!commentText.trim()}
+                          className="px-6 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                        >
+                          Gönder
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 text-center">
+                  <p className="text-sm font-bold text-blue-700 mb-2">Yorum yapmak için giriş yapmalısınız</p>
+                  <Link
+                    href="/login"
+                    className="inline-block px-6 py-2 bg-blue-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all"
+                  >
+                    Giriş Yap
+                  </Link>
+                </div>
+              )}
+
+              {/* Comments List */}
+              <div className="space-y-4">
+                {comments.length === 0 ? (
+                  <div className="text-center py-8">
+                    <MessageCircle className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-sm font-bold text-gray-400">Henüz yorum yapılmamış</p>
+                    <p className="text-xs text-gray-400 mt-1">İlk yorumu siz yapın!</p>
+                  </div>
+                ) : (
+                  comments.map((comment) => (
+                    <CommentItem
+                      key={comment.id}
+                      comment={comment}
+                      listingId={listingId!}
+                      currentUser={currentUser}
+                      isAuthenticated={isAuthenticated}
+                      replyingTo={replyingTo}
+                      replyText={replyText}
+                      setReplyingTo={setReplyingTo}
+                      setReplyText={setReplyText}
+                      setFeedback={setFeedback}
+                      dispatch={dispatch}
+                      level={0}
+                    />
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -779,3 +878,183 @@ const getCurrencySymbol = (val: number) => {
   if (val === Currency.EUR) return '€';
   return '₺';
 };
+
+// Comment Item Component with Reply Support
+interface CommentItemProps {
+  comment: any;
+  listingId: number;
+  currentUser: any;
+  isAuthenticated: boolean;
+  replyingTo: number | null;
+  replyText: string;
+  setReplyingTo: (id: number | null) => void;
+  setReplyText: (text: string) => void;
+  setFeedback: (feedback: { type: 'success' | 'error', message: string } | null) => void;
+  dispatch: any;
+  level: number;
+}
+
+function CommentItem({
+  comment,
+  listingId,
+  currentUser,
+  isAuthenticated,
+  replyingTo,
+  replyText,
+  setReplyingTo,
+  setReplyText,
+  setFeedback,
+  dispatch,
+  level
+}: CommentItemProps) {
+  const maxLevel = 3; // Maksimum iç içe geçme seviyesi
+  const isReplying = replyingTo === comment.id;
+
+  const handleReply = async () => {
+    if (!replyText.trim()) return;
+    try {
+      await dispatch(createComment({
+        listingId,
+        data: {
+          content: replyText.trim(),
+          parentCommentId: comment.id
+        }
+      })).unwrap();
+      setReplyText('');
+      setReplyingTo(null);
+      setFeedback({ type: 'success', message: 'Yanıt başarıyla eklendi!' });
+    } catch (err) {
+      setFeedback({ type: 'error', message: 'Yanıt eklenirken bir hata oluştu.' });
+    }
+  };
+
+  return (
+    <div className={`${level > 0 ? 'ml-8 mt-3' : ''}`}>
+      <div className="flex gap-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all">
+        <UserAvatar
+          name={comment.user.name}
+          surname={comment.user.surname}
+          profilePictureUrl={comment.user.profilePictureUrl}
+          size="sm"
+        />
+        <div className="flex-1 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/profile/${comment.user.id}`}
+                className="text-sm font-black text-gray-800 hover:text-blue-600 transition-colors"
+              >
+                {comment.user.name} {comment.user.surname}
+              </Link>
+              <span className="text-[10px] text-gray-400">•</span>
+              <span className="text-[10px] text-gray-400 font-bold">
+                {new Date(comment.createdAt).toLocaleDateString('tr-TR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {isAuthenticated && level < maxLevel && (
+                <button
+                  onClick={() => setReplyingTo(isReplying ? null : comment.id)}
+                  className="text-[10px] font-black text-blue-500 hover:text-blue-700 uppercase tracking-widest transition-colors"
+                >
+                  {isReplying ? 'İptal' : 'Yanıtla'}
+                </button>
+              )}
+              {currentUser?.id === comment.user.id && (
+                <button
+                  onClick={async () => {
+                    if (window.confirm('Bu yorumu silmek istediğinizden emin misiniz?')) {
+                      try {
+                        await dispatch(deleteComment({
+                          listingId,
+                          commentId: comment.id
+                        })).unwrap();
+                        setFeedback({ type: 'success', message: 'Yorum silindi.' });
+                      } catch (err) {
+                        setFeedback({ type: 'error', message: 'Yorum silinirken bir hata oluştu.' });
+                      }
+                    }
+                  }}
+                  className="text-[10px] font-black text-red-400 hover:text-red-600 uppercase tracking-widest transition-colors"
+                >
+                  Sil
+                </button>
+              )}
+            </div>
+          </div>
+          <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-line">
+            {comment.content}
+          </p>
+
+          {/* Reply Form */}
+          {isReplying && (
+            <div className="mt-3 p-3 bg-white rounded-xl border border-blue-200">
+              <div className="flex gap-2">
+                <UserAvatar
+                  name={currentUser?.name || ''}
+                  surname={currentUser?.surname || ''}
+                  profilePictureUrl={currentUser?.profilePictureUrl}
+                  size="sm"
+                />
+                <div className="flex-1 space-y-2">
+                  <textarea
+                    value={replyText}
+                    onChange={(e) => setReplyText(e.target.value)}
+                    placeholder="Yanıtınızı yazın..."
+                    className="w-full min-h-[60px] p-2 bg-gray-50 border border-gray-200 focus:border-blue-500 rounded-lg outline-none text-sm text-gray-700 resize-none transition-all"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => {
+                        setReplyingTo(null);
+                        setReplyText('');
+                      }}
+                      className="px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-gray-500 hover:text-gray-700 transition-all"
+                    >
+                      İptal
+                    </button>
+                    <button
+                      onClick={handleReply}
+                      disabled={!replyText.trim()}
+                      className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Yanıtla
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Nested Replies */}
+      {comment.replies && comment.replies.length > 0 && (
+        <div className="space-y-3">
+          {comment.replies.map((reply: any) => (
+            <CommentItem
+              key={reply.id}
+              comment={reply}
+              listingId={listingId}
+              currentUser={currentUser}
+              isAuthenticated={isAuthenticated}
+              replyingTo={replyingTo}
+              replyText={replyText}
+              setReplyingTo={setReplyingTo}
+              setReplyText={setReplyText}
+              setFeedback={setFeedback}
+              dispatch={dispatch}
+              level={level + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
